@@ -14,6 +14,10 @@ export const requestProviderOTP = async (req, res) => {
         if (existingProvider) {
             return res.status(400).json({ message: 'Provider already exists' });
         }
+
+        // Delete any previous OTPs for this email to prevent re-use
+        await prisma.oTPVerification.deleteMany({ where: { email: provider_email } });
+
         // Generate 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
@@ -24,6 +28,7 @@ export const requestProviderOTP = async (req, res) => {
                 expires_at: expiresAt
             }
         });
+
         await sendOTPEmail(provider_email, otp);
         res.status(200).json({ message: 'OTP sent to provider email' });
     } catch (err) {
@@ -34,52 +39,81 @@ export const requestProviderOTP = async (req, res) => {
 
 // Step 2: Verify OTP and register service provider
 export const verifyProviderOTPAndRegister = async (req, res) => {
-    const {
-        provider_first_name,
-        provider_last_name,
-        provider_password,
-        provider_userName,
-        provider_email,
-        provider_phone_number,
-        provider_location,
-        provider_uli,
-        otp
-    } = req.body;
-
-    const record = await prisma.oTPVerification.findFirst({
-        where: { email: provider_email },
-        orderBy: { created_at: 'desc' }
-    });
-
-    if (!record || record.otp !== otp) {
-        return res.status(400).json({ message: 'Invalid or expired OTP' });
-    }
-    if (new Date(record.expires_at) < new Date()) {
-        return res.status(400).json({ message: 'OTP expired' });
-    }
-    const existingProvider = await prisma.serviceProviderDetails.findUnique({ where: { provider_email } });
-    if (existingProvider) {
-        return res.status(400).json({ message: 'Provider already exists' });
-    }
-    const hashedPassword = await bcrypt.hash(provider_password, 10);
-    const newProvider = await prisma.serviceProviderDetails.create({
-        data: {
+    try {
+        const {
             provider_first_name,
             provider_last_name,
-            provider_password: hashedPassword,
+            provider_password,
             provider_userName,
             provider_email,
             provider_phone_number,
-            provider_profile_photo: provider_profile_photo || null,
-            provider_valid_id: provider_valid_id || null,
-            provider_location: provider_location || null,
-            provider_uli
+            provider_location,
+            provider_uli,
+            otp
+        } = req.body;
+
+        // Check if provider already exists (prevent duplicate registration)
+        const existingProvider = await prisma.serviceProviderDetails.findUnique({ where: { provider_email } });
+        if (existingProvider) {
+            return res.status(400).json({ message: 'Provider already exists' });
         }
-    });
-    await prisma.oTPVerification.deleteMany({ where: { email: provider_email } });
-    // Optionally, send a welcome email or notification
-    sendRegistrationSuccessEmail(provider_email, provider_first_name, provider_userName);
-    res.status(201).json({ message: 'Service provider registered successfully', providerId: newProvider.provider_id });
+
+        // Verify OTP
+        const record = await prisma.oTPVerification.findFirst({
+            where: { email: provider_email },
+            orderBy: { created_at: 'desc' }
+        });
+
+        if (!record || record.otp !== otp) {
+            return res.status(400).json({ message: 'Invalid OTP' });
+        }
+
+        if (new Date(record.expires_at) < new Date()) {
+            return res.status(400).json({ message: 'OTP expired' });
+        }
+
+        // Handle file uploads
+        const profilePhotoFile = req.files && req.files['provider_profile_photo'] ? req.files['provider_profile_photo'][0] : null;
+        const validIdFile = req.files && req.files['provider_valid_id'] ? req.files['provider_valid_id'][0] : null;
+        const provider_profile_photo = profilePhotoFile ? profilePhotoFile.path : null;
+        const provider_valid_id = validIdFile ? validIdFile.path : null;
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(provider_password, 10);
+
+        // Create new provider
+        const newProvider = await prisma.serviceProviderDetails.create({
+            data: {
+                provider_first_name,
+                provider_last_name,
+                provider_password: hashedPassword,
+                provider_userName,
+                provider_email,
+                provider_phone_number,
+                provider_profile_photo: provider_profile_photo || null,
+                provider_valid_id: provider_valid_id || null,
+                provider_location: provider_location || null,
+                provider_uli
+            }
+        });
+
+        // Delete the used OTP
+        await prisma.oTPVerification.deleteMany({ where: { email: provider_email } });
+
+        // Send registration success email
+        await sendRegistrationSuccessEmail(provider_email, provider_first_name, provider_userName);
+        
+        res.status(201).json({ 
+            message: 'Service provider registered successfully', 
+            providerId: newProvider.provider_id,
+            provider_profile_photo: provider_profile_photo,
+            provider_valid_id: provider_valid_id
+        });
+
+    } catch (err) {
+        console.error('Provider registration error:', err);
+        res.status(500).json({ message: 'Server error during provider registration' });
+    }
 };
 
 // Service provider login

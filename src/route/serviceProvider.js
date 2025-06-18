@@ -37,7 +37,7 @@ router.get('/providers', async (req, res) => {
   }
 });
 
-router.get('certificates', async (req, res) => {
+router.get('/certificates', async (req, res) => {
   try {
     const certificates = await prisma.certificate.findMany();
     res.json(certificates);
