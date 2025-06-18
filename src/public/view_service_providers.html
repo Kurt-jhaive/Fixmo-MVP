@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Provider Details Viewer</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; }
+        .container { max-width: 800px; margin: 40px auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin-bottom: 1em; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+        th, td { border: 1px solid #ccc; padding: 0.7em; text-align: left; }
+        th { background: #007bff; color: #fff; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .img-thumb { max-width: 60px; max-height: 60px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Service Provider Details</h2>
+        <table id="providerTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Profile Photo</th>
+                    <th>Valid ID</th>
+                    <th>Location</th>
+                    <th>Rating</th>
+                    <th>Created At</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <script>
+        async function fetchProviders() {
+            // Adjust the endpoint to match your backend route
+            const res = await fetch('http://localhost:3000/auth/providers');
+            const data = await res.json();
+            const tbody = document.querySelector('#providerTable tbody');
+            tbody.innerHTML = '';
+            data.forEach(provider => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${provider.provider_id}</td>
+                    <td>${provider.provider_first_name} ${provider.provider_last_name}</td>
+                    <td>${provider.provider_userName}</td>
+                    <td>${provider.provider_email}</td>
+                    <td>${provider.provider_phone_number}</td>
+                    <td>${provider.certificate_file_path ? `<img src="${provider.certificate_file_path}" class="img-thumb" />` : ''}</td>
+                    <td>${provider.provider_valid_id ? `<a href="${provider.provider_valid_id}" target="_blank">View</a>` : ''}</td>
+                    <td>${provider.provider_location || ''}</td>
+                    <td>${provider.provider_rating}</td>
+                    <td>${new Date(provider.created_at).toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        fetchProviders();
+    </script>
+</body>
+</html>

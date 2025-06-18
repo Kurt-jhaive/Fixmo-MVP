@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User{
+    user_id Int @id @default(autoincrement())
+    first_name String
+    last_name String
+    userName String @unique
+    email String @unique
+    password String
+    phone_number String @unique
+    profile_photo String?
+    valid_id String?
+    user_location String?
+    created_at DateTime @default(now())
+    user_rating Rating[]
+    user_appointments Appointment[]
+    is_verified Boolean @default(false)
+}
+
+model ServiceProviderDetails{
+    provider_id Int @id @default(autoincrement())
+    provider_first_name String
+    provider_last_name String
+    provider_password String
+    provider_userName String @unique
+    provider_email String @unique
+    provider_phone_number String @unique
+    provider_profile_photo String?
+    provider_valid_id String?
+    provider_isVerified Boolean @default(false)
+    created_at DateTime @default(now())
+    provider_rating Float @default(0.0)
+    provider_location String?
+    provider_appointments Appointment[]
+    provider_services ServiceListing[]
+    provider_ratings Rating[]
+    provider_uli String @unique
+    provider_certificates Certificate[]
+    provider_availability Availability[]
+    
+}
+
+model Certificate{
+    certificate_id Int @id @default(autoincrement())
+    certificate_name String
+    certificate_number String @unique
+    certificate_file_path String
+    expiry_date DateTime?
+    provider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+    provider_id Int
+}
+
+
+model ServiceListing{
+    service_id Int @id @default(autoincrement())
+    service_title String
+    service_description String
+    service_startingprice Float
+    serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+    provider_id Int
+    specific_services SpecificService[]
+    
+}
+
+model SpecificService{
+    specific_service_id Int @id @default(autoincrement())
+    specific_service_title String
+    specific_service_description String
+    serviceListing ServiceListing @relation(fields: [service_id], references: [service_id])
+    service_id Int
+
+
+}
+
+model Availability{
+    availability_id Int @id @default(autoincrement())
+    dayOfWeek String
+    startTime String
+    endTime String
+    serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+    provider_id Int
+}
+
+model Appointment{
+    appointment_id Int @id @default(autoincrement())
+    customer User @relation(fields: [customer_id], references: [user_id])
+    customer_id Int
+    serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+    provider_id Int
+
+    appointment_status String
+    scheduled_date DateTime
+    actual_price Float?
+    repairDescription String?
+    created_at DateTime @default(now())
+    appointment_rating Rating[]
+
+}
+
+model Rating{
+    id Int @id @default(autoincrement())
+    rating_value Int
+    rating_comment String?
+    appointment Appointment @relation(fields: [appointment_id], references: [appointment_id])
+    appointment_id Int
+    user User @relation(fields: [user_id], references: [user_id])
+    user_id Int
+    serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+    provider_id Int
+}
+
+model OTPVerification {
+  id            Int      @id @default(autoincrement())
+  email         String
+  otp           String
+  expires_at    DateTime
+  created_at    DateTime @default(now())
+}
+
+
