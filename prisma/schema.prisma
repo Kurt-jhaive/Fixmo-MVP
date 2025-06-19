@@ -54,6 +54,9 @@ model Certificate{
     expiry_date DateTime?
     provider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
     provider_id Int
+    
+
+    CoveredService CoveredService[]
 }
 
 
@@ -68,6 +71,12 @@ model ServiceListing{
     
 }
 
+model ServiceCategory{
+    category_id Int @id @default(autoincrement())
+    category_name String
+    specific_services SpecificService[]
+}
+
 model SpecificService{
     specific_service_id Int @id @default(autoincrement())
     specific_service_title String
@@ -75,7 +84,18 @@ model SpecificService{
     serviceListing ServiceListing @relation(fields: [service_id], references: [service_id])
     service_id Int
 
+    category                  ServiceCategory    @relation(fields: [category_id], references: [category_id])
+    category_id               Int
 
+    covered_by_certificates   CoveredService[]
+
+}
+model CoveredService{
+    covered_service_id Int @id @default(autoincrement())
+    specific_service SpecificService @relation(fields: [specific_service_id], references: [specific_service_id])
+    specific_service_id Int
+    certificate Certificate @relation(fields: [certificate_id], references: [certificate_id])
+    certificate_id Int
 }
 
 model Availability{

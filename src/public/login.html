@@ -75,19 +75,22 @@
             <input type="text" id="user_location" placeholder="Location (optional)" />
             <button type="submit">Register</button>
             <div class="message" id="registerDetailsMessage"></div>
-        </form>
-    </div>    <script>
-        // Tab switching
-        const loginTab = document.getElementById('loginTab');
-        const registerTab = document.getElementById('registerTab');
-        const forgotPasswordTab = document.getElementById('forgotPasswordTab');
-        const loginForm = document.getElementById('loginForm');
-        const registerEmailForm = document.getElementById('registerEmailForm');
-        const registerOTPForm = document.getElementById('registerOTPForm');
-        const registerDetailsForm = document.getElementById('registerDetailsForm');
-        const forgotPasswordEmailForm = document.getElementById('forgotPasswordEmailForm');
-        const forgotPasswordOTPForm = document.getElementById('forgotPasswordOTPForm');
-        const forgotPasswordResetForm = document.getElementById('forgotPasswordResetForm');
+        </form>    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const forgotPasswordTab = document.getElementById('forgotPasswordTab');
+            const loginForm = document.getElementById('loginForm');
+            const registerEmailForm = document.getElementById('registerEmailForm');
+            const registerOTPForm = document.getElementById('registerOTPForm');
+            const registerDetailsForm = document.getElementById('registerDetailsForm');
+            const forgotPasswordEmailForm = document.getElementById('forgotPasswordEmailForm');
+            const forgotPasswordOTPForm = document.getElementById('forgotPasswordOTPForm');
+            const forgotPasswordResetForm = document.getElementById('forgotPasswordResetForm');
+
+            console.log('DOM loaded, setting up event listeners');
 
         // OTP Rate limiting
         let otpAttempts = {
@@ -131,7 +134,7 @@
             forgotPasswordTab.classList.add('active');
             hideAllForms();
             forgotPasswordEmailForm.style.display = '';
-        };
+        }};
 
         // OTP Rate limiting functions
         function canSendOTP(type) {
@@ -165,13 +168,21 @@
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
-            console.log('Login data:', { email: email ? 'provided' : 'missing', password: password ? 'provided' : 'missing' });
+            console.log('Login data:', { 
+                email: email, 
+                password: password,
+                emailLength: email.length,
+                passwordLength: password.length 
+            });
             
             try {
+                const requestBody = JSON.stringify({ email, password });
+                console.log('Request body:', requestBody);
+                
                 const res = await fetch('http://localhost:3000/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: requestBody
                 });
                 console.log('Response status:', res.status);
                 let data;
@@ -428,13 +439,15 @@
                 }
             } catch (error) {
                 msgDiv.style.color = 'red';
-                msgDiv.textContent = 'Network error. Please try again.';
-                submitBtn.disabled = false;
+                msgDiv.textContent = 'Network error. Please try again.';                submitBtn.disabled = false;
                 submitBtn.textContent = 'Register';
             }
         });
-    }
+    // End of DOMContentLoaded
+    });
+
+        // Initialize the login tab as active
+        loginTab.click();
     </script>
 </body>
-</html> 
-     
+</html>

@@ -193,3 +193,54 @@ export const uploadCertificate = async (req, res) => {
         res.status(500).json({ message: 'Error uploading certificate' });
     }
 };
+
+
+// Add a new service listing
+// This function allows a service provider to create a new service listing
+
+export const addServiceListing = async (req, res) => {
+  const {
+    provider_id,
+    specific_service_id,
+    service_description,
+    service_price
+  } = req.body;
+
+  try {
+    // 1. Get the specific service title for naming the listing
+    const specificService = await prisma.specificService.findUnique({
+      where: { specific_service_id }
+    });
+
+    if (!specificService) {
+      return res.status(404).json({ message: 'Specific service not found' });
+    }
+
+    // 2. Create the listing
+    const listing = await prisma.serviceListing.create({
+      data: {
+        service_title: specificService.specific_service_title,
+        service_description,
+        service_startingprice: parseFloat(service_price),
+        provider_id
+      }
+    });
+
+    // 3. Link the specific service to the new listing
+    await prisma.specificService.update({
+      where: { specific_service_id },
+      data: {
+        service_id: listing.service_id
+      }
+    });
+
+    return res.status(201).json({
+      message: 'Service listing created successfully',
+      listing
+    });
+
+  } catch (error) {
+    console.error('Error creating service listing:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};

@@ -9,18 +9,50 @@ import { checkOTPRateLimit, recordOTPAttempt } from '../services/rateLimitUtils.
 const prisma = new PrismaClient();
 
 export const login = async (req, res) => {
+    console.log('Login request received');
+    console.log('Request body:', req.body);
+    console.log('Request headers:', req.headers);
+    
     const { email, password } = req.body;
+    
+    console.log('Extracted data:', { 
+        email: email, 
+        password: password ? '[PROVIDED]' : '[MISSING]',
+        emailType: typeof email,
+        passwordType: typeof password,
+        emailLength: email ? email.length : 0,
+        passwordLength: password ? password.length : 0
+    });
+    
+    // Validate input
+    if (!email || !password) {
+        console.log('Validation failed: Missing email or password');
+        return res.status(400).json({ message: 'Email and password are required' });
+    }
+    
     try {
+        console.log('Looking up user with email:', email);
         const user = await prisma.user.findUnique({ where: { email } });
+        
         if (!user) {
+            console.log('User not found for email:', email);
             return res.status(400).json({ message: 'Invalid email or password' });
         }
+        
+        console.log('User found:', { id: user.user_id, email: user.email, userName: user.userName });
+        console.log('Comparing passwords...');
+        
         const isMatch = await bcrypt.compare(password, user.password);
+        console.log('Password match result:', isMatch);
+        
         if (!isMatch) {
+            console.log('Password mismatch for user:', email);
             return res.status(400).json({ message: 'Invalid email or password' });
         }
+        
         const token = jwt.sign({ userId: user.user_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         console.log('User logged in successfully:', user.userName);
+        
         res.status(200).json({
             message: 'Login successful',
             token,
@@ -28,7 +60,7 @@ export const login = async (req, res) => {
             userName: user.userName
         });
     } catch (err) {
-        console.error(err);
+        console.error('Login error:', err);
         res.status(500).json({ message: 'Server error during login' });
     }
 };
@@ -178,3 +210,4 @@ export const verifyForgotPasswordOTPAndReset = async (req, res) => {
         notFoundMsg: 'User not found'
     }, res);
 };
+

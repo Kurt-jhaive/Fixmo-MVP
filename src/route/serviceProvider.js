@@ -6,7 +6,8 @@ import {
   providerLogin,
   requestProviderForgotPasswordOTP,
   verifyProviderForgotPasswordOTPAndReset,
-  uploadCertificate
+  uploadCertificate,
+  addServiceListing
 } from '../controller/authserviceProviderController.js';
 import { PrismaClient } from '@prisma/client';
 
@@ -25,7 +26,10 @@ router.post('/provider-forgot-password-request-otp', requestProviderForgotPasswo
 // Forgot password: verify OTP and reset password
 router.post('/provider-forgot-password-verify-otp', verifyProviderForgotPasswordOTPAndReset);
 // Upload service provider certificate (with multer)
-router.post('/provider/:providerId/upload-certificate', upload.single('certificate_file'), uploadCertificate);
+router.post('/upload-certificate', upload.single('certificate_file'), uploadCertificate);
+
+
+router.post('/addListing', addServiceListing);
 // Get all service providers
 router.get('/providers', async (req, res) => {
   try {
