@@ -179,7 +179,7 @@
                 const requestBody = JSON.stringify({ email, password });
                 console.log('Request body:', requestBody);
                 
-                const res = await fetch('http://localhost:3000/auth/login', {
+                const res = await fetch('http://192.168.100.165:3000/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: requestBody
@@ -228,7 +228,7 @@
             msgDiv.style.color = 'blue';
             
             try {
-                const res = await fetch('http://localhost:3000/auth/request-otp', {
+                const res = await fetch('http://192.168.100.165:3000/auth/request-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -283,7 +283,7 @@
             msgDiv.style.color = 'blue';
             
             try {
-                const res = await fetch('http://localhost:3000/auth/forgot-password-request-otp', {
+                const res = await fetch('http://192.168.100.165:3000/auth/forgot-password-request-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -340,7 +340,7 @@
             msgDiv.style.color = 'blue';
             
             try {
-                const res = await fetch('http://localhost:3000/auth/forgot-password-verify-otp', {
+                const res = await fetch('http://192.168.100.165:3000/auth/forgot-password-verify-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -413,7 +413,7 @@
             }
             
             try {
-                const res = await fetch('http://localhost:3000/auth/verify-register', {
+                const res = await fetch('http://192.168.100.165:3000/auth/verify-register', {
                     method: 'POST',
                     body: formData
                 });

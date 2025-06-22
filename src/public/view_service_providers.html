@@ -39,7 +39,7 @@
     <script>
         async function fetchProviders() {
             // Adjust the endpoint to match your backend route
-            const res = await fetch('http://localhost:3000/auth/providers');
+            const res = await fetch('http://192.168.100.165:3000/auth/providers');
             const data = await res.json();
             const tbody = document.querySelector('#providerTable tbody');
             tbody.innerHTML = '';

@@ -228,7 +228,7 @@
             msgDiv.style.color = 'blue';
             
             try {
-                const res = await fetch('http://localhost:3000/auth/provider-request-otp', {
+                const res = await fetch('http://192.168.100.165:3000/auth/provider-request-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ provider_email })
@@ -284,7 +284,7 @@
             msgDiv.style.color = 'blue';
             
             try {
-                const res = await fetch('http://localhost:3000/auth/provider-request-forgot-password-otp', {
+                const res = await fetch('http://192.168.100.165:3000/auth/provider-request-forgot-password-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ provider_email })
@@ -341,7 +341,7 @@
             msgDiv.style.color = 'blue';
             
             try {
-                const res = await fetch('http://localhost:3000/auth/provider-verify-forgot-password-otp-and-reset', {
+                const res = await fetch('http://192.168.100.165:3000/auth/provider-verify-forgot-password-otp-and-reset', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -409,7 +409,7 @@
             };
             
             try {
-                const res = await fetch('http://localhost:3000/provider-verify-register', {
+                const res = await fetch('http://192.168.100.165:3000/provider-verify-register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -460,7 +460,7 @@
             formData.append('certificate_number', certificate_number);
             formData.append('expiry_date', expiry_date);
             formData.append('certificate_file', certificate_file);
-            const res = await fetch(`http://localhost:3000/auth/provider/${providerId}/upload-certificate`, {
+            const res = await fetch(`http://192.168.100.165:3000/auth/provider/${providerId}/upload-certificate`, {
                 method: 'POST',
                 body: formData
             });

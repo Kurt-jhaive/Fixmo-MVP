@@ -7,6 +7,12 @@ import {
   verifyOTPAndRegister,
   requestForgotPasswordOTP,
   verifyForgotPasswordOTPAndReset,
+  addAppointment,
+  getServiceListings,
+  getServiceListingDetails,
+  getCustomerAppointments,
+  cancelAppointment,
+  addRatetoProvider
 } from '../controller/authCustomerController.js';
 
 const router = express.Router();
@@ -38,6 +44,20 @@ router.post('/verify-register', upload.fields([
 router.post('/forgot-password-request-otp', requestForgotPasswordOTP);
 // Forgot password: verify OTP and reset password
 router.post('/forgot-password-verify-otp', verifyForgotPasswordOTPAndReset);
+
+// Customer appointment routes
+// Book a new appointment
+router.post('/book-appointment', addAppointment);
+// Get all service listings (marketplace)
+router.get('/service-listings', getServiceListings);
+// Get specific service listing details
+router.get('/service-listing/:service_id', getServiceListingDetails);
+// Get customer's appointments
+router.get('/customer/:customer_id/appointments', getCustomerAppointments);
+// Cancel appointment
+router.put('/cancel-appointment/:appointment_id', cancelAppointment);
+// Submit rating for service provider
+router.post('/rate-provider', addRatetoProvider);
 
 export default router;
 

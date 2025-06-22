@@ -7,7 +7,13 @@ import {
   requestProviderForgotPasswordOTP,
   verifyProviderForgotPasswordOTPAndReset,
   uploadCertificate,
-  addServiceListing
+  addServiceListing,
+  addAvailability,
+  getProviderAvailability,
+  updateAvailability,
+  deleteAvailability,
+  getProviderDayAvailability,
+
 } from '../controller/authserviceProviderController.js';
 import { PrismaClient } from '@prisma/client';
 
@@ -28,8 +34,22 @@ router.post('/provider-forgot-password-verify-otp', verifyProviderForgotPassword
 // Upload service provider certificate (with multer)
 router.post('/upload-certificate', upload.single('certificate_file'), uploadCertificate);
 
-
 router.post('/addListing', addServiceListing);
+
+//Add Availability to the provider
+router.post('/addAvailability', addAvailability);
+// Get availability for a provider
+router.get('/provider/:provider_id/availability', getProviderAvailability);
+// Get availability for a specific provider and day
+router.get('/provider/:provider_id/availability/:dayOfWeek', getProviderDayAvailability);
+// Get suggested time slots for a provider and day
+
+// Update specific availability
+router.put('/availability/:availability_id', updateAvailability);
+// Delete specific availability
+router.delete('/availability/:availability_id', deleteAvailability);
+
+
 // Get all service providers
 router.get('/providers', async (req, res) => {
   try {

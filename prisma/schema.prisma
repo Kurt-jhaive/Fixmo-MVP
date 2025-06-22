@@ -21,6 +21,7 @@ model User{
     user_rating Rating[]
     user_appointments Appointment[]
     is_verified Boolean @default(false)
+    is_activated Boolean @default(true)
 }
 
 model ServiceProviderDetails{
@@ -43,6 +44,7 @@ model ServiceProviderDetails{
     provider_uli String @unique
     provider_certificates Certificate[]
     provider_availability Availability[]
+    provider_isActivated Boolean @default(true)
     
 }
 
@@ -142,5 +144,7 @@ model OTPVerification {
   expires_at    DateTime
   created_at    DateTime @default(now())
 }
+
+
 
 
