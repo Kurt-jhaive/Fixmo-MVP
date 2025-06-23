@@ -62,7 +62,10 @@ export const verifyProviderOTPAndRegister = async (req, res) => {
             provider_phone_number,
             provider_location,
             provider_uli,
-            otp
+            otp,
+            certificateNames,
+            certificateNumbers,
+            expiryDates
         } = req.body;
 
         // Check if provider already exists (prevent duplicate registration)
@@ -91,6 +94,9 @@ export const verifyProviderOTPAndRegister = async (req, res) => {
         const provider_profile_photo = profilePhotoFile ? profilePhotoFile.path : null;
         const provider_valid_id = validIdFile ? validIdFile.path : null;
 
+        // Handle certificate files
+        const certificateFiles = req.files && req.files['certificateFile'] ? req.files['certificateFile'] : [];
+
         // Hash password
         const hashedPassword = await bcrypt.hash(provider_password, 10);
 
@@ -110,6 +116,30 @@ export const verifyProviderOTPAndRegister = async (req, res) => {
             }
         });
 
+        // Create certificates if provided
+        const createdCertificates = [];
+        if (certificateFiles && certificateFiles.length > 0) {
+            for (let i = 0; i < certificateFiles.length; i++) {
+                const certificateFile = certificateFiles[i];
+                const certificateName = Array.isArray(certificateNames) ? certificateNames[i] : certificateNames;
+                const certificateNumber = Array.isArray(certificateNumbers) ? certificateNumbers[i] : certificateNumbers;
+                const expiryDate = Array.isArray(expiryDates) ? expiryDates[i] : expiryDates;
+
+                if (certificateName && certificateNumber && certificateFile) {
+                    const certificate = await prisma.certificate.create({
+                        data: {
+                            certificate_name: certificateName,
+                            certificate_number: certificateNumber,
+                            certificate_file_path: certificateFile.path,
+                            expiry_date: expiryDate ? new Date(expiryDate) : null,
+                            provider_id: newProvider.provider_id
+                        }
+                    });
+                    createdCertificates.push(certificate);
+                }
+            }
+        }
+
         // Delete the used OTP
         await prisma.oTPVerification.deleteMany({ where: { email: provider_email } });
 
@@ -120,7 +150,8 @@ export const verifyProviderOTPAndRegister = async (req, res) => {
             message: 'Service provider registered successfully', 
             providerId: newProvider.provider_id,
             provider_profile_photo: provider_profile_photo,
-            provider_valid_id: provider_valid_id
+            provider_valid_id: provider_valid_id,
+            certificates: createdCertificates
         });
 
     } catch (err) {

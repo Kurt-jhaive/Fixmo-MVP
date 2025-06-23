@@ -54,13 +54,26 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'serviceproviderlogin.html'));
 });
 
+app.get('/fixmo-login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'fixmo_login.html'));
+});
+
+app.get('/fixmo-register', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'fixmo_register.html'));
+});
+
+app.get('/fixmo-provider-register', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'fixmo_provider_register.html'));
+});
+
+app.get('/location-test', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'location-test.html'));
+});
+
 app.get('/availability', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'availability_test.html'));
 });
 
-app.get('/ping', (req, res) => {
-  res.send('pong');
-});
 
 
 app.use('/auth', authCustomerRoutes, serviceProviderRoutes, adminRoute); // Use the authCustomer and serviceProvider routes

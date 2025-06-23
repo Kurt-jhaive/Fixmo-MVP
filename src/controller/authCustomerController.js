@@ -761,7 +761,6 @@ export const addRatetoProvider = async (req, res) => {
 
     } catch (err) {
         console.error('Error submitting rating:', err);
-        return res.status(500).json({ message: 'Internal server error while submitting rating' });
-    }
+        return res.status(500).json({ message: 'Internal server error while submitting rating' });    }
 };
 

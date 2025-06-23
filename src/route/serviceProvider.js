@@ -19,14 +19,23 @@ import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' }); // configure as needed
+
+// Create a specialized upload middleware for registration with multiple files
+const registrationUpload = multer({ dest: 'uploads/' }).fields([
+  { name: 'provider_profile_photo', maxCount: 1 },
+  { name: 'provider_valid_id', maxCount: 1 },
+  { name: 'certificateFile', maxCount: 10 } // Allow up to 10 certificates
+]);
+
 const prisma = new PrismaClient();
 
 // Step 1: Service provider requests OTP
 router.post('/provider-request-otp', requestProviderOTP);
 // Step 2: Service provider verifies OTP and registers
-router.post('/provider-verify-register', verifyProviderOTPAndRegister);
+router.post('/provider-verify-register', registrationUpload, verifyProviderOTPAndRegister);
 // Service provider login
 router.post('/provider-login', providerLogin);
+router.post('/loginProvider', providerLogin);
 // Forgot password: request OTP
 router.post('/provider-forgot-password-request-otp', requestProviderForgotPasswordOTP);
 // Forgot password: verify OTP and reset password
