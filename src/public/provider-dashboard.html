@@ -145,29 +145,28 @@
                     <h2>Quick Actions</h2>
                     <p>Manage your business efficiently</p>
                 </div>
-                <div class="actions-grid">
-                    <div class="action-card" onclick="providerDashboard.navigateToPage('manage-services')">
+                <div class="actions-grid">                    <div class="action-card" onclick="window.dashboard.navigateToPage('manage-services')">
                         <div class="action-icon">
                             <i class="fas fa-plus-circle"></i>
                         </div>
                         <h3>Add New Service</h3>
                         <p>Create a new service listing to attract more customers</p>
                     </div>
-                    <div class="action-card" onclick="providerDashboard.navigateToPage('bookings')">
+                    <div class="action-card" onclick="window.dashboard.navigateToPage('bookings')">
                         <div class="action-icon">
                             <i class="fas fa-calendar-alt"></i>
                         </div>
                         <h3>View Bookings</h3>
                         <p>Check and manage your current and upcoming bookings</p>
                     </div>
-                    <div class="action-card" onclick="providerDashboard.showAvailabilityModal()">
+                    <div class="action-card" onclick="window.dashboard.showAvailabilityModal()">
                         <div class="action-icon">
                             <i class="fas fa-clock"></i>
                         </div>
                         <h3>Set Availability</h3>
                         <p>Update your working hours and available days</p>
                     </div>
-                    <div class="action-card" onclick="providerDashboard.navigateToPage('profile')">
+                    <div class="action-card" onclick="window.dashboard.navigateToPage('profile')">
                         <div class="action-icon">
                             <i class="fas fa-user-cog"></i>
                         </div>
@@ -181,7 +180,7 @@
             <div class="recent-activity-section">
                 <div class="section-header">
                     <h2>Recent Activity</h2>
-                    <a href="#" class="view-all-link" onclick="providerDashboard.navigateToPage('bookings')">View All</a>
+                    <a href="#" class="view-all-link" onclick="window.dashboard.navigateToPage('bookings')">View All</a>
                 </div>
                 <div class="activity-container" id="recentActivity">
                     <!-- Recent activity will be loaded here -->
@@ -253,9 +252,7 @@
             <div class="bookings-container" id="bookingsContainer">
                 <!-- Bookings will be loaded here -->
             </div>
-        </div>
-
-        <!-- Profile Page -->
+        </div>        <!-- Profile Page -->
         <div id="profilePage" class="page">
             <div class="page-header">
                 <h1>Edit Profile</h1>
@@ -263,6 +260,17 @@
             </div>
             <div class="profile-container" id="profileContainer">
                 <!-- Profile form will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settingsPage" class="page">
+            <div class="page-header">
+                <h1>Account Settings</h1>
+                <p>Manage your account preferences and notifications</p>
+            </div>
+            <div class="settings-container" id="settingsContainer">
+                <!-- Settings will be loaded here -->
             </div>
         </div>
     </main>

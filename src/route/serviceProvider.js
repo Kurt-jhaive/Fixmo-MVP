@@ -1,10 +1,13 @@
 import express from 'express';
 import multer from 'multer';
+import authMiddleware from '../middleware/authMiddleware.js';
+import { requireProviderSession, requireAuth } from '../middleware/sessionAuth.js';
 import {
   requestProviderOTP,
   verifyProviderOTPOnly,
   verifyProviderOTPAndRegister,
   providerLogin,
+  providerLogout,
   requestProviderForgotPasswordOTP,
   verifyProviderForgotPasswordOTPAndReset,
   providerResetPassword,
@@ -46,6 +49,9 @@ router.post('/provider-verify-register', registrationUpload, verifyProviderOTPAn
 // Service provider login
 router.post('/provider-login', providerLogin);
 router.post('/loginProvider', providerLogin);
+// Service provider logout
+router.post('/provider-logout', providerLogout);
+router.post('/logout', providerLogout);
 // Forgot password: request OTP
 router.post('/provider-forgot-password-request-otp', requestProviderForgotPasswordOTP);
 // Forgot password: verify OTP and reset password
@@ -53,22 +59,35 @@ router.post('/provider-forgot-password-verify-otp', verifyProviderForgotPassword
 // Simple provider password reset (OTP already verified)
 router.post('/provider-reset-password', providerResetPassword);
 // Upload service provider certificate (with multer)
-router.post('/upload-certificate', upload.single('certificate_file'), uploadCertificate);
+router.post('/upload-certificate', requireAuth('provider'), upload.single('certificate_file'), uploadCertificate);
 
-router.post('/addListing', addServiceListing);
+// PROTECTED ROUTES - require session/JWT authentication
+router.post('/addListing', requireAuth('provider'), addServiceListing);
 
 //Add Availability to the provider
-router.post('/addAvailability', addAvailability);
+router.post('/addAvailability', requireAuth('provider'), addAvailability);
 // Get availability for a provider
 router.get('/provider/:provider_id/availability', getProviderAvailability);
 // Get availability for a specific provider and day
 router.get('/provider/:provider_id/availability/:dayOfWeek', getProviderDayAvailability);
-// Get suggested time slots for a provider and day
 
 // Update specific availability
-router.put('/availability/:availability_id', updateAvailability);
+router.put('/availability/:availability_id', requireAuth('provider'), updateAvailability);
 // Delete specific availability
-router.delete('/availability/:availability_id', deleteAvailability);
+router.delete('/availability/:availability_id', requireAuth('provider'), deleteAvailability);
+
+// Protected route to get provider's own profile
+router.get('/profile', requireAuth('provider'), getProviderProfile);
+// Protected route to update provider profile
+router.put('/profile', requireAuth('provider'), updateProviderProfile);
+// Protected route to get provider stats
+router.get('/stats', requireAuth('provider'), getProviderStats);
+// Protected route to get provider's services
+router.get('/my-services', requireAuth('provider'), getProviderServices);
+// Protected route to get provider's bookings
+router.get('/my-bookings', requireAuth('provider'), getProviderBookings);
+// Protected route to get provider activity
+router.get('/activity', requireAuth('provider'), getProviderActivity);
 
 
 // Get all service providers

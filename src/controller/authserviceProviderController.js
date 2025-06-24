@@ -191,12 +191,51 @@ export const providerLogin = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid email or password' });
         }
-        const token = jwt.sign({ providerId: provider.provider_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.status(200).json({
-            message: 'Login successful',
-            token,
-            providerId: provider.provider_id,
-            providerUserName: provider.provider_userName
+        
+        // Create JWT token
+        const token = jwt.sign(
+            { 
+                id: provider.provider_id,
+                providerId: provider.provider_id,
+                userType: 'provider',
+                email: provider.provider_email
+            }, 
+            process.env.JWT_SECRET || 'your-secret-key', 
+            { expiresIn: '24h' }
+        );
+
+        // Create session
+        req.session.provider = {
+            id: provider.provider_id,
+            email: provider.provider_email,
+            userName: provider.provider_userName,
+            firstName: provider.provider_first_name,
+            lastName: provider.provider_last_name,
+            loginTime: new Date()
+        };
+
+        // Save session before responding
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error:', err);
+                return res.status(500).json({ message: 'Session creation failed' });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Login successful',
+                token,
+                providerId: provider.provider_id,
+                providerUserName: provider.provider_userName,
+                userType: 'provider',
+                provider: {
+                    id: provider.provider_id,
+                    firstName: provider.provider_first_name,
+                    lastName: provider.provider_last_name,
+                    email: provider.provider_email,
+                    userName: provider.provider_userName
+                }
+            });
         });
         
     } catch (err) {
@@ -669,11 +708,19 @@ export const providerResetPassword = async (req, res) => {
 
 // Get provider profile
 export const getProviderProfile = async (req, res) => {
-    const { provider_id } = req.params;
-    
     try {
+        // Use the provider ID from the authentication middleware
+        const providerId = req.userId;
+        
+        if (!providerId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Provider ID not found in session' 
+            });
+        }
+
         const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) },
+            where: { provider_id: parseInt(providerId) },
             select: {
                 provider_id: true,
                 provider_first_name: true,
@@ -746,11 +793,19 @@ export const updateProviderProfile = async (req, res) => {
 
 // Get provider stats
 export const getProviderStats = async (req, res) => {
-    const { provider_id } = req.params;
-    
     try {
+        // Use the provider ID from the authentication middleware
+        const providerId = req.userId;
+        
+        if (!providerId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Provider ID not found in session' 
+            });
+        }
+
         const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) }
+            where: { provider_id: parseInt(providerId) }
         });
 
         if (!provider) {
@@ -760,19 +815,17 @@ export const getProviderStats = async (req, res) => {
         // Get total completed appointments and earnings
         const completedAppointments = await prisma.appointment.findMany({
             where: {
-                provider_id: parseInt(provider_id),
+                provider_id: parseInt(providerId),
                 appointment_status: 'completed'
             }
         });
 
         const totalEarnings = completedAppointments.reduce((sum, appointment) => {
             return sum + (appointment.actual_price || 0);
-        }, 0);
-
-        // Get active bookings (pending, confirmed, in_progress)
+        }, 0);        // Get active bookings (pending, confirmed, in_progress)
         const activeBookings = await prisma.appointment.count({
             where: {
-                provider_id: parseInt(provider_id),
+                provider_id: parseInt(providerId),
                 appointment_status: {
                     in: ['pending', 'confirmed', 'in_progress']
                 }
@@ -781,7 +834,7 @@ export const getProviderStats = async (req, res) => {
 
         // Get total services
         const totalServices = await prisma.serviceListing.count({
-            where: { provider_id: parseInt(provider_id) }
+            where: { provider_id: parseInt(providerId) }
         });
 
         // Get monthly stats (current month)
@@ -791,16 +844,14 @@ export const getProviderStats = async (req, res) => {
 
         const monthlyBookings = await prisma.appointment.count({
             where: {
-                provider_id: parseInt(provider_id),
+                provider_id: parseInt(providerId),
                 created_at: {
                     gte: startOfMonth
                 }
             }
-        });
-
-        const monthlyCompletedAppointments = await prisma.appointment.findMany({
+        });        const monthlyCompletedAppointments = await prisma.appointment.findMany({
             where: {
-                provider_id: parseInt(provider_id),
+                provider_id: parseInt(providerId),
                 appointment_status: 'completed',
                 created_at: {
                     gte: startOfMonth
@@ -814,29 +865,27 @@ export const getProviderStats = async (req, res) => {
 
         // Calculate completion rate
         const totalAppointments = await prisma.appointment.count({
-            where: { provider_id: parseInt(provider_id) }
+            where: { provider_id: parseInt(providerId) }
         });
 
         const completionRate = totalAppointments > 0 
             ? Math.round((completedAppointments.length / totalAppointments) * 100)
-            : 0;
-
-        // Get popular services (services with most bookings)
+            : 0;        // Get popular services (services with most bookings)
         const serviceBookings = await prisma.appointment.groupBy({
             by: ['provider_id'],
-            where: { provider_id: parseInt(provider_id) },
+            where: { provider_id: parseInt(providerId) },
             _count: { appointment_id: true }
         });
 
         const popularServices = await prisma.serviceListing.findMany({
-            where: { provider_id: parseInt(provider_id) },
+            where: { provider_id: parseInt(providerId) },
             take: 5,
             orderBy: { service_id: 'desc' } // Simple ordering for now
         });
 
         // Get total ratings count
         const totalRatings = await prisma.rating.count({
-            where: { provider_id: parseInt(provider_id) }
+            where: { provider_id: parseInt(providerId) }
         });
 
         const stats = {
@@ -863,11 +912,19 @@ export const getProviderStats = async (req, res) => {
 
 // Get provider services
 export const getProviderServices = async (req, res) => {
-    const { provider_id } = req.params;
-    
     try {
+        // Use the provider ID from the authentication middleware
+        const providerId = req.userId;
+        
+        if (!providerId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Provider ID not found in session' 
+            });
+        }
+
         const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) }
+            where: { provider_id: parseInt(providerId) }
         });
 
         if (!provider) {
@@ -875,7 +932,7 @@ export const getProviderServices = async (req, res) => {
         }
 
         const services = await prisma.serviceListing.findMany({
-            where: { provider_id: parseInt(provider_id) },
+            where: { provider_id: parseInt(providerId) },
             include: {
                 specific_services: {
                     include: {
@@ -895,11 +952,18 @@ export const getProviderServices = async (req, res) => {
 
 // Get provider bookings
 export const getProviderBookings = async (req, res) => {
-    const { provider_id } = req.params;
-    
     try {
+        // Use the provider ID from the authentication middleware
+        const providerId = req.userId;        
+        if (!providerId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Provider ID not found in session' 
+            });
+        }
+
         const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) }
+            where: { provider_id: parseInt(providerId) }
         });
 
         if (!provider) {
@@ -907,7 +971,7 @@ export const getProviderBookings = async (req, res) => {
         }
 
         const bookings = await prisma.appointment.findMany({
-            where: { provider_id: parseInt(provider_id) },
+            where: { provider_id: parseInt(providerId) },
             include: {
                 customer: {
                     select: {
@@ -931,20 +995,25 @@ export const getProviderBookings = async (req, res) => {
 
 // Get provider recent activity
 export const getProviderActivity = async (req, res) => {
-    const { provider_id } = req.params;
-    
-    try {
+    try {        // Use the provider ID from the authentication middleware
+        const providerId = req.userId;
+        
+        if (!providerId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Provider ID not found in session' 
+            });
+        }
+
         const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) }
+            where: { provider_id: parseInt(providerId) }
         });
 
         if (!provider) {
             return res.status(404).json({ message: 'Provider not found' });
-        }
-
-        // Get recent bookings
+        }        // Get recent bookings
         const recentBookings = await prisma.appointment.findMany({
-            where: { provider_id: parseInt(provider_id) },
+            where: { provider_id: parseInt(providerId) },
             include: {
                 customer: {
                     select: { first_name: true, last_name: true }
@@ -952,11 +1021,9 @@ export const getProviderActivity = async (req, res) => {
             },
             orderBy: { created_at: 'desc' },
             take: 5
-        });
-
-        // Get recent ratings
+        });        // Get recent ratings
         const recentRatings = await prisma.rating.findMany({
-            where: { provider_id: parseInt(provider_id) },
+            where: { provider_id: parseInt(providerId) },
             include: {
                 user: {
                     select: { first_name: true, last_name: true }
@@ -997,6 +1064,33 @@ export const getProviderActivity = async (req, res) => {
     } catch (error) {
         console.error('Error fetching provider activity:', error);
         res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Provider logout
+export const providerLogout = async (req, res) => {
+    try {
+        req.session.destroy((err) => {
+            if (err) {
+                console.error('Session destroy error:', err);
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Logout failed' 
+                });
+            }
+            
+            res.clearCookie('connect.sid'); // Clear session cookie
+            res.status(200).json({ 
+                success: true, 
+                message: 'Logged out successfully' 
+            });
+        });
+    } catch (err) {
+        console.error('Logout error:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server error during logout' 
+        });
     }
 };
 

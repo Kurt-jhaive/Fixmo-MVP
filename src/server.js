@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import session from 'express-session';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import prisma from './prismaclient.js'; // Use .js extension for ESM
@@ -27,6 +28,18 @@ app.use(cors({
   origin: '*', // 💡 for development only
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
+}));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set to true in production with HTTPS
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 }));
 
 
