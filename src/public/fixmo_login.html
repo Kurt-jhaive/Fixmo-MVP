@@ -194,9 +194,10 @@
                     localStorage.setItem('fixmo_user_id', data.userId);
                     localStorage.setItem('fixmo_user_name', data.userName);
                     localStorage.setItem('fixmo_user_type', 'customer');
-                      // Redirect to customer dashboard after 2 seconds
+                    
+                    // Redirect to marketplace after 2 seconds
                     setTimeout(() => {
-                        window.location.href = '/customer-dashboard';
+                        window.location.href = '/marketplace';
                     }, 2000);
                 } else {
                     showError(data.message || 'Login failed');
@@ -228,37 +229,22 @@
                     })
                 });
 
-                const data = await response.json();                if (response.ok) {
+                const data = await response.json();
+
+                if (response.ok) {
                     showSuccess('Login successful! Redirecting...');
                     
-                    // Store basic auth data
+                    // Store provider data
                     localStorage.setItem('fixmo_provider_token', data.token);
                     localStorage.setItem('fixmo_provider_id', data.providerId);
                     localStorage.setItem('fixmo_provider_name', data.providerUserName);
                     localStorage.setItem('fixmo_user_type', 'provider');
                     
-                    // Fetch complete provider profile and store it
-                    try {
-                        const profileResponse = await fetch(`/serviceProvider/profile/${data.providerId}`, {
-                            headers: {
-                                'Authorization': `Bearer ${data.token}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                        
-                        if (profileResponse.ok) {
-                            const providerProfile = await profileResponse.json();
-                            localStorage.setItem('serviceProvider', JSON.stringify(providerProfile));
-                        }
-                    } catch (profileError) {
-                        console.error('Error fetching provider profile:', profileError);
-                    }
-                    
-                    // Redirect to provider dashboard after 2 seconds
+                    // Redirect to manage listings after 2 seconds
                     setTimeout(() => {
                         window.location.href = '/provider-dashboard';
                     }, 2000);
-                }else {
+                } else {
                     showError(data.message || 'Login failed');
                 }
             } catch (error) {

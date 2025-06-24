@@ -78,6 +78,7 @@ app.get('/availability', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'availability_test.html'));
 });
 
+// Dashboard routes
 app.get('/customer-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'customer-dashboard.html'));
 });
@@ -86,10 +87,22 @@ app.get('/provider-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'provider-dashboard.html'));
 });
 
+app.get('/provider-manage-services', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'provider-manage-services.html'));
+});
+
+// API routes to serve data files
+app.get('/api/categories', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'data', 'categories.json'));
+});
+
+app.get('/api/locations', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'assets', 'locationdetails.json'));
+});
+
 
 
 app.use('/auth', authCustomerRoutes, serviceProviderRoutes, adminRoute); // Use the authCustomer and serviceProvider routes
-app.use('/api/serviceProvider', serviceProviderRoutes); // Mount service provider routes for API access
 
 // app.use('/users', usersRouter); // Uncomment if usersRouter is defined
 

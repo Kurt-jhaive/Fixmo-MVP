@@ -14,13 +14,7 @@ import {
   getServiceListingDetails,
   getCustomerAppointments,
   cancelAppointment,
-  addRatetoProvider,
-  resetPasswordOnly,
-  getUserProfile,
-  updateVerificationDocuments,
-  getServiceListingsForCustomer,
-  getServiceCategories,
-  getCustomerStats
+  addRatetoProvider
 } from '../controller/authCustomerController.js';
 
 const router = express.Router();
@@ -55,21 +49,6 @@ router.post('/forgot-password-request-otp', requestForgotPasswordOTP);
 router.post('/forgot-password-verify-otp', verifyForgotPasswordOTPAndReset);
 // Simple password reset (OTP already verified)
 router.post('/reset-password', resetPassword);
-// Simple password reset (OTP already verified)
-router.post('/reset-password-only', resetPasswordOnly);
-// Get user profile and verification status
-router.get('/user-profile/:userId', getUserProfile);
-// Update verification documents
-router.post('/update-verification-documents', upload.fields([
-  { name: 'profilePicture', maxCount: 1 },
-  { name: 'validId', maxCount: 1 }
-]), updateVerificationDocuments);
-// Get service listings for customer dashboard
-router.get('/service-listings', getServiceListingsForCustomer);
-// Get service categories
-router.get('/service-categories', getServiceCategories);
-// Get customer statistics
-router.get('/customer-stats/:userId', getCustomerStats);
 
 // Customer appointment routes
 // Book a new appointment

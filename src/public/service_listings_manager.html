@@ -453,7 +453,7 @@
             document.getElementById('loadingListings').style.display = 'block';
             
             try {
-                const response = await fetch(`http://192.168.100.165:3000/auth/service-listings?provider_id=${providerId}`);
+                const response = await fetch(`/auth/service-listings?provider_id=${providerId}`);
                 const data = await response.json();
 
                 if (response.ok) {

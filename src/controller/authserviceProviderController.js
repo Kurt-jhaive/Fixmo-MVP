@@ -191,12 +191,32 @@ export const providerLogin = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid email or password' });
         }
-        const token = jwt.sign({ providerId: provider.provider_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        
+        // Create JWT with consistent payload structure
+        const token = jwt.sign(
+            { 
+                id: provider.provider_id,
+                providerId: provider.provider_id, // Keep for backward compatibility
+                userType: 'provider',
+                email: provider.provider_email
+            }, 
+            process.env.JWT_SECRET || 'your-secret-key', 
+            { expiresIn: '24h' }
+        );
+        
         res.status(200).json({
             message: 'Login successful',
             token,
             providerId: provider.provider_id,
-            providerUserName: provider.provider_userName
+            providerUserName: provider.provider_userName,
+            userType: 'provider',
+            provider: {
+                id: provider.provider_id,
+                firstName: provider.provider_first_name,
+                lastName: provider.provider_last_name,
+                email: provider.provider_email,
+                userName: provider.provider_userName
+            }
         });
         
     } catch (err) {
@@ -662,341 +682,6 @@ export const providerResetPassword = async (req, res) => {
     } catch (error) {
         console.error('Provider password reset error:', error);
         res.status(500).json({ message: 'Server error during password reset' });
-    }
-};
-
-// Provider dashboard endpoints
-
-// Get provider profile
-export const getProviderProfile = async (req, res) => {
-    const { provider_id } = req.params;
-    
-    try {
-        const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) },
-            select: {
-                provider_id: true,
-                provider_first_name: true,
-                provider_last_name: true,
-                provider_userName: true,
-                provider_email: true,
-                provider_phone_number: true,
-                provider_profile_photo: true,
-                provider_isVerified: true,
-                provider_rating: true,
-                provider_location: true,
-                provider_uli: true,
-                created_at: true,
-                provider_isActivated: true
-            }
-        });
-
-        if (!provider) {
-            return res.status(404).json({ message: 'Provider not found' });
-        }
-
-        res.status(200).json(provider);
-    } catch (error) {
-        console.error('Error fetching provider profile:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-};
-
-// Update provider profile
-export const updateProviderProfile = async (req, res) => {
-    const { provider_id } = req.params;
-    const {
-        provider_first_name,
-        provider_last_name,
-        provider_phone_number,
-        provider_location,
-        provider_uli
-    } = req.body;
-    
-    try {
-        const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) }
-        });
-
-        if (!provider) {
-            return res.status(404).json({ message: 'Provider not found' });
-        }
-
-        const updateData = {};
-        if (provider_first_name) updateData.provider_first_name = provider_first_name;
-        if (provider_last_name) updateData.provider_last_name = provider_last_name;
-        if (provider_phone_number) updateData.provider_phone_number = provider_phone_number;
-        if (provider_location) updateData.provider_location = provider_location;
-        if (provider_uli) updateData.provider_uli = provider_uli;
-
-        const updatedProvider = await prisma.serviceProviderDetails.update({
-            where: { provider_id: parseInt(provider_id) },
-            data: updateData
-        });
-
-        res.status(200).json({
-            message: 'Profile updated successfully',
-            provider: updatedProvider
-        });
-    } catch (error) {
-        console.error('Error updating provider profile:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-};
-
-// Get provider stats
-export const getProviderStats = async (req, res) => {
-    const { provider_id } = req.params;
-    
-    try {
-        const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) }
-        });
-
-        if (!provider) {
-            return res.status(404).json({ message: 'Provider not found' });
-        }
-
-        // Get total completed appointments and earnings
-        const completedAppointments = await prisma.appointment.findMany({
-            where: {
-                provider_id: parseInt(provider_id),
-                appointment_status: 'completed'
-            }
-        });
-
-        const totalEarnings = completedAppointments.reduce((sum, appointment) => {
-            return sum + (appointment.actual_price || 0);
-        }, 0);
-
-        // Get active bookings (pending, confirmed, in_progress)
-        const activeBookings = await prisma.appointment.count({
-            where: {
-                provider_id: parseInt(provider_id),
-                appointment_status: {
-                    in: ['pending', 'confirmed', 'in_progress']
-                }
-            }
-        });
-
-        // Get total services
-        const totalServices = await prisma.serviceListing.count({
-            where: { provider_id: parseInt(provider_id) }
-        });
-
-        // Get monthly stats (current month)
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const monthlyBookings = await prisma.appointment.count({
-            where: {
-                provider_id: parseInt(provider_id),
-                created_at: {
-                    gte: startOfMonth
-                }
-            }
-        });
-
-        const monthlyCompletedAppointments = await prisma.appointment.findMany({
-            where: {
-                provider_id: parseInt(provider_id),
-                appointment_status: 'completed',
-                created_at: {
-                    gte: startOfMonth
-                }
-            }
-        });
-
-        const monthlyRevenue = monthlyCompletedAppointments.reduce((sum, appointment) => {
-            return sum + (appointment.actual_price || 0);
-        }, 0);
-
-        // Calculate completion rate
-        const totalAppointments = await prisma.appointment.count({
-            where: { provider_id: parseInt(provider_id) }
-        });
-
-        const completionRate = totalAppointments > 0 
-            ? Math.round((completedAppointments.length / totalAppointments) * 100)
-            : 0;
-
-        // Get popular services (services with most bookings)
-        const serviceBookings = await prisma.appointment.groupBy({
-            by: ['provider_id'],
-            where: { provider_id: parseInt(provider_id) },
-            _count: { appointment_id: true }
-        });
-
-        const popularServices = await prisma.serviceListing.findMany({
-            where: { provider_id: parseInt(provider_id) },
-            take: 5,
-            orderBy: { service_id: 'desc' } // Simple ordering for now
-        });
-
-        // Get total ratings count
-        const totalRatings = await prisma.rating.count({
-            where: { provider_id: parseInt(provider_id) }
-        });
-
-        const stats = {
-            totalEarnings,
-            activeBookings,
-            providerRating: provider.provider_rating,
-            totalServices,
-            monthlyBookings,
-            monthlyRevenue,
-            completionRate,
-            totalRatings,
-            popularServices: popularServices.map(service => ({
-                name: service.service_title,
-                bookings: Math.floor(Math.random() * 10) + 1 // Placeholder for actual booking count
-            }))
-        };
-
-        res.status(200).json(stats);
-    } catch (error) {
-        console.error('Error fetching provider stats:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-};
-
-// Get provider services
-export const getProviderServices = async (req, res) => {
-    const { provider_id } = req.params;
-    
-    try {
-        const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) }
-        });
-
-        if (!provider) {
-            return res.status(404).json({ message: 'Provider not found' });
-        }
-
-        const services = await prisma.serviceListing.findMany({
-            where: { provider_id: parseInt(provider_id) },
-            include: {
-                specific_services: {
-                    include: {
-                        category: true
-                    }
-                }
-            },
-            orderBy: { service_id: 'desc' }
-        });
-
-        res.status(200).json(services);
-    } catch (error) {
-        console.error('Error fetching provider services:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-};
-
-// Get provider bookings
-export const getProviderBookings = async (req, res) => {
-    const { provider_id } = req.params;
-    
-    try {
-        const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) }
-        });
-
-        if (!provider) {
-            return res.status(404).json({ message: 'Provider not found' });
-        }
-
-        const bookings = await prisma.appointment.findMany({
-            where: { provider_id: parseInt(provider_id) },
-            include: {
-                customer: {
-                    select: {
-                        user_id: true,
-                        first_name: true,
-                        last_name: true,
-                        email: true,
-                        phone_number: true
-                    }
-                }
-            },
-            orderBy: { created_at: 'desc' }
-        });
-
-        res.status(200).json(bookings);
-    } catch (error) {
-        console.error('Error fetching provider bookings:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-};
-
-// Get provider recent activity
-export const getProviderActivity = async (req, res) => {
-    const { provider_id } = req.params;
-    
-    try {
-        const provider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) }
-        });
-
-        if (!provider) {
-            return res.status(404).json({ message: 'Provider not found' });
-        }
-
-        // Get recent bookings
-        const recentBookings = await prisma.appointment.findMany({
-            where: { provider_id: parseInt(provider_id) },
-            include: {
-                customer: {
-                    select: { first_name: true, last_name: true }
-                }
-            },
-            orderBy: { created_at: 'desc' },
-            take: 5
-        });
-
-        // Get recent ratings
-        const recentRatings = await prisma.rating.findMany({
-            where: { provider_id: parseInt(provider_id) },
-            include: {
-                user: {
-                    select: { first_name: true, last_name: true }
-                },
-                appointment: {
-                    select: { appointment_id: true }
-                }
-            },
-            orderBy: { id: 'desc' },
-            take: 3
-        });
-
-        // Convert to activity format
-        const activities = [];
-
-        recentBookings.forEach(booking => {
-            activities.push({
-                type: 'booking',
-                title: 'New Booking',
-                description: `Booking from ${booking.customer.first_name} ${booking.customer.last_name}`,
-                created_at: booking.created_at
-            });
-        });
-
-        recentRatings.forEach(rating => {
-            activities.push({
-                type: 'review',
-                title: 'New Review',
-                description: `${rating.rating_value}-star review from ${rating.user.first_name} ${rating.user.last_name}`,
-                created_at: rating.appointment.created_at || new Date()
-            });
-        });
-
-        // Sort by date and take most recent
-        activities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-        res.status(200).json(activities.slice(0, 10));
-    } catch (error) {
-        console.error('Error fetching provider activity:', error);
-        res.status(500).json({ message: 'Internal server error' });
     }
 };
 
