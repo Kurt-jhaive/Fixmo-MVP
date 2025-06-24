@@ -1,0 +1,169 @@
+[
+  {
+    "certificate": "Computer Systems Servicing NC II",
+    "categories": {
+      "Repair": [
+        "Computer Repair",
+        "Printer Repair",
+        "Mobile Gadget Repair"
+      ],
+      "Cleaning": [
+        "Computer Cleaning",
+        "Printer Cleaning"
+      ],
+      "Installation": [
+        "Computer Setup",
+        "Printer Setup",
+        "Software Installation"
+      ]
+    }
+  },
+  {
+    "certificate": "Consumer Electronics Servicing NC II/III",
+    "categories": {
+      "Repair": [
+        "TV Repair",
+        "Speaker Repair",
+        "DVD Player Repair"
+      ],
+      "Cleaning": [
+        "TV Screen Cleaning",
+        "Speaker Dust Removal"
+      ],
+      "Installation": [
+        "TV Setup",
+        "Audio System Setup"
+      ]
+    }
+  },
+  {
+    "certificate": "Electronic Products Assembly and Servicing NC II",
+    "categories": {
+      "Repair": [
+        "Home Appliance Repair",
+        "Basic Circuit Board Repair"
+      ],
+      "Installation": [
+        "Appliance Setup",
+        "Component Assembly"
+      ]
+    }
+  },
+  {
+    "certificate": "RAC Servicing NC I/II",
+    "categories": {
+      "Repair": [
+        "Aircon Repair",
+        "Refrigerator Repair"
+      ],
+      "Cleaning": [
+        "Aircon Cleaning",
+        "Condenser Coil Cleaning"
+      ],
+      "Installation": [
+        "Aircon Installation",
+        "Refrigerator Setup"
+      ]
+    }
+  },
+  {
+    "certificate": "Electrical Installation and Maintenance NC II/III",
+    "categories": {
+      "Repair": [
+        "Outlet Repair",
+        "Breaker Troubleshooting"
+      ],
+      "Installation": [
+        "House Wiring Setup",
+        "Outlet Installation",
+        "Lighting Fixture Installation"
+      ]
+    }
+  },
+  {
+    "certificate": "Plumbing NC I/II/III",
+    "categories": {
+      "Repair": [
+        "Leaking Faucet Repair",
+        "Toilet Flush Repair"
+      ],
+      "Installation": [
+        "Sink Installation",
+        "Toilet Installation"
+      ],
+      "Cleaning": [
+        "Drain Declogging",
+        "Pipe Flushing"
+      ]
+    }
+  },
+  {
+    "certificate": "Carpentry NC II/III",
+    "categories": {
+      "Repair": [
+        "Furniture Repair",
+        "Cabinet Door Fixing"
+      ],
+      "Installation": [
+        "Shelf Mounting",
+        "Curtain Rod Installation"
+      ]
+    }
+  },
+  {
+    "certificate": "Masonry NC I/II",
+    "categories": {
+      "Repair": [
+        "Wall Crack Repair"
+      ],
+      "Installation": [
+        "Concrete Block Laying"
+      ]
+    }
+  },
+  {
+    "certificate": "Tile Setting NC II",
+    "categories": {
+      "Repair": [
+        "Broken Tile Replacement"
+      ],
+      "Installation": [
+        "Floor Tiling",
+        "Wall Tiling"
+      ]
+    }
+  },
+  {
+    "certificate": "Shielded Metal Arc Welding (SMAW) NC I/II",
+    "categories": {
+      "Repair": [
+        "Gate Welding Repair",
+        "Grill Fixing"
+      ],
+      "Installation": [
+        "Steel Bar Installation",
+        "Custom Frame Welding"
+      ]
+    }
+  },
+  {
+    "certificate": "Gas Metal Arc Welding (GMAW) NC II",
+    "categories": {
+      "Repair": [
+        "Metal Furniture Repair"
+      ],
+      "Installation": [
+        "Decorative Metalwork Installation"
+      ]
+    }
+  },
+  {
+    "certificate": "Cable Television (CATV) Installation NC II",
+    "categories": {
+      "Installation": [
+        "TV Cable Setup",
+        "Antenna Installation"
+      ]
+    }
+  }
+]

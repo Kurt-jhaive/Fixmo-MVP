@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Services - Fixmo Provider</title>
+    <link rel="stylesheet" href="css/provider-dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="nav-left">
+                <div class="logo">
+                    <i class="fas fa-tools"></i>
+                    <span>Fixmo Provider</span>
+                </div>
+            </div>
+            <div class="nav-right">
+                <div class="provider-info">
+                    <span id="providerName">Loading...</span>
+                    <div class="provider-menu">
+                        <a href="/provider-dashboard" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left"></i>
+                            Back to Dashboard
+                        </a>
+                        <button class="logout-btn" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content" style="margin-left: 0; margin-top: 100px;">
+        <div class="section-header">
+            <h1>Manage Services</h1>
+            <p>Add, edit, and manage your service offerings based on your certificates.</p>
+            <button class="btn btn-primary" onclick="showAddServiceModal()">
+                <i class="fas fa-plus"></i>
+                Add New Service
+            </button>
+        </div>
+
+        <!-- Services List -->
+        <div class="services-container">
+            <div id="servicesList" class="services-grid">
+                <div class="loading">Loading your services...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Service Modal -->
+    <div id="addServiceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Service</h2>
+                <span class="close" onclick="closeAddServiceModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="addServiceForm">
+                    <div class="form-group">
+                        <label for="certificate_id">Certificate:</label>
+                        <select id="certificate_id" name="certificate_id" required>
+                            <option value="">Select a certificate</option>
+                        </select>
+                        <small class="form-help">Services must be based on your verified certificates</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="service_title">Service Title:</label>
+                        <input type="text" id="service_title" name="service_title" required 
+                               placeholder="e.g., Residential Electrical Installation">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="service_description">Description:</label>
+                        <textarea id="service_description" name="service_description" rows="4" required 
+                                  placeholder="Describe your service in detail..."></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="service_startingprice">Price per Hour (₱):</label>
+                            <input type="number" id="service_startingprice" name="service_startingprice" 
+                                   min="0" step="0.01" required placeholder="500.00">
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeAddServiceModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Add Service
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Service Modal -->
+    <div id="editServiceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Service</h2>
+                <span class="close" onclick="closeEditServiceModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editServiceForm">
+                    <input type="hidden" id="edit_service_id" name="service_id">
+                    
+                    <div class="form-group">
+                        <label for="edit_certificate_id">Certificate:</label>
+                        <select id="edit_certificate_id" name="certificate_id" required>
+                            <option value="">Select a certificate</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_service_title">Service Title:</label>
+                        <input type="text" id="edit_service_title" name="service_title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_service_description">Description:</label>
+                        <textarea id="edit_service_description" name="service_description" rows="4" required></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_service_startingprice">Starting Price (₱):</label>
+                            <input type="number" id="edit_service_startingprice" name="service_startingprice" 
+                                   min="0" step="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeEditServiceModal()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Update Service
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Additional Styles for this page -->
+    <style>
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .form-help {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 0.25rem;
+            display: block;
+        }
+        
+        .service-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-summary {
+            background: white;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        
+        .stat-summary h3 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-summary .number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--dark-color);
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <!-- Scripts -->
+    <script src="js/manage-services.js"></script>
+</body>
+</html>

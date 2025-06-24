@@ -460,34 +460,46 @@ class ProviderDashboard {
         if (diffInHours < 24) return `${diffInHours}h ago`;
         return `${Math.floor(diffInHours / 24)}d ago`;
     }    navigateToPage(page) {
-        // Special case for manage-services - redirect to separate page
-        if (page === 'manage-services') {
-            window.location.href = '/provider-manage-services';
-            return;
-        }
-
         // Hide all pages
         document.querySelectorAll('.page').forEach(p => {
             p.classList.remove('active');
         });
 
+        // Convert page name to proper ID format
+        let pageId;
+        if (page === 'manage-services') {
+            pageId = 'manageServicesPage';
+        } else {
+            pageId = `${page}Page`;
+        }
+
         // Show selected page
-        const targetPage = document.getElementById(`${page}Page`);
+        const targetPage = document.getElementById(pageId);
         if (targetPage) {
             targetPage.classList.add('active');
             this.currentPage = page;
 
+            // Update navigation active state
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const activeNavItem = document.querySelector(`[data-page="${page}"]`);
+            if (activeNavItem) {
+                activeNavItem.classList.add('active');
+            }
+
             // Load page-specific data
             this.loadPageData(page);
         } else {
-            console.warn(`Page not found: ${page}Page`);
+            console.warn(`Page not found: ${pageId}`);
         }
-    }
-
-    async loadPageData(page) {
+    }async loadPageData(page) {
         switch (page) {
             case 'dashboard':
                 this.renderDashboard();
+                break;
+            case 'manage-services':
+                await this.loadManageServicesPage();
                 break;
             case 'bookings':
                 await this.loadBookingsPage();
@@ -498,6 +510,28 @@ class ProviderDashboard {
             case 'settings':
                 await this.loadSettingsPage();
                 break;
+        }
+    }    async loadManageServicesPage() {
+        console.log('Loading manage services page...');
+        try {
+            // Initialize the service manager if it exists and hasn't been initialized
+            if (typeof ServiceManager !== 'undefined') {
+                if (!window.serviceManager) {
+                    console.log('Creating new service manager instance...');
+                    window.serviceManager = new ServiceManager();
+                }
+                
+                // Initialize or refresh
+                console.log('Initializing/refreshing service manager...');
+                await window.serviceManager.init();
+                console.log('Service manager loaded successfully');
+            } else {
+                console.error('ServiceManager class not found');
+                this.showToast('Service manager not available', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading manage services page:', error);
+            this.showToast('Error loading services page', 'error');
         }
     }
 

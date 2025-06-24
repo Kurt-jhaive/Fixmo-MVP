@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import prisma from './prismaclient.js'; // Use .js extension for ESM
 import authCustomerRoutes from './route/authCustomer.js'; // Use .js extension for ESM
 import serviceProviderRoutes from './route/serviceProvider.js'; // Use .js extension for ESM
+import serviceRoutes from './route/serviceRoutes.js'; // New service management routes
 import adminRoute from './route/adminRoute.js'; // Use .js extension for ESM
 import cors from 'cors';
 
@@ -103,6 +104,7 @@ app.get('/provider-dashboard', (req, res) => {
 
 app.use('/auth', authCustomerRoutes, serviceProviderRoutes, adminRoute); // Use the authCustomer and serviceProvider routes
 app.use('/api/serviceProvider', serviceProviderRoutes); // Mount service provider routes for API access
+app.use('/api/services', serviceRoutes); // Mount service management routes
 
 // app.use('/users', usersRouter); // Uncomment if usersRouter is defined
 
