@@ -59,6 +59,8 @@ model Certificate{
     
 
     CoveredService CoveredService[]
+    certificate_status String @default("Pending") // Pending, Approved, Rejected
+    created_at DateTime @default(now())
 }
 
 
@@ -70,6 +72,7 @@ model ServiceListing{
     serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
     provider_id Int
     specific_services SpecificService[]
+    servicelisting_isActive Boolean @default(true)  
     
 }
 
