@@ -399,19 +399,27 @@ class ServiceManager {    constructor() {
         const categoryName = service.category_name || service.specific_services?.[0]?.category?.category_name || 'Uncategorized';
         const certificateNames = service.certificates?.map(cert => cert.certificate_name).join(', ') || 'No certificates';
         
+        // Use specific service name from the radio button selection if available
+        const serviceName = service.specific_services?.[0]?.specific_service_title || service.service_name || service.service_title;
+        
         // Format price
         const price = parseFloat(service.price || service.service_startingprice || 0);
         
+        // Determine if service is active
+        const isActive = service.is_available !== false && service.status !== 'inactive';
+        const statusClass = isActive ? 'active' : 'inactive';
+        const statusText = isActive ? 'Active' : 'Inactive';
+        
         return `
-            <div class="service-card">
+            <div class="service-card ${statusClass}">
                 <div class="service-category">${this.escapeHtml(categoryName)}</div>
                 
-                <div class="service-status active">
-                    Active
+                <div class="service-status ${statusClass}">
+                    ${statusText}
                 </div>
                 
                 <div class="service-header">
-                    <h3 class="service-title">${this.escapeHtml(service.service_name || service.service_title)}</h3>
+                    <h3 class="service-title">${this.escapeHtml(serviceName)}</h3>
                     <div class="service-price">
                         <span class="starting-from">Starting from</span>
                         ₱${price.toFixed(2)}
@@ -440,13 +448,24 @@ class ServiceManager {    constructor() {
                 </div>
                 
                 <div class="service-actions">
-                    <button class="btn btn-delete" onclick="window.serviceManager.deleteService(${service.listing_id || service.service_id}, '${this.escapeHtml(service.service_name || service.service_title)}')">
+                    <button class="btn btn-secondary" onclick="window.serviceManager.editService(${service.listing_id || service.service_id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    ${isActive ? 
+                        `<button class="btn btn-warning" onclick="window.serviceManager.deactivateService(${service.listing_id || service.service_id}, '${this.escapeHtml(serviceName)}')">
+                            <i class="fas fa-pause"></i> Deactivate
+                        </button>` :
+                        `<button class="btn btn-success" onclick="window.serviceManager.activateService(${service.listing_id || service.service_id}, '${this.escapeHtml(serviceName)}')">
+                            <i class="fas fa-play"></i> Activate
+                        </button>`
+                    }
+                    <button class="btn btn-delete" onclick="window.serviceManager.deleteService(${service.listing_id || service.service_id}, '${this.escapeHtml(serviceName)}')">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
             </div>
         `;
-    }    showAddServiceModal() {
+    }showAddServiceModal() {
         console.log('=== showAddServiceModal called ===');
         console.log('Current modalOpen state:', this.modalOpen);
         
@@ -463,8 +482,7 @@ class ServiceManager {    constructor() {
         if (modal) {
             this.modalOpen = true;
             console.log('Setting modalOpen to true');
-            
-            // Reset form
+              // Reset form
             const form = document.getElementById('addServiceForm');
             if (form) {
                 form.reset();
@@ -472,6 +490,9 @@ class ServiceManager {    constructor() {
             } else {
                 console.error('Form not found!');
             }
+            
+            // Clear service title and make it editable again
+            this.updateServiceTitle('');
             
             this.currentEditingService = null;
             this.selectedServices = [];
@@ -547,42 +568,37 @@ class ServiceManager {    constructor() {
             if (!serviceTitle || !serviceDescription || !servicePrice) {
                 this.showToast('Please fill in all required fields', 'error');
                 return;
-            }
-
-            if (this.selectedServices.length === 0) {
+            }            if (this.selectedServices.length === 0) {
                 this.showToast('Please select at least one service based on your certificates', 'error');
+                return;
+            }            // Create service for the selected option
+            const selectedService = this.selectedServices[0];
+            const serviceData = {
+                service_title: serviceTitle.trim(),
+                service_description: serviceDescription.trim(),
+                service_startingprice: parseFloat(servicePrice),
+                certificate_id: selectedService.certificate_id
+            };
+
+            console.log('Sending service data:', serviceData);
+
+            const response = await fetch('/api/services/services', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(serviceData)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                this.showToast(result.message || 'Error creating service', 'error');
                 return;
             }
 
-            // For each selected certificate, create a service
-            for (const selectedService of this.selectedServices) {
-                const serviceData = {
-                    service_title: serviceTitle.trim(),
-                    service_description: serviceDescription.trim(),
-                    service_startingprice: parseFloat(servicePrice),
-                    certificate_id: selectedService.certificate_id
-                };
-
-                console.log('Sending service data:', serviceData);
-
-                const response = await fetch('/api/services/services', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(serviceData)
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    this.showToast(result.message || `Error creating service for certificate ${selectedService.certificate_name}`, 'error');
-                    return;
-                }
-            }
-
-            this.showToast('Service(s) created successfully!', 'success');
+            this.showToast('Service created successfully!', 'success');
             this.hideModals();
             await this.loadServices();
             this.renderServices();
@@ -760,85 +776,191 @@ class ServiceManager {    constructor() {
             return;
         }
 
+        // Create a dropdown with all available services organized by category
+        let options = '<option value="">Select a service to offer...</option>';
+        
         // Group certificate services by certificate
         const certificateGroups = this.certificateServices.filter(certData => 
             this.certificates.some(cert => cert.certificate_name === certData.certificate)
         );
 
-        const html = certificateGroups.map(certData => {
+        // Group all services by category across all certificates, avoiding duplicates
+        const categorizedServices = {};
+        
+        certificateGroups.forEach(certData => {
             const certificate = this.certificates.find(cert => cert.certificate_name === certData.certificate);
             
-            return `
-                <div class="certificate-group">
-                    <div class="certificate-header">
-                        <i class="fas fa-certificate"></i> ${this.escapeHtml(certData.certificate)}
-                    </div>
-                    <div class="certificate-categories">
-                        ${Object.entries(certData.categories).map(([categoryName, services]) => `
-                            <div class="category-group">
-                                <div class="category-title">
-                                    <i class="fas fa-tag"></i> ${this.escapeHtml(categoryName)}
-                                </div>
-                                <div class="service-checkboxes">
-                                    ${services.map(serviceName => {
-                                        const isSelected = this.selectedServices.some(s => 
-                                            s.certificate_id === certificate.certificate_id &&
-                                            s.categoryName === categoryName &&
-                                            s.serviceName === serviceName
-                                        );
-                                        return `
-                                            <div class="service-checkbox ${isSelected ? 'selected' : ''}">
-                                                <input type="checkbox" 
-                                                       id="service_${certificate.certificate_id}_${categoryName}_${serviceName}"
-                                                       ${isSelected ? 'checked' : ''}
-                                                       onchange="window.serviceManager.toggleServiceSelection(${certificate.certificate_id}, '${categoryName}', '${serviceName}', this.checked)">
-                                                <label for="service_${certificate.certificate_id}_${categoryName}_${serviceName}">
-                                                    ${this.escapeHtml(serviceName)}
-                                                </label>
+            Object.entries(certData.categories).forEach(([categoryName, services]) => {
+                if (!categorizedServices[categoryName]) {
+                    categorizedServices[categoryName] = [];
+                }
+                
+                services.forEach(serviceName => {
+                    // Check if this service already exists in this category (avoid duplicates)
+                    const existingService = categorizedServices[categoryName].find(s => 
+                        s.serviceName === serviceName && s.certificate_id === certificate.certificate_id
+                    );
+                    
+                    if (!existingService) {
+                        categorizedServices[categoryName].push({
+                            certificate_id: certificate.certificate_id,
+                            certificate_name: certificate.certificate_name,
+                            categoryName,
+                            serviceName
+                        });
+                    }
+                });
+            });
+        });
+
+        // Sort categories alphabetically and build optgroups
+        const sortedCategories = Object.keys(categorizedServices).sort();
+        sortedCategories.forEach(categoryName => {
+            const services = categorizedServices[categoryName];
+            options += `<optgroup label="📋 ${categoryName}">`;
+            
+            // Sort services within each category
+            services.sort((a, b) => a.serviceName.localeCompare(b.serviceName)).forEach(service => {
+                const optionValue = JSON.stringify(service);
+                options += `<option value='${optionValue}'>${service.serviceName} (🏆 ${service.certificate_name})</option>`;
+            });
+            options += `</optgroup>`;
+        });
+
+        const html = `
+            <div class="service-selector-container">
+                <div class="form-group">
+                    <label for="serviceDropdown">
+                        <i class="fas fa-list"></i> Available Services:
+                    </label>
+                    <select id="serviceDropdown" class="form-control" onchange="window.serviceManager.onServiceSelected(this.value)">
+                        ${options}
+                    </select>
+                    <small class="form-help">
+                        <i class="fas fa-info-circle"></i> 
+                        Choose a service you're certified to offer. The service title will be automatically filled.
+                    </small>
+                </div>
+                
+                <div class="certificates-summary" style="margin-top: 1rem;">
+                    <h4><i class="fas fa-certificate"></i> Your Certificates & Services:</h4>
+                    <div class="certificates-grid">
+                        ${certificateGroups.map(certData => {
+                            const certificate = this.certificates.find(cert => cert.certificate_name === certData.certificate);
+                            const totalServices = Object.values(certData.categories).reduce((sum, services) => sum + services.length, 0);
+                            return `
+                                <div class="certificate-card">
+                                    <div class="certificate-header">
+                                        <i class="fas fa-award"></i> 
+                                        <span class="certificate-name">${this.escapeHtml(certData.certificate)}</span>
+                                        <span class="service-count">${totalServices} services</span>
+                                    </div>
+                                    <div class="certificate-categories">
+                                        ${Object.entries(certData.categories).map(([categoryName, services]) => `
+                                            <div class="category-group">
+                                                <div class="category-title">
+                                                    <i class="fas fa-tag"></i> ${this.escapeHtml(categoryName)} 
+                                                    <span class="category-count">(${services.length})</span>
+                                                </div>
+                                                <div class="services-grid">
+                                                    ${services.slice(0, 3).map(serviceName => `
+                                                        <span class="service-badge">${this.escapeHtml(serviceName)}</span>
+                                                    `).join('')}
+                                                    ${services.length > 3 ? `
+                                                        <span class="service-badge more">+${services.length - 3} more</span>
+                                                    ` : ''}
+                                                </div>
                                             </div>
-                                        `;
-                                    }).join('')}
+                                        `).join('')}
+                                    </div>
                                 </div>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                 </div>
-            `;
-        }).join('');
+            </div>
+        `;
 
         container.innerHTML = html;
-    }    toggleServiceSelection(certificateId, categoryName, serviceName, isSelected) {
-        const serviceKey = `${certificateId}_${categoryName}_${serviceName}`;
+    }    onServiceSelected(optionValue) {
+        console.log('Service selected:', optionValue);
         
-        if (isSelected) {
-            // Add service
-            this.selectedServices.push({
-                certificate_id: certificateId,
-                categoryName,
-                serviceName
-            });
-        } else {
-            // Remove service
-            this.selectedServices = this.selectedServices.filter(s => 
-                !(s.certificate_id === certificateId && 
-                  s.categoryName === categoryName && 
-                  s.serviceName === serviceName)
-            );
+        if (!optionValue) {
+            this.selectedServices = [];
+            this.updateSelectedServicesList();
+            this.updateServiceTitle('');
+            return;
         }
 
-        this.updateSelectedServicesList();
-        
-        // Update checkbox styling
-        const checkbox = document.querySelector(`#service_${certificateId}_${categoryName}_${serviceName}`);
-        if (checkbox) {
-            const container = checkbox.closest('.service-checkbox');
-            if (container) {
-                container.classList.toggle('selected', isSelected);
+        try {
+            const serviceData = JSON.parse(optionValue);
+            
+            // Clear previous selections and add new one (single selection mode)
+            this.selectedServices = [serviceData];
+            
+            // Update the service title field with the selected service name (auto-fill and readonly)
+            this.updateServiceTitle(serviceData.serviceName);
+            
+            // Update the selected services display
+            this.updateSelectedServicesList();
+            
+            // Add visual feedback
+            this.showToast(`Service "${serviceData.serviceName}" selected!`, 'success');
+            
+            console.log('Selected service:', serviceData);
+            console.log('Total selected services:', this.selectedServices.length);
+            
+        } catch (error) {
+            console.error('Error parsing selected service:', error);
+            this.showToast('Error selecting service. Please try again.', 'error');
+        }
+    }    updateServiceTitle(serviceName) {
+        const serviceTitleInput = document.getElementById('serviceTitle');
+        if (serviceTitleInput) {
+            serviceTitleInput.value = serviceName;
+            // Make it readonly when auto-filled from service selection
+            serviceTitleInput.readOnly = !!serviceName;
+            
+            if (serviceName) {
+                serviceTitleInput.style.backgroundColor = '#e8f5e8';
+                serviceTitleInput.style.borderColor = '#28a745';
+                serviceTitleInput.style.color = '#155724';
+                serviceTitleInput.style.fontWeight = '500';
+                serviceTitleInput.title = 'Auto-filled from selected service';
+                
+                // Add visual indicator that it's auto-filled
+                const parentGroup = serviceTitleInput.closest('.form-group');
+                if (parentGroup) {
+                    let indicator = parentGroup.querySelector('.auto-fill-indicator');
+                    if (!indicator) {
+                        indicator = document.createElement('small');
+                        indicator.className = 'auto-fill-indicator';
+                        indicator.innerHTML = '<i class="fas fa-magic"></i> Auto-filled from service selection';
+                        indicator.style.color = '#28a745';
+                        indicator.style.fontWeight = '500';
+                        indicator.style.marginTop = '0.25rem';
+                        indicator.style.display = 'block';
+                        parentGroup.appendChild(indicator);
+                    }
+                }
+            } else {
+                serviceTitleInput.style.backgroundColor = '';
+                serviceTitleInput.style.borderColor = '';
+                serviceTitleInput.style.color = '';
+                serviceTitleInput.style.fontWeight = '';
+                serviceTitleInput.title = '';
+                
+                // Remove auto-fill indicator
+                const parentGroup = serviceTitleInput.closest('.form-group');
+                if (parentGroup) {
+                    const indicator = parentGroup.querySelector('.auto-fill-indicator');
+                    if (indicator) {
+                        indicator.remove();
+                    }
+                }
             }
         }
-    }
-
-    updateSelectedServicesList() {
+    }updateSelectedServicesList() {
         const listContainer = document.getElementById('selectedServicesList');
         const servicesContainer = document.getElementById('selectedServicesContainer');
         
@@ -856,11 +978,20 @@ class ServiceManager {    constructor() {
             return `
                 <div class="selected-service-item">
                     <div class="selected-service-info">
-                        <div class="selected-service-name">${this.escapeHtml(service.serviceName)}</div>
-                        <div class="selected-service-category">${this.escapeHtml(service.categoryName)}</div>
-                        <div class="selected-service-certificate">Certified by: ${this.escapeHtml(certificate?.certificate_name || 'Unknown')}</div>
+                        <div class="selected-service-name">
+                            <i class="fas fa-wrench"></i>
+                            ${this.escapeHtml(service.serviceName)}
+                        </div>
+                        <div class="selected-service-category">
+                            <i class="fas fa-folder"></i>
+                            ${this.escapeHtml(service.categoryName)}
+                        </div>
+                        <div class="selected-service-certificate">
+                            <i class="fas fa-certificate"></i>
+                            Certified by: ${this.escapeHtml(certificate?.certificate_name || 'Unknown')}
+                        </div>
                     </div>
-                    <button type="button" class="remove-service-btn" onclick="window.serviceManager.removeSelectedService(${index})">
+                    <button type="button" class="remove-service-btn" onclick="window.serviceManager.removeSelectedService(${index})" title="Remove this service">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -868,23 +999,39 @@ class ServiceManager {    constructor() {
         }).join('');
 
         servicesContainer.innerHTML = html;
-    }
-
-    removeSelectedService(index) {
+        
+        // Add smooth animation
+        setTimeout(() => {
+            const items = servicesContainer.querySelectorAll('.selected-service-item');
+            items.forEach((item, i) => {
+                item.style.animationDelay = `${i * 0.1}s`;
+                item.classList.add('fade-in');
+            });
+        }, 10);
+    }    removeSelectedService(index) {
         const removedService = this.selectedServices[index];
+        console.log('Removing service:', removedService);
+        
         this.selectedServices.splice(index, 1);
         
-        // Uncheck the corresponding checkbox
-        const checkbox = document.querySelector(`#service_${removedService.certificate_id}_${removedService.categoryName}_${removedService.serviceName}`);
-        if (checkbox) {
-            checkbox.checked = false;
-            const container = checkbox.closest('.service-checkbox');
-            if (container) {
-                container.classList.remove('selected');
-            }
+        // Reset the dropdown to "Select a service..."
+        const dropdown = document.getElementById('serviceDropdown');
+        if (dropdown) {
+            dropdown.value = '';
         }
         
+        // Clear the service title
+        this.updateServiceTitle('');
+        
+        // Update the display
         this.updateSelectedServicesList();
+        
+        // Show feedback
+        if (removedService) {
+            this.showToast(`Service "${removedService.serviceName}" removed`, 'info');
+        }
+        
+        console.log('Remaining selected services:', this.selectedServices.length);
     }
     escapeHtml(text) {
         const div = document.createElement('div');
