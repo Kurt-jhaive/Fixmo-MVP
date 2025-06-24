@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Provider Dashboard - Fixmo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/provider-dashboard.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <!-- Logo -->
+            <div class="nav-logo">
+                <span class="logo-text">FIXMO</span>
+                <span class="provider-badge">PRO</span>
+                <i class="fas fa-tools logo-icon"></i>
+            </div>
+
+            <!-- Navigation Menu -->
+            <div class="nav-menu">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="manage-services">
+                    <i class="fas fa-tools"></i>
+                    <span>Manage Services</span>
+                </a>
+                <a href="#" class="nav-item" data-page="bookings">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Bookings</span>
+                </a>
+                <a href="#" class="nav-item" data-page="profile">
+                    <i class="fas fa-user-edit"></i>
+                    <span>Edit Profile</span>
+                </a>
+            </div>
+
+            <!-- User Profile -->
+            <div class="nav-profile">
+                <div class="profile-info">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="profile-details">
+                        <span class="profile-name" id="profileName">Loading...</span>
+                        <span class="profile-status" id="profileStatus">
+                            <i class="fas fa-shield-alt verification-icon"></i>
+                            <span id="verificationText">Unverified</span>
+                        </span>
+                    </div>
+                    <div class="profile-dropdown-toggle">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="#" class="dropdown-item" data-page="profile">
+                        <i class="fas fa-user-edit"></i> Edit Profile
+                    </a>
+                    <a href="#" class="dropdown-item" id="settingsBtn">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item" id="signOutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page active">
+            <!-- Verification Alert -->
+            <div id="verificationAlert" class="verification-alert" style="display: none;">
+                <div class="alert-content">
+                    <i class="fas fa-exclamation-triangle alert-icon"></i>
+                    <div class="alert-text">
+                        <h4>Provider Verification Required</h4>
+                        <p>Please complete your profile verification to start receiving bookings and showcase your services.</p>
+                    </div>
+                    <button class="verify-btn" id="verifyAccountBtn">
+                        <i class="fas fa-upload"></i> Complete Verification
+                    </button>
+                </div>
+            </div>
+
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <h1 class="welcome-title">Welcome back, <span id="welcomeName">Provider</span>!</h1>
+                <p class="welcome-subtitle">Manage your services and grow your business</p>
+            </div>
+
+            <!-- Provider Stats -->
+            <div class="stats-grid">
+                <div class="stat-card earnings">
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalEarnings">₱0</h3>
+                        <p>Total Earnings</p>
+                        <span class="stat-trend positive" id="earningsTrend">+0% this month</span>
+                    </div>
+                </div>
+                <div class="stat-card bookings">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="activeBookings">0</h3>
+                        <p>Active Bookings</p>
+                        <span class="stat-trend" id="bookingsTrend">0 pending approval</span>
+                    </div>
+                </div>
+                <div class="stat-card rating">
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="providerRating">0.0</h3>
+                        <p>Provider Rating</p>
+                        <span class="stat-trend" id="ratingTrend">Based on 0 reviews</span>
+                    </div>
+                </div>
+                <div class="stat-card services">
+                    <div class="stat-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalServices">0</h3>
+                        <p>Active Services</p>
+                        <span class="stat-trend" id="servicesTrend">0 draft services</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions-section">
+                <div class="section-header">
+                    <h2>Quick Actions</h2>
+                    <p>Manage your business efficiently</p>
+                </div>
+                <div class="actions-grid">
+                    <div class="action-card" onclick="providerDashboard.navigateToPage('manage-services')">
+                        <div class="action-icon">
+                            <i class="fas fa-plus-circle"></i>
+                        </div>
+                        <h3>Add New Service</h3>
+                        <p>Create a new service listing to attract more customers</p>
+                    </div>
+                    <div class="action-card" onclick="providerDashboard.navigateToPage('bookings')">
+                        <div class="action-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <h3>View Bookings</h3>
+                        <p>Check and manage your current and upcoming bookings</p>
+                    </div>
+                    <div class="action-card" onclick="providerDashboard.showAvailabilityModal()">
+                        <div class="action-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3>Set Availability</h3>
+                        <p>Update your working hours and available days</p>
+                    </div>
+                    <div class="action-card" onclick="providerDashboard.navigateToPage('profile')">
+                        <div class="action-icon">
+                            <i class="fas fa-user-cog"></i>
+                        </div>
+                        <h3>Update Profile</h3>
+                        <p>Keep your professional profile up to date</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity-section">
+                <div class="section-header">
+                    <h2>Recent Activity</h2>
+                    <a href="#" class="view-all-link" onclick="providerDashboard.navigateToPage('bookings')">View All</a>
+                </div>
+                <div class="activity-container" id="recentActivity">
+                    <!-- Recent activity will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Performance Overview -->
+            <div class="performance-section">
+                <div class="section-header">
+                    <h2>Performance Overview</h2>
+                    <p>Track your business growth</p>
+                </div>
+                <div class="performance-grid">
+                    <div class="performance-card">
+                        <h4>This Month</h4>
+                        <div class="performance-stats">
+                            <div class="performance-item">
+                                <span class="label">Bookings</span>
+                                <span class="value" id="monthlyBookings">0</span>
+                            </div>
+                            <div class="performance-item">
+                                <span class="label">Revenue</span>
+                                <span class="value" id="monthlyRevenue">₱0</span>
+                            </div>
+                            <div class="performance-item">
+                                <span class="label">Completion Rate</span>
+                                <span class="value" id="completionRate">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="performance-card">
+                        <h4>Popular Services</h4>
+                        <div class="popular-services" id="popularServices">
+                            <!-- Popular services will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Services Page -->
+        <div id="manageServicesPage" class="page">
+            <div class="page-header">
+                <h1>Manage Services</h1>
+                <button class="btn-primary" id="addServiceBtn">
+                    <i class="fas fa-plus"></i> Add New Service
+                </button>
+            </div>
+            <div class="services-container" id="servicesContainer">
+                <!-- Services will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Bookings Page -->
+        <div id="bookingsPage" class="page">
+            <div class="page-header">
+                <h1>Bookings Management</h1>
+                <div class="booking-filters">
+                    <select id="bookingStatusFilter" class="filter-select">
+                        <option value="">All Bookings</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bookings-container" id="bookingsContainer">
+                <!-- Bookings will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Profile Page -->
+        <div id="profilePage" class="page">
+            <div class="page-header">
+                <h1>Edit Profile</h1>
+                <p>Update your professional information and credentials</p>
+            </div>
+            <div class="profile-container" id="profileContainer">
+                <!-- Profile form will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Service Modal -->
+    <div id="addServiceModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Add New Service</h3>
+                <button class="modal-close" id="addServiceModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addServiceForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="serviceTitle">Service Title</label>
+                            <input type="text" id="serviceTitle" name="serviceTitle" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="serviceCategory">Category</label>
+                            <select id="serviceCategory" name="serviceCategory" class="form-control" required>
+                                <option value="">Select Category</option>
+                                <!-- Categories will be loaded dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="serviceDescription">Service Description</label>
+                        <textarea id="serviceDescription" name="serviceDescription" class="form-control" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="servicePrice">Starting Price (₱)</label>
+                        <input type="number" id="servicePrice" name="servicePrice" class="form-control" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelAddService">Cancel</button>
+                        <button type="submit" class="btn-primary">Add Service</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Availability Modal -->
+    <div id="availabilityModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Set Availability</h3>
+                <button class="modal-close" id="availabilityModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="availabilityForm">
+                    <!-- Availability form will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/dashboard-utils.js"></script>
+    <script src="js/provider-dashboard.js"></script>
+</body>
+</html>

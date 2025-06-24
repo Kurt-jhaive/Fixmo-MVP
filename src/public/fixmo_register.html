@@ -4,6 +4,8 @@
     <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Fixmo - Register Account</title>    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Fixmo Registration Styles -->
     <link href="css/fixmo-registration.css" rel="stylesheet">
+    <!-- Reusable OTP Verification -->
+    <script src="js/otp-verifier.js"></script>
 </head>
 <body>
     <div class="register-container">
@@ -239,9 +241,31 @@
             Already have an account? <a href="/fixmo-login">Sign in here</a>
         </div>
     </div>    <script>        let verifiedEmail = '';
-        let verifiedOTP = '';
-        let resendCooldown = 0;        let customerLocationAutocomplete;
+        let resendCooldown = 0;
         let locationData;
+        let otpVerifier;
+
+        // Initialize OTP verifier
+        function initializeOTPVerifier() {
+            otpVerifier = new OTPVerifier({
+                userType: 'customer',
+                showMessage: (message, type) => {
+                    if (type === 'error') {
+                        showError(message);
+                    } else {
+                        showSuccess(message);
+                    }
+                },
+                onSuccess: (data) => {
+                    proceedToRegistration();
+                },
+                onError: (error) => {
+                    const otpTiles = document.querySelectorAll('.otp-tile');
+                    otpVerifier.showOTPError(otpTiles);
+                    otpVerifier.clearOTPTiles(otpTiles);
+                }
+            });
+        }
 
         // Load NCR location data and initialize dropdowns
         async function loadNCRData() {
@@ -328,9 +352,7 @@
             fullAddress += 'Metro Manila';
 
             return fullAddress;
-        }
-
-        // Email verification form handler (Step 1)
+        }        // Email verification form handler (Step 1)
         document.getElementById('emailVerificationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -341,79 +363,38 @@
                 return;
             }
 
-            try {
-                const response = await fetch('/auth/request-otp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email: email })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    showSuccess('Verification code sent to your email. Please check your inbox.');
-                    verifiedEmail = email;
-                    
-                    // Hide email input and show OTP input
-                    document.getElementById('emailInputSection').style.display = 'none';
-                    document.getElementById('otpInputSection').style.display = 'block';
-                    
-                    // Focus on first OTP tile
-                    document.querySelector('.otp-tile[data-index="0"]').focus();
-                    
-                    // Start resend cooldown
-                    startResendCooldown();
-                } else {
-                    showError(data.message || 'Failed to send verification code');
-                }
-            } catch (error) {
-                showError('Network error. Please try again.');
-                console.error('Email verification error:', error);
+            const result = await otpVerifier.requestOTP(email);
+            
+            if (result.success) {
+                verifiedEmail = email;
+                
+                // Hide email input and show OTP input
+                document.getElementById('emailInputSection').style.display = 'none';
+                document.getElementById('otpInputSection').style.display = 'block';
+                
+                // Focus on first OTP tile
+                document.querySelector('.otp-tile[data-index="0"]').focus();
+                  // Start resend cooldown
+                startResendCooldown();
             }
         });
-
-        // OTP verification form handler
+                // OTP verification form handler
         document.getElementById('otpVerificationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const otpTiles = document.querySelectorAll('.otp-tile');
-            const otp = Array.from(otpTiles).map(tile => tile.value).join('');
+            const otp = otpVerifier.getOTPFromTiles(otpTiles);
             
-            if (otp.length !== 6) {
-                showError('Please enter the complete 6-digit code');
-                // Add error styling to empty tiles
-                otpTiles.forEach(tile => {
-                    if (!tile.value) {
-                        tile.classList.add('error');
-                        setTimeout(() => tile.classList.remove('error'), 1000);
-                    }
-                });
-                return;
-            }            // For demo purposes, accept test OTP
-            if (otp === '123456') {
-                verifiedOTP = otp;
-                proceedToRegistration();
+            // Validate OTP format
+            const validation = otpVerifier.validateOTP(otp);
+            if (!validation.valid) {
+                showError(validation.message);
+                otpVerifier.showOTPError(otpTiles);
                 return;
             }
 
-            // You can add real OTP verification here later
-            // For now, just check if it's a 6-digit number
-            if (/^\d{6}$/.test(otp)) {
-                verifiedOTP = otp;
-                proceedToRegistration();
-            } else {
-                showError('Please enter a valid 6-digit verification code.');
-                // Add error styling to all tiles
-                otpTiles.forEach(tile => {
-                    tile.classList.add('error');
-                    tile.value = '';
-                    setTimeout(() => tile.classList.remove('error'), 1000);
-                });
-                // Focus back on first tile
-                otpTiles[0].focus();
-            }
+            // Verify OTP with backend
+            await otpVerifier.verifyOTP(verifiedEmail, otp);
         });
 
         function proceedToRegistration() {
@@ -457,14 +438,14 @@
             // Prepare form data for final registration
             const formData = new FormData();
             
-            // Add form data using the verified email
-            formData.append('first_name', document.getElementById('firstName').value);
+            // Add form data using the verified email            formData.append('first_name', document.getElementById('firstName').value);
             formData.append('last_name', document.getElementById('lastName').value);
             formData.append('userName', document.getElementById('userName').value);
-            formData.append('email', verifiedEmail);            formData.append('password', password);
+            formData.append('email', verifiedEmail);
+            formData.append('password', password);
             formData.append('phone_number', document.getElementById('phoneNumber').value);
             formData.append('user_location', getFullCustomerAddress());
-            formData.append('otp', verifiedOTP); // Use the verified OTP from step 1
+            formData.append('otp', '123456'); // Dummy OTP since email is already verified
             
             // Add file uploads if present
             const profilePhoto = document.getElementById('profilePhoto').files[0];
@@ -499,40 +480,19 @@
                 showError('Network error. Please try again.');
                 console.error('Registration error:', error);
             }
-        });
-
-        // Resend OTP functionality
-        function resendOTP() {
+        });        // Resend OTP functionality
+        async function resendOTP() {
             if (resendCooldown > 0) return;
               
-            // Make request to resend OTP using verified email
-            fetch('/auth/request-otp', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email: verifiedEmail })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success || data.message?.includes('sent')) {
-                    showSuccess('New verification code sent to your email');
-                    startResendCooldown();
-                    
-                    // Clear and focus OTP tiles
-                    const otpTiles = document.querySelectorAll('.otp-tile');
-                    otpTiles.forEach(tile => {
-                        tile.value = '';
-                        tile.classList.remove('filled', 'error');
-                    });
-                    otpTiles[0].focus();
-                } else {
-                    showError(data.message || 'Failed to resend verification code');
-                }
-            })
-            .catch(error => {
-                showError('Network error. Please try again.');
-            });
+            const result = await otpVerifier.requestOTP(verifiedEmail);
+            
+            if (result.success) {
+                startResendCooldown();
+                
+                // Clear and focus OTP tiles
+                const otpTiles = document.querySelectorAll('.otp-tile');
+                otpVerifier.clearOTPTiles(otpTiles);
+            }
         }
 
         function startResendCooldown() {
@@ -597,9 +557,7 @@
         function hideMessages() {
             document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('successMessage').style.display = 'none';
-        }
-
-        // File upload label update
+        }        // File upload label update
         document.querySelectorAll('input[type="file"]').forEach(input => {
             input.addEventListener('change', function() {
                 const label = this.nextElementSibling;
@@ -609,73 +567,27 @@
                     label.style.color = '#38a169';
                 }
             });
-        });        // Auto-focus on first input and initialize location dropdowns
+        });
+
+        // Initialize on page load
         window.addEventListener('load', function() {
             document.getElementById('emailAddress').focus();
             
-            // Initialize location dropdowns
+            // Initialize OTP verifier and location dropdowns
+            initializeOTPVerifier();
             loadNCRData();
-        });// OTP Tile functionality
+        });
+
+        // OTP Tile functionality
         document.addEventListener('DOMContentLoaded', function() {
             const otpTiles = document.querySelectorAll('.otp-tile');
             
-            otpTiles.forEach((tile, index) => {
-                tile.addEventListener('input', function(e) {
-                    // Only allow digits
-                    e.target.value = e.target.value.replace(/\D/g, '');
-                    
-                    if (e.target.value) {
-                        e.target.classList.add('filled');
-                        e.target.classList.remove('error');
-                        
-                        // Auto-focus next tile
-                        if (index < otpTiles.length - 1) {
-                            otpTiles[index + 1].focus();
-                        }
-                    } else {
-                        e.target.classList.remove('filled');
-                    }
-                });
-                
-                tile.addEventListener('keydown', function(e) {
-                    // Handle backspace
-                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                        otpTiles[index - 1].focus();
-                        otpTiles[index - 1].value = '';
-                        otpTiles[index - 1].classList.remove('filled');
-                    }
-                    
-                    // Handle arrow keys
-                    if (e.key === 'ArrowLeft' && index > 0) {
-                        otpTiles[index - 1].focus();
-                    }
-                    if (e.key === 'ArrowRight' && index < otpTiles.length - 1) {
-                        otpTiles[index + 1].focus();
-                    }
-                });
-                
-                tile.addEventListener('paste', function(e) {
-                    e.preventDefault();
-                    const paste = (e.clipboardData || window.clipboardData).getData('text');
-                    const digits = paste.replace(/\D/g, '').slice(0, 6);
-                    
-                    digits.split('').forEach((digit, i) => {
-                        if (otpTiles[i]) {
-                            otpTiles[i].value = digit;
-                            otpTiles[i].classList.add('filled');
-                            otpTiles[i].classList.remove('error');
-                        }
-                    });
-                    
-                    // Focus on next empty tile or submit if all filled
-                    const nextEmpty = Array.from(otpTiles).find(tile => !tile.value);
-                    if (nextEmpty) {
-                        nextEmpty.focus();
-                    } else if (digits.length === 6) {
-                        document.getElementById('otpVerificationForm').dispatchEvent(new Event('submit'));
-                    }
-                });
-            });        });
+            // Use the OTP verifier to set up tiles
+            setTimeout(() => {
+                if (otpVerifier) {
+                    otpVerifier.setupOTPTiles(otpTiles);                }
+            }, 100);
+        });
     </script>
 </body>
 </html>

@@ -66,6 +66,10 @@ app.get('/fixmo-provider-register', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'fixmo_provider_register.html'));
 });
 
+app.get('/fixmo-forgot-password', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'fixmo_forgot_password.html'));
+});
+
 app.get('/location-test', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'location-test.html'));
 });
@@ -74,9 +78,18 @@ app.get('/availability', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'availability_test.html'));
 });
 
+app.get('/customer-dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'customer-dashboard.html'));
+});
+
+app.get('/provider-dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'provider-dashboard.html'));
+});
+
 
 
 app.use('/auth', authCustomerRoutes, serviceProviderRoutes, adminRoute); // Use the authCustomer and serviceProvider routes
+app.use('/api/serviceProvider', serviceProviderRoutes); // Mount service provider routes for API access
 
 // app.use('/users', usersRouter); // Uncomment if usersRouter is defined
 

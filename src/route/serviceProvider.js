@@ -2,10 +2,12 @@ import express from 'express';
 import multer from 'multer';
 import {
   requestProviderOTP,
+  verifyProviderOTPOnly,
   verifyProviderOTPAndRegister,
   providerLogin,
   requestProviderForgotPasswordOTP,
   verifyProviderForgotPasswordOTPAndReset,
+  providerResetPassword,
   uploadCertificate,
   addServiceListing,
   addAvailability,
@@ -13,6 +15,12 @@ import {
   updateAvailability,
   deleteAvailability,
   getProviderDayAvailability,
+  getProviderProfile,
+  updateProviderProfile,
+  getProviderStats,
+  getProviderServices,
+  getProviderBookings,
+  getProviderActivity
 
 } from '../controller/authserviceProviderController.js';
 import { PrismaClient } from '@prisma/client';
@@ -31,6 +39,8 @@ const prisma = new PrismaClient();
 
 // Step 1: Service provider requests OTP
 router.post('/provider-request-otp', requestProviderOTP);
+// Step 1.5: Service provider verifies OTP only (for registration flow)
+router.post('/provider-verify-otp', verifyProviderOTPOnly);
 // Step 2: Service provider verifies OTP and registers
 router.post('/provider-verify-register', registrationUpload, verifyProviderOTPAndRegister);
 // Service provider login
@@ -40,6 +50,8 @@ router.post('/loginProvider', providerLogin);
 router.post('/provider-forgot-password-request-otp', requestProviderForgotPasswordOTP);
 // Forgot password: verify OTP and reset password
 router.post('/provider-forgot-password-verify-otp', verifyProviderForgotPasswordOTPAndReset);
+// Simple provider password reset (OTP already verified)
+router.post('/provider-reset-password', providerResetPassword);
 // Upload service provider certificate (with multer)
 router.post('/upload-certificate', upload.single('certificate_file'), uploadCertificate);
 
@@ -69,6 +81,14 @@ router.get('/providers', async (req, res) => {
     res.status(500).json({ message: 'Error fetching providers' });
   }
 });
+
+// Provider dashboard endpoints
+router.get('/profile/:provider_id', getProviderProfile);
+router.put('/profile/:provider_id', updateProviderProfile);
+router.get('/stats/:provider_id', getProviderStats);
+router.get('/services/:provider_id', getProviderServices);
+router.get('/bookings/:provider_id', getProviderBookings);
+router.get('/activity/:provider_id', getProviderActivity);
 
 router.get('/certificates', async (req, res) => {
   try {

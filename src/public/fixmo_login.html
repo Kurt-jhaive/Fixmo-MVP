@@ -5,311 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fixmo - Professional Service Platform</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #66B2B2 0%, #207F7F 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
+    <link rel="stylesheet" href="styles/fixmo_login_signup.css">
 
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-            animation: drift 20s linear infinite;
-        }
-
-        @keyframes drift {
-            0% { transform: translateX(0) translateY(0); }
-            100% { transform: translateX(-10px) translateY(-10px); }
-        }
-
-        .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
-            width: 100%;
-            max-width: 450px;
-            padding: 50px 40px;
-            position: relative;
-            z-index: 1;
-            animation: slideUp 0.8s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .logo-section {
-            text-align: center;
-            margin-bottom: 40px;
-        }        .logo {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #66B2B2 0%, #207F7F 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-            position: relative;
-        }
-
-        .logo::after {
-            content: '🔧';
-            position: absolute;
-            top: -10px;
-            right: -15px;
-            font-size: 1.5rem;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
-        }
-
-        .tagline {
-            color: #666;
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            color: #888;
-            font-size: 0.9rem;        }
-
-        .login-tabs {
-            display: flex;
-            margin-bottom: 30px;
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 5px;
-        }
-
-        .tab-button {
-            flex: 1;
-            padding: 12px 20px;
-            border: none;
-            background: transparent;
-            color: #666;
-            font-weight: 600;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .tab-button.active {
-            background: linear-gradient(135deg, #66B2B2 0%, #207F7F 100%);
-            color: white;
-            box-shadow: 0 5px 15px rgba(102, 178, 178, 0.4);
-        }
-
-        /* Removed login tabs since we only have customer login */
-
-        .form-group {
-            margin-bottom: 25px;
-            position: relative;
-        }
-
-        .form-group label {
-            display: block;
-            color: #555;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 15px 20px 15px 50px;
-            border: 2px solid #e1e5e9;
-            border-radius: 15px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: #fafbfc;
-        }        .form-control:focus {
-            outline: none;
-            border-color: #66B2B2;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(102, 178, 178, 0.1);
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-            font-size: 1.1rem;
-        }        .form-control:focus + .input-icon {
-            color: #66B2B2;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: color 0.3s ease;
-        }        .password-toggle:hover {
-            color: #66B2B2;
-        }
-
-        .form-options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-        }
-
-        .remember-me {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #666;
-        }        .remember-me input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #66B2B2;
-        }        .forgot-password {
-            color: #66B2B2;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.3s ease;
-        }
-
-        .forgot-password:hover {
-            color: #207F7F;
-        }        .login-button {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #66B2B2 0%, #207F7F 100%);
-            color: white;
-            border: none;
-            border-radius: 15px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 178, 178, 0.4);
-        }
-
-        .login-button:active {
-            transform: translateY(0);
-        }
-
-        .login-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .login-button:hover::before {
-            left: 100%;        }
-
-        .signup-link {
-            text-align: center;
-            color: #666;
-            font-size: 0.95rem;
-        }        .signup-link a {
-            color: #66B2B2;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.3s ease;
-        }
-
-        .signup-link a:hover {
-            color: #207F7F;
-        }
-
-        .error-message {
-            background: #fff5f5;
-            color: #e53e3e;
-            padding: 12px 18px;
-            border-radius: 10px;
-            border-left: 4px solid #e53e3e;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        .success-message {
-            background: #f0fff4;
-            color: #38a169;
-            padding: 12px 18px;
-            border-radius: 10px;
-            border-left: 4px solid #38a169;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            display: none;        }        /* Provider and Customer form styles */
-        .provider-form {
-            display: none;
-        }
-
-        .provider-form.active {
-            display: block;
-        }
-
-        .customer-form.active {
-            display: block;
-        }
-
-        .customer-form {
-            display: none;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .login-container {
-                margin: 20px;
-                padding: 30px 25px;
-            }            .logo {
-                font-size: 2.5rem;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="login-container">
@@ -497,10 +194,9 @@
                     localStorage.setItem('fixmo_user_id', data.userId);
                     localStorage.setItem('fixmo_user_name', data.userName);
                     localStorage.setItem('fixmo_user_type', 'customer');
-                    
-                    // Redirect to marketplace after 2 seconds
+                      // Redirect to customer dashboard after 2 seconds
                     setTimeout(() => {
-                        window.location.href = '/marketplace';
+                        window.location.href = '/customer-dashboard';
                     }, 2000);
                 } else {
                     showError(data.message || 'Login failed');
@@ -508,9 +204,7 @@
             } catch (error) {
                 showError('Network error. Please try again.');
                 console.error('Login error:', error);
-            }        });
-
-        // Provider login handler
+            }        });        // Provider login handler
         document.getElementById('providerLoginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -528,25 +222,43 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ 
+                        provider_email: email, 
+                        provider_password: password 
+                    })
                 });
 
-                const data = await response.json();
-
-                if (response.ok) {
+                const data = await response.json();                if (response.ok) {
                     showSuccess('Login successful! Redirecting...');
                     
-                    // Store provider data
+                    // Store basic auth data
                     localStorage.setItem('fixmo_provider_token', data.token);
                     localStorage.setItem('fixmo_provider_id', data.providerId);
-                    localStorage.setItem('fixmo_provider_name', data.providerName);
+                    localStorage.setItem('fixmo_provider_name', data.providerUserName);
                     localStorage.setItem('fixmo_user_type', 'provider');
                     
-                    // Redirect to manage listings after 2 seconds
+                    // Fetch complete provider profile and store it
+                    try {
+                        const profileResponse = await fetch(`/serviceProvider/profile/${data.providerId}`, {
+                            headers: {
+                                'Authorization': `Bearer ${data.token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (profileResponse.ok) {
+                            const providerProfile = await profileResponse.json();
+                            localStorage.setItem('serviceProvider', JSON.stringify(providerProfile));
+                        }
+                    } catch (profileError) {
+                        console.error('Error fetching provider profile:', profileError);
+                    }
+                    
+                    // Redirect to provider dashboard after 2 seconds
                     setTimeout(() => {
-                        window.location.href = '/manage-listings';
+                        window.location.href = '/provider-dashboard';
                     }, 2000);
-                } else {
+                }else {
                     showError(data.message || 'Login failed');
                 }
             } catch (error) {
@@ -564,11 +276,9 @@
             } else {
                 window.location.href = '/fixmo-provider-register';
             }
-        }
-
-        // Forgot password placeholder
+        }        // Forgot password redirect
         function showForgotPassword() {
-            showError('Forgot password functionality coming soon!');
+            window.location.href = '/fixmo-forgot-password';
         }
 
         // Signup placeholder

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { sendOTPEmail, sendRegistrationSuccessEmail } from '../services/mailer.js';
-import { forgotrequestOTP, verifyOTPAndResetPassword } from '../services/otpUtils.js';
+import { forgotrequestOTP, verifyOTPAndResetPassword, verifyOTP, cleanupOTP } from '../services/otpUtils.js';
 import { checkOTPRateLimit, recordOTPAttempt } from '../services/rateLimitUtils.js';
 
 const prisma = new PrismaClient();
@@ -136,18 +136,10 @@ export const verifyOTPAndRegister = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Verify OTP
-    const record = await prisma.oTPVerification.findFirst({
-      where: { email },
-      orderBy: { created_at: 'desc' }
-    });
-
-    if (!record || record.otp !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
-
-    if (new Date(record.expires_at) < new Date()) {
-      return res.status(400).json({ message: 'OTP expired' });
+    // Verify OTP using the reusable utility
+    const verificationResult = await verifyOTP(email, otp);
+    if (!verificationResult.success) {
+      return res.status(400).json({ message: verificationResult.message });
     }
 
     // Hash password
@@ -166,13 +158,11 @@ export const verifyOTPAndRegister = async (req, res) => {
         valid_id: validIdPath || null,
         user_location: user_location || null
       }
-    });
-
-    // Send registration success email
+    });    // Send registration success email
     await sendRegistrationSuccessEmail(email, first_name, userName); 
 
     // Delete the used OTP
-    await prisma.oTPVerification.deleteMany({ where: { email } });
+    await cleanupOTP(email);
     
     console.log('User registered successfully');
 
@@ -762,5 +752,410 @@ export const addRatetoProvider = async (req, res) => {
     } catch (err) {
         console.error('Error submitting rating:', err);
         return res.status(500).json({ message: 'Internal server error while submitting rating' });    }
+};
+
+// Standalone OTP verification endpoint (for registration flow)
+export const verifyOTPOnly = async (req, res) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+        return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    try {
+        const verificationResult = await verifyOTP(email, otp);
+        
+        if (verificationResult.success) {
+            res.status(200).json({ 
+                message: 'OTP verified successfully',
+                verified: true 
+            });
+        } else {
+            res.status(400).json({ 
+                message: verificationResult.message,
+                verified: false 
+            });
+        }
+    } catch (err) {
+        console.error('OTP verification error:', err);
+        res.status(500).json({ message: 'Error verifying OTP' });
+    }
+};
+
+// CUSTOMER: Simple password reset (OTP already verified)
+export const resetPassword = async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+
+        if (!email || !newPassword) {
+            return res.status(400).json({ message: 'Email and new password are required' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+        }
+
+        // Check if user exists
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update the password
+        await prisma.user.update({
+            where: { email },
+            data: { password: hashedPassword }
+        });
+
+        res.status(200).json({ message: 'Password reset successful' });
+    } catch (error) {
+        console.error('Password reset error:', error);
+        res.status(500).json({ message: 'Server error during password reset' });
+    }
+};
+
+// CUSTOMER: Step 2 - Reset password without OTP verification (OTP already verified)
+export const resetPasswordOnly = async (req, res) => {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+        return res.status(400).json({ message: 'Email and new password are required' });
+    }
+
+    try {
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update the password
+        const updatedUser = await prisma.user.update({
+            where: { email },
+            data: { password: hashedPassword }
+        });
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ message: 'Password reset successfully' });
+    } catch (err) {
+        console.error('Password reset error:', err);
+        res.status(500).json({ message: 'Server error during password reset' });
+    }
+};
+
+// Get user profile and verification status
+export const getUserProfile = async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    try {        const user = await prisma.user.findUnique({
+            where: { user_id: parseInt(userId) },
+            select: {
+                user_id: true,
+                first_name: true,
+                last_name: true,
+                userName: true,
+                email: true,
+                phone_number: true,
+                user_location: true,
+                profile_photo: true,
+                valid_id: true,
+                is_verified: true,
+                created_at: true
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({
+            message: 'User profile retrieved successfully',
+            user: user
+        });
+    } catch (err) {
+        console.error('Get user profile error:', err);
+        res.status(500).json({ message: 'Server error retrieving user profile' });
+    }
+};
+
+// Update user verification documents
+export const updateVerificationDocuments = async (req, res) => {
+    const { userId } = req.body;
+
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    try {
+        // Handle file uploads
+        const profilePictureFile = req.files && req.files['profilePicture'] ? req.files['profilePicture'][0] : null;
+        const validIdFile = req.files && req.files['validId'] ? req.files['validId'][0] : null;
+
+        const updateData = {};
+          if (profilePictureFile) {
+            updateData.profile_photo = profilePictureFile.path;
+        }
+        
+        if (validIdFile) {
+            updateData.valid_id = validIdFile.path;
+        }
+
+        // If documents are uploaded, set verification status to pending
+        if (profilePictureFile || validIdFile) {
+            updateData.is_verified = false; // Reset verification status, admin will need to verify
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { user_id: parseInt(userId) },
+            data: updateData,            select: {
+                user_id: true,
+                profile_photo: true,
+                valid_id: true,
+                is_verified: true
+            }
+        });
+
+        res.status(200).json({
+            message: 'Verification documents updated successfully',
+            user: updatedUser
+        });
+    } catch (err) {
+        console.error('Update verification documents error:', err);
+        res.status(500).json({ message: 'Server error updating verification documents' });
+    }
+};
+
+// Get all service listings with filtering and pagination
+export const getServiceListingsForCustomer = async (req, res) => {
+    const { 
+        page = 1, 
+        limit = 12, 
+        search = '', 
+        category = '', 
+        location = '', 
+        sortBy = 'rating' 
+    } = req.query;
+
+    try {
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        
+        // Build where clause for filtering
+        const whereClause = {};
+        
+        // Search filter
+        if (search) {
+            whereClause.OR = [
+                { service_title: { contains: search, mode: 'insensitive' } },
+                { service_description: { contains: search, mode: 'insensitive' } },
+                { serviceProvider: { 
+                    OR: [
+                        { provider_first_name: { contains: search, mode: 'insensitive' } },
+                        { provider_last_name: { contains: search, mode: 'insensitive' } }
+                    ]
+                }}
+            ];
+        }
+
+        // Location filter
+        if (location) {
+            whereClause.serviceProvider = {
+                ...whereClause.serviceProvider,
+                provider_location: { contains: location, mode: 'insensitive' }
+            };
+        }
+
+        // Category filter (through specific services)
+        if (category) {
+            whereClause.specific_services = {
+                some: {
+                    category: {
+                        category_name: { equals: category, mode: 'insensitive' }
+                    }
+                }
+            };
+        }
+
+        // Only show services from verified and activated providers
+        whereClause.serviceProvider = {
+            ...whereClause.serviceProvider,
+            provider_isVerified: true,
+            provider_isActivated: true
+        };
+
+        // Build orderBy clause
+        let orderBy = {};
+        switch (sortBy) {
+            case 'rating':
+                orderBy = { serviceProvider: { provider_rating: 'desc' } };
+                break;
+            case 'price-low':
+                orderBy = { service_startingprice: 'asc' };
+                break;
+            case 'price-high':
+                orderBy = { service_startingprice: 'desc' };
+                break;
+            case 'newest':
+                orderBy = { service_id: 'desc' };
+                break;
+            default:
+                orderBy = { serviceProvider: { provider_rating: 'desc' } };
+        }
+
+        // Get service listings
+        const serviceListings = await prisma.serviceListing.findMany({
+            where: whereClause,
+            include: {
+                serviceProvider: {
+                    select: {
+                        provider_id: true,
+                        provider_first_name: true,
+                        provider_last_name: true,
+                        provider_userName: true,
+                        provider_rating: true,
+                        provider_location: true,
+                        provider_profile_photo: true
+                    }
+                },
+                specific_services: {
+                    include: {
+                        category: {
+                            select: {
+                                category_name: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy,
+            skip,
+            take: parseInt(limit)
+        });
+
+        // Get total count for pagination
+        const totalCount = await prisma.serviceListing.count({
+            where: whereClause
+        });
+
+        // Format the response
+        const formattedListings = serviceListings.map(listing => ({
+            id: listing.service_id,
+            title: listing.service_title,
+            description: listing.service_description,
+            startingPrice: listing.service_startingprice,
+            provider: {
+                id: listing.serviceProvider.provider_id,
+                name: `${listing.serviceProvider.provider_first_name} ${listing.serviceProvider.provider_last_name}`,
+                userName: listing.serviceProvider.provider_userName,
+                rating: listing.serviceProvider.provider_rating || 0,
+                location: listing.serviceProvider.provider_location,
+                profilePhoto: listing.serviceProvider.provider_profile_photo
+            },
+            categories: listing.specific_services.map(service => service.category.category_name),
+            specificServices: listing.specific_services.map(service => ({
+                id: service.specific_service_id,
+                title: service.specific_service_title,
+                description: service.specific_service_description
+            }))
+        }));
+
+        res.status(200).json({
+            message: 'Service listings retrieved successfully',
+            listings: formattedListings,
+            pagination: {
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(totalCount / parseInt(limit)),
+                totalCount,
+                hasNext: skip + parseInt(limit) < totalCount,
+                hasPrev: parseInt(page) > 1
+            }
+        });
+    } catch (err) {
+        console.error('Get service listings error:', err);
+        res.status(500).json({ message: 'Server error retrieving service listings' });
+    }
+};
+
+// Get service categories for filter dropdown
+export const getServiceCategories = async (req, res) => {
+    try {
+        const categories = await prisma.serviceCategory.findMany({
+            select: {
+                category_id: true,
+                category_name: true
+            },
+            orderBy: {
+                category_name: 'asc'
+            }
+        });
+
+        res.status(200).json({
+            message: 'Service categories retrieved successfully',
+            categories
+        });
+    } catch (err) {
+        console.error('Get service categories error:', err);
+        res.status(500).json({ message: 'Server error retrieving service categories' });
+    }
+};
+
+// Get customer statistics (bookings, ratings, etc.)
+export const getCustomerStats = async (req, res) => {
+    const { userId } = req.params;
+
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    try {
+        // Get appointment counts
+        const [activeBookings, completedBookings, userRatings] = await Promise.all([
+            prisma.appointment.count({
+                where: {
+                    customer_id: parseInt(userId),
+                    appointment_status: {
+                        in: ['pending', 'confirmed', 'in_progress']
+                    }
+                }
+            }),
+            prisma.appointment.count({
+                where: {
+                    customer_id: parseInt(userId),
+                    appointment_status: 'completed'
+                }
+            }),
+            prisma.rating.findMany({
+                where: {
+                    user_id: parseInt(userId)
+                },
+                select: {
+                    rating_value: true
+                }
+            })
+        ]);
+
+        // Calculate average rating given by user
+        const averageRating = userRatings.length > 0 
+            ? userRatings.reduce((sum, rating) => sum + rating.rating_value, 0) / userRatings.length 
+            : 0;
+
+        res.status(200).json({
+            message: 'Customer statistics retrieved successfully',
+            stats: {
+                activeBookings,
+                completedBookings,
+                averageRating: averageRating.toFixed(1)
+            }
+        });
+    } catch (err) {
+        console.error('Get customer stats error:', err);
+        res.status(500).json({ message: 'Server error retrieving customer statistics' });
+    }
 };
 

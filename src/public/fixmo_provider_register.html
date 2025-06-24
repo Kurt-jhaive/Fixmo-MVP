@@ -4,6 +4,8 @@
     <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Fixmo - Service Provider Registration</title>    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Fixmo Registration Styles -->
     <link href="css/fixmo-registration.css" rel="stylesheet">
+    <!-- Reusable OTP Verification -->
+    <script src="js/otp-verifier.js"></script>
     
 </head>
 <body>
@@ -173,9 +175,9 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="providerUli">Professional License/ID Number <span class="required">*</span></label>
+                        <label for="providerUli">Unique Learner Identifier (ULI) <span class="required">*</span></label>
                         <div class="input-wrapper">
-                            <input type="text" id="providerUli" class="form-control" placeholder="Enter your professional license/ID number" required>
+                            <input type="text" id="providerUli" class="form-control" placeholder="Enter your 14 Unique Learner Identifier (ULI) number" maxlength="14" required>
                             <i class="fas fa-certificate input-icon"></i>
                         </div>
                     </div>
@@ -239,48 +241,48 @@
                         <i class="fas fa-certificate"></i> Professional Certificates
                     </div>
                       <div id="certificatesContainer">
-                        <div class="certificate-entry" data-index="0">
-                            <div class="form-row">
+                        <div class="certificate-entry" data-index="0">                            <div class="form-row">
                                 <div class="form-group">
                                     <label for="certificateName0">Certificate Name <span class="required">*</span></label>
                                     <div class="input-wrapper">
-                                        <select id="certificateName0" name="certificateName" class="form-select" required>
+                                        <select id="certificateName0" name="certificateName" class="form-control" required>
                                             <option value="">Select a TESDA Certificate</option>
-                                            <option value="Automotive Servicing NC I">Automotive Servicing NC I</option>
-                                            <option value="Automotive Servicing NC II">Automotive Servicing NC II</option>
-                                            <option value="Automotive Servicing NC III">Automotive Servicing NC III</option>
-                                            <option value="Computer Hardware Servicing NC II">Computer Hardware Servicing NC II</option>
-                                            <option value="Computer Programming NC IV">Computer Programming NC IV</option>
-                                            <option value="Consumer Electronics Servicing NC II">Consumer Electronics Servicing NC II</option>
-                                            <option value="Electrical Installation and Maintenance NC II">Electrical Installation and Maintenance NC II</option>
-                                            <option value="Electrical Installation and Maintenance NC III">Electrical Installation and Maintenance NC III</option>
+
+                                            <!-- 📱 Electronics & Gadget Repair -->
+                                            <option value="Computer Systems Servicing NC II">Computer Systems Servicing NC II (includes Mobile Gadget Repair)</option>
+                                            <option value="Consumer Electronics Servicing NC II/III">Consumer Electronics Servicing NC II/III</option>
                                             <option value="Electronic Products Assembly and Servicing NC II">Electronic Products Assembly and Servicing NC II</option>
-                                            <option value="HVAC/R (Heating, Ventilation, Air Conditioning and Refrigeration) Servicing NC I">HVAC/R Servicing NC I</option>
-                                            <option value="HVAC/R (Heating, Ventilation, Air Conditioning and Refrigeration) Servicing NC II">HVAC/R Servicing NC II</option>
-                                            <option value="HVAC/R (Heating, Ventilation, Air Conditioning and Refrigeration) Servicing NC III">HVAC/R Servicing NC III</option>
-                                            <option value="Plumbing NC I">Plumbing NC I</option>
-                                            <option value="Plumbing NC II">Plumbing NC II</option>
-                                            <option value="Welding NC I">Welding NC I</option>
-                                            <option value="Welding NC II">Welding NC II</option>
-                                            <option value="Welding NC III">Welding NC III</option>
-                                            <option value="Carpentry NC II">Carpentry NC II</option>
-                                            <option value="Carpentry NC III">Carpentry NC III</option>
-                                            <option value="Masonry NC I">Masonry NC I</option>
-                                            <option value="Masonry NC II">Masonry NC II</option>
-                                            <option value="Painting NC II">Painting NC II</option>
-                                            <option value="Tile Setting NC I">Tile Setting NC I</option>
+                                            <option value="Telecom OSP Installation (Fiber Optic Cable) NC II">Telecom OSP Installation (Fiber Optic Cable) NC II</option>
+
+                                            <!-- ❄️ Air Conditioning & Appliance Services -->
+                                            <option value="RAC Servicing NC I/II">RAC Servicing NC I/II (Domestic Refrigeration and Air Conditioning)</option>
+                                            <option value="RAC Servicing (PACU/CRE) NC II">RAC Servicing (PACU/CRE) NC II</option>
+                                            <option value="Refrigeration and Air-conditioning NC I">Refrigeration and Air-conditioning NC I</option>
+
+                                            <!-- ⚡ Electrical Services -->
+                                            <option value="Electrical Installation and Maintenance NC II/III">Electrical Installation and Maintenance NC II/III</option>
+                                            <option value="Auto Electrical Assembly NC II">Auto Electrical Assembly NC II</option>
+
+                                            <!-- 🚰 Plumbing Services -->
+                                            <option value="Plumbing NC I/II/III">Plumbing NC I/II/III</option>
+
+                                            <!-- 🔨 Carpentry & Handyman Services -->
+                                            <option value="Carpentry NC II/III">Carpentry NC II/III</option>
+                                            <option value="Building Maintenance Handyman">Building Maintenance Handyman</option>
+                                            <option value="Building Wiring Installation NC II">Building Wiring Installation NC II</option>
+
+                                            <!-- 🧱 Masonry & Tile Work -->
+                                            <option value="Masonry NC I/II">Masonry NC I/II</option>
                                             <option value="Tile Setting NC II">Tile Setting NC II</option>
-                                            <option value="Beauty Care NC II">Beauty Care NC II</option>
-                                            <option value="Beauty Care NC III">Beauty Care NC III</option>
-                                            <option value="Massage Therapy NC II">Massage Therapy NC II</option>
-                                            <option value="Dressmaking NC II">Dressmaking NC II</option>
-                                            <option value="Food and Beverage Services NC II">Food and Beverage Services NC II</option>
-                                            <option value="Food and Beverage Services NC III">Food and Beverage Services NC III</option>
-                                            <option value="Cookery NC II">Cookery NC II</option>
-                                            <option value="Cookery NC III">Cookery NC III</option>
-                                            <option value="Housekeeping NC II">Housekeeping NC II</option>
-                                            <option value="Tour Guiding Services NC II">Tour Guiding Services NC II</option>
-                                            <option value="Other TESDA Certificate">Other TESDA Certificate</option>
+                                            <option value="Reinforced Steel Bar Installation NC II">Reinforced Steel Bar Installation NC II</option>
+
+                                            <!-- 🔧 Welding / Metalwork -->
+                                            <option value="Shielded Metal Arc Welding (SMAW) NC I/II">Shielded Metal Arc Welding (SMAW) NC I/II</option>
+                                            <option value="Gas Metal Arc Welding (GMAW) NC II">Gas Metal Arc Welding (GMAW) NC II</option>
+                                            <option value="Gas Tungsten Arc Welding (GTAW) NC II">Gas Tungsten Arc Welding (GTAW) NC II</option>
+
+                                            <!-- 📡 Cable / TV Installation -->
+                                            <option value="Cable Television (CATV) Installation NC II">Cable Television (CATV) Installation NC II</option>
                                         </select>
                                         <i class="fas fa-certificate input-icon"></i>
                                     </div>
@@ -334,10 +336,47 @@
         <div class="login-link">
             Already have an account? <a href="/fixmo-login">Sign in here</a>
         </div>
-    </div>    <script>        let verifiedEmail = '';
-        let otpEmail = '';
-        let resendCooldown = 0;        let providerLocationAutocomplete;
+    </div>    <script>
+        let verifiedEmail = '';
+        let resendCooldown = 0;
         let locationData;
+        let otpVerifier;
+
+        // Initialize OTP verifier
+        function initializeOTPVerifier() {
+            otpVerifier = new OTPVerifier({
+                userType: 'provider',
+                showMessage: (message, type) => {
+                    if (type === 'error') {
+                        showError(message);
+                    } else {
+                        showSuccess(message);
+                    }
+                },
+                onSuccess: (data) => {
+                    showSuccess('Email verified successfully! Please complete your registration.');
+                    
+                    // Update step indicator
+                    document.getElementById('step1').classList.remove('active');
+                    document.getElementById('step1').classList.add('completed');
+                    document.getElementById('step2').classList.add('active');
+                    
+                    // Show registration form
+                    document.getElementById('emailForm').style.display = 'none';
+                    document.getElementById('providerForm').style.display = 'block';
+                    
+                    // Pre-fill email in registration form
+                    document.getElementById('email').value = verifiedEmail;
+                    
+                    // Focus on first name field
+                    document.getElementById('firstName').focus();
+                },
+                onError: (error) => {
+                    const otpTiles = document.querySelectorAll('.otp-tile');                    otpVerifier.showOTPError(otpTiles);
+                    otpVerifier.clearOTPTiles(otpTiles);
+                }
+            });
+        }
 
         // Load NCR location data and initialize dropdowns
         async function loadNCRData() {
@@ -423,11 +462,14 @@
             if (district) fullAddress += district + ', ';
             fullAddress += 'Metro Manila';
 
-            return fullAddress;
-        }        // Initialize dropdowns when page loads
+            return fullAddress;        }
+
+        // Initialize when page loads
         window.addEventListener('load', function() {
             document.getElementById('emailAddress').focus();
-            loadNCRData();        });
+            initializeOTPVerifier();
+            loadNCRData();
+        });
 
         // Email verification form handler (Step 1)
         document.getElementById('emailVerificationForm').addEventListener('submit', async function(e) {
@@ -437,112 +479,41 @@
             
             if (!email) {
                 showError('Please enter your email address');
-                return;
+                return;            }
+
+            const result = await otpVerifier.requestOTP(email);
+            
+            if (result.success) {
+                verifiedEmail = email;
+                
+                // Hide email input and show OTP input
+                document.getElementById('emailInputSection').style.display = 'none';
+                document.getElementById('otpInputSection').style.display = 'block';
+                
+                // Focus on first OTP tile
+                document.querySelector('.otp-tile[data-index="0"]').focus();
+                
+                // Start resend cooldown
+                startResendCooldown();
             }
-
-            try {
-                const response = await fetch('/auth/provider-request-otp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ provider_email: email })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    showSuccess('Verification code sent to your email. Please check your inbox.');
-                    verifiedEmail = email;
-                    
-                    // Hide email input and show OTP input
-                    document.getElementById('emailInputSection').style.display = 'none';
-                    document.getElementById('otpInputSection').style.display = 'block';
-                    
-                    // Focus on first OTP tile
-                    document.querySelector('.otp-tile[data-index="0"]').focus();
-                    
-                    // Start resend cooldown
-                    startResendCooldown();
-                } else {
-                    showError(data.message || 'Failed to send verification code');
-                }
-            } catch (error) {
-                showError('Network error. Please try again.');
-                console.error('Email verification error:', error);
-            }
-        });
-
-        // OTP verification form handler
+        });        // OTP verification form handler
         document.getElementById('otpVerificationForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const otpTiles = document.querySelectorAll('.otp-tile');
-            const otp = Array.from(otpTiles).map(tile => tile.value).join('');
+            const otp = otpVerifier.getOTPFromTiles(otpTiles);
             
-            if (otp.length !== 6) {
-                showError('Please enter the complete 6-digit code');
-                // Add error styling to empty tiles
-                otpTiles.forEach(tile => {
-                    if (!tile.value) {
-                        tile.classList.add('error');
-                        setTimeout(() => tile.classList.remove('error'), 1000);
-                    }
-                });
+            // Validate OTP format
+            const validation = otpVerifier.validateOTP(otp);
+            if (!validation.valid) {
+                showError(validation.message);
+                otpVerifier.showOTPError(otpTiles);
                 return;
             }
 
-            try {
-                // Just verify the OTP, don't register yet
-                const response = await fetch('/auth/provider-request-otp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        provider_email: verifiedEmail,
-                        verify_only: true,
-                        otp: otp 
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok || otp === '123456') { // Allow test OTP
-                    showSuccess('Email verified successfully! Please complete your registration.');
-                    
-                    // Update step indicator
-                    document.getElementById('step1').classList.remove('active');
-                    document.getElementById('step1').classList.add('completed');
-                    document.getElementById('step2').classList.add('active');
-                    
-                    // Show registration form
-                    document.getElementById('emailForm').style.display = 'none';
-                    document.getElementById('providerForm').style.display = 'block';
-                    
-                    // Pre-fill email in registration form
-                    document.getElementById('email').value = verifiedEmail;
-                    
-                    // Focus on first name field
-                    document.getElementById('firstName').focus();
-                } else {
-                    showError('Invalid verification code. Please try again.');
-                    // Add error styling to all tiles
-                    otpTiles.forEach(tile => {
-                        tile.classList.add('error');
-                        tile.value = '';
-                        setTimeout(() => tile.classList.remove('error'), 1000);
-                    });
-                    // Focus back on first tile
-                    otpTiles[0].focus();
-                }
-            } catch (error) {
-                showError('Network error. Please try again.');
-                console.error('OTP verification error:', error);
-            }
-        });
-
-        // Password visibility toggle
+            // Verify OTP with backend
+            await otpVerifier.verifyOTP(verifiedEmail, otp);
+        });        // Password visibility toggle
         function togglePassword(inputId) {
             const input = document.getElementById(inputId);
             const icon = event.target;
@@ -634,8 +605,7 @@
 
             // Prepare form data for final registration
             const formData = new FormData();
-            
-            // Add form data using the verified email
+              // Add form data using the verified email
             formData.append('provider_first_name', document.getElementById('firstName').value);
             formData.append('provider_last_name', document.getElementById('lastName').value);
             formData.append('provider_userName', document.getElementById('userName').value);
@@ -644,7 +614,7 @@
             formData.append('provider_phone_number', document.getElementById('phoneNumber').value);
             formData.append('provider_location', getFullProviderAddress());
             formData.append('provider_uli', document.getElementById('providerUli').value);
-            formData.append('otp', '123456'); // Use verified OTP or a dummy value since email is already verified
+            formData.append('otp', '123456'); // Dummy OTP since email is already verified
             
             // Add file uploads if present
             const profilePhoto = document.getElementById('profilePhoto').files[0];
@@ -655,9 +625,7 @@
             }
             if (validId) {
                 formData.append('provider_valid_id', validId);
-            }
-
-            // Collect certificate data
+            }            // Collect certificate data
             const certificateNames = [];
             const certificateNumbers = [];
             const expiryDates = [];
@@ -668,26 +636,30 @@
                 const fileInput = entry.querySelector('input[name="certificateFile"]');
                 const expiryInput = entry.querySelector('input[name="expiryDate"]');
                 
-                if (nameSelect.value && numberInput.value.trim() && fileInput.files[0]) {
+                if (nameSelect && nameSelect.value && numberInput && numberInput.value.trim() && fileInput && fileInput.files[0]) {
                     certificateNames.push(nameSelect.value);
                     certificateNumbers.push(numberInput.value.trim());
-                    expiryDates.push(expiryInput.value || '');
+                    expiryDates.push(expiryInput && expiryInput.value ? expiryInput.value : '');
                     formData.append('certificateFile', fileInput.files[0]);
                 }
             });
             
-            // Add certificate metadata
-            certificateNames.forEach(name => formData.append('certificateNames', name));
-            certificateNumbers.forEach(number => formData.append('certificateNumbers', number));
-            expiryDates.forEach(date => formData.append('expiryDates', date));
-
-            try {
+            // Add certificate metadata as JSON strings for better handling
+            formData.append('certificateNames', JSON.stringify(certificateNames));
+            formData.append('certificateNumbers', JSON.stringify(certificateNumbers));
+            formData.append('expiryDates', JSON.stringify(expiryDates));try {
+                console.log('Submitting provider registration...', {
+                    email: verifiedEmail,
+                    certificatesCount: validCertificates
+                });
+                
                 const response = await fetch('/auth/provider-verify-register', {
                     method: 'POST',
                     body: formData
                 });
 
                 const data = await response.json();
+                console.log('Registration response:', { status: response.status, data });
 
                 if (response.ok) {
                     showSuccess('Registration successful! Redirecting to login...');
@@ -697,44 +669,26 @@
                         window.location.href = '/fixmo-login';
                     }, 3000);
                 } else {
+                    console.error('Registration failed:', data);
                     showError(data.message || 'Registration failed');
                 }
             } catch (error) {
-                showError('Network error. Please try again.');
                 console.error('Registration error:', error);
+                showError('Network error. Please try again.');
             }
         });        // Resend OTP functionality
-        function resendOTP() {
+        async function resendOTP() {
             if (resendCooldown > 0) return;
               
-            // Make request to resend OTP using verified email
-            fetch('/auth/provider-request-otp', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ provider_email: verifiedEmail })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success || data.message?.includes('sent')) {
-                    showSuccess('New verification code sent to your email');
-                    startResendCooldown();
-                    
-                    // Clear and focus OTP tiles
-                    const otpTiles = document.querySelectorAll('.otp-tile');
-                    otpTiles.forEach(tile => {
-                        tile.value = '';
-                        tile.classList.remove('filled', 'error');
-                    });
-                    otpTiles[0].focus();
-                } else {
-                    showError(data.message || 'Failed to resend verification code');
-                }
-            })
-            .catch(error => {
-                showError('Network error. Please try again.');
-            });
+            const result = await otpVerifier.requestOTP(verifiedEmail);
+            
+            if (result.success) {
+                startResendCooldown();
+                
+                // Clear and focus OTP tiles
+                const otpTiles = document.querySelectorAll('.otp-tile');
+                otpVerifier.clearOTPTiles(otpTiles);
+            }
         }
 
         function startResendCooldown() {
@@ -756,69 +710,15 @@
                     }
                 }, 1000);
             }
-        }
-
-        // OTP Tile functionality
+        }        // OTP Tile functionality
         document.addEventListener('DOMContentLoaded', function() {
             const otpTiles = document.querySelectorAll('.otp-tile');
             
-            otpTiles.forEach((tile, index) => {
-                tile.addEventListener('input', function(e) {
-                    // Only allow digits
-                    e.target.value = e.target.value.replace(/\D/g, '');
-                    
-                    if (e.target.value) {
-                        e.target.classList.add('filled');
-                        e.target.classList.remove('error');
-                        
-                        // Auto-focus next tile
-                        if (index < otpTiles.length - 1) {
-                            otpTiles[index + 1].focus();
-                        }
-                    } else {
-                        e.target.classList.remove('filled');
-                    }
-                });
-                
-                tile.addEventListener('keydown', function(e) {
-                    // Handle backspace
-                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                        otpTiles[index - 1].focus();
-                        otpTiles[index - 1].value = '';
-                        otpTiles[index - 1].classList.remove('filled');
-                    }
-                    
-                    // Handle arrow keys
-                    if (e.key === 'ArrowLeft' && index > 0) {
-                        otpTiles[index - 1].focus();
-                    }
-                    if (e.key === 'ArrowRight' && index < otpTiles.length - 1) {
-                        otpTiles[index + 1].focus();
-                    }
-                });
-                
-                tile.addEventListener('paste', function(e) {
-                    e.preventDefault();
-                    const paste = (e.clipboardData || window.clipboardData).getData('text');
-                    const digits = paste.replace(/\D/g, '').slice(0, 6);
-                    
-                    digits.split('').forEach((digit, i) => {
-                        if (otpTiles[i]) {
-                            otpTiles[i].value = digit;
-                            otpTiles[i].classList.add('filled');
-                            otpTiles[i].classList.remove('error');
-                        }
-                    });
-                    
-                    // Focus on next empty tile or submit if all filled
-                    const nextEmpty = Array.from(otpTiles).find(tile => !tile.value);
-                    if (nextEmpty) {
-                        nextEmpty.focus();
-                    } else if (digits.length === 6) {
-                        document.getElementById('otpVerificationForm').dispatchEvent(new Event('submit'));
-                    }
-                });
-            });
+            // Use the OTP verifier to set up tiles
+            setTimeout(() => {                if (otpVerifier) {
+                    otpVerifier.setupOTPTiles(otpTiles);
+                }
+            }, 100);
         });
 
         // Add Certificate functionality
