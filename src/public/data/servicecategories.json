@@ -84,16 +84,21 @@
     "certificate": "Plumbing NC I/II/III",
     "categories": {
       "Repair": [
-        "Leaking Faucet Repair",
-        "Toilet Flush Repair"
+        "Leaking Repair",
+        "Toilet Repair",
+        "Septic Tank Repair"
       ],
       "Installation": [
         "Sink Installation",
-        "Toilet Installation"
+        "Toilet Installation",
+        "Septic Tank Installation"
       ],
       "Cleaning": [
         "Drain Declogging",
-        "Pipe Flushing"
+        "Pipe Flushing",
+        "Septic Tank Cleaning",
+        "Water Heater Descaling",
+        "Faucet Cleaning"
       ]
     }
   },

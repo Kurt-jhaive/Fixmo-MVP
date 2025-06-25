@@ -106,9 +106,7 @@ class CertificateManager {
                 this.currentSearch = e.target.value;
                 this.filterAndDisplayCertificates();
             });
-        }
-
-        // Add certificate form submission
+        }        // Add certificate form submission
         const addCertificateForm = document.getElementById('addCertificateForm');
         if (addCertificateForm) {
             addCertificateForm.addEventListener('submit', (e) => {
@@ -116,6 +114,16 @@ class CertificateManager {
                 this.handleAddCertificate();
             });
         }
+
+        // Handle certificate view button clicks using event delegation
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.certificate-view-btn')) {
+                const button = e.target.closest('.certificate-view-btn');
+                const filePath = button.getAttribute('data-file-path');
+                console.log('Certificate view button clicked with file path:', filePath);
+                this.viewCertificate(filePath);
+            }
+        });
     }
 
     async loadCertificates() {
@@ -135,8 +143,7 @@ class CertificateManager {
             if (response.ok) {
                 const responseData = await response.json();
                 console.log('Raw certificates response:', responseData);
-                
-                if (responseData.success && Array.isArray(responseData.data)) {
+                  if (responseData.success && Array.isArray(responseData.data)) {
                     this.certificates = responseData.data.map(cert => ({
                         certificate_id: cert.certificate_id,
                         certificate_name: cert.certificate_name,
@@ -148,6 +155,10 @@ class CertificateManager {
                     }));
                     console.log('Certificates processed:', this.certificates.length);
                     console.log('Sample certificate:', this.certificates[0]);
+                    console.log('Loaded certificates with file paths:');
+                    this.certificates.forEach(cert => {
+                        console.log(`- ${cert.certificate_name}: ${cert.certificate_file_path}`);
+                    });
                 } else if (Array.isArray(responseData)) {
                     this.certificates = responseData;
                 } else {
@@ -538,9 +549,8 @@ class CertificateManager {
                                 <i class="fas fa-${statusIcon}"></i>
                                 <span>${(cert.certificate_status || 'Pending')}</span>
                             </div>
-                        </div>
-                        <div class="certificate-actions">
-                            <button class="btn-view" onclick="window.certificateManager.viewCertificate('${cert.certificate_file_path || ''}')" title="View Certificate">
+                        </div>                        <div class="certificate-actions">
+                            <button class="btn-view certificate-view-btn" data-file-path="${cert.certificate_file_path || ''}" title="View Certificate">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
@@ -563,18 +573,163 @@ class CertificateManager {
                     </div>
                 </div>
             `;
-        }).join('');
-    }
+        }).join('');    }
 
     viewCertificate(filePath) {
+        console.log('viewCertificate called with filePath:', filePath);
         if (filePath) {
             console.log('Opening certificate file:', filePath);
-            window.open(filePath, '_blank');
+            // Use the simple certificate viewer
+            if (window.showCertificateViewer) {
+                window.showCertificateViewer(filePath);
+            } else {
+                // Fallback to simple window open
+                window.open(filePath, '_blank');
+            }
         } else {
+            console.log('No file path provided');
             this.showToast('Certificate file not found', 'error');
         }
+    }
+
+    showCertificateModal(filePath) {
+        console.log('showCertificateModal called with filePath:', filePath);
+        
+        // Clean up the file path to ensure proper formatting
+        let cleanPath = filePath;
+        if (filePath.startsWith('/uploads/')) {
+            cleanPath = filePath;
+        } else if (filePath.startsWith('uploads/')) {
+            cleanPath = '/' + filePath;
+        } else {
+            // Handle malformed paths like "/uploadscertificatescertificateFile-..."
+            if (filePath.includes('uploads') && !filePath.includes('/uploads/')) {
+                cleanPath = filePath.replace(/uploads([^\/])/, '/uploads/$1');
+            }
+        }
+        
+        console.log('Cleaned path:', cleanPath);
+
+        // Get or create the certificate viewer modal
+        let modal = document.getElementById('certificateViewerModal');
+        if (!modal) {
+            console.log('Creating new certificate viewer modal');
+            modal = this.createCertificateViewerModal();
+            document.body.appendChild(modal);
+        } else {
+            console.log('Using existing certificate viewer modal');
+        }
+
+        // Determine file type
+        const fileExtension = cleanPath.split('.').pop().toLowerCase();
+        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension);
+        const isPDF = fileExtension === 'pdf';
+
+        // Update modal content
+        const modalContent = modal.querySelector('.certificate-viewer-content');
+        const modalTitle = modal.querySelector('.certificate-viewer-title');
+        
+        modalTitle.textContent = `Certificate Viewer - ${fileExtension.toUpperCase()}`;
+
+        if (isImage) {
+            modalContent.innerHTML = `
+                <div class="certificate-image-container">
+                    <img src="${cleanPath}" alt="Certificate" class="certificate-image" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="certificate-error" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Unable to load certificate image</p>
+                        <a href="${cleanPath}" target="_blank" class="btn-download">
+                            <i class="fas fa-download"></i> Download File
+                        </a>
+                    </div>
+                </div>
+            `;
+        } else if (isPDF) {
+            modalContent.innerHTML = `
+                <div class="certificate-pdf-container">
+                    <iframe src="${cleanPath}" class="certificate-pdf" frameborder="0">
+                        <div class="certificate-error">
+                            <i class="fas fa-file-pdf"></i>
+                            <p>Unable to display PDF in browser</p>
+                            <a href="${cleanPath}" target="_blank" class="btn-download">
+                                <i class="fas fa-download"></i> Open PDF
+                            </a>
+                        </div>
+                    </iframe>
+                </div>
+            `;
+        } else {
+            modalContent.innerHTML = `
+                <div class="certificate-download-container">
+                    <div class="certificate-info">
+                        <i class="fas fa-file"></i>
+                        <h3>Document File</h3>
+                        <p>This file cannot be previewed in the browser.</p>
+                        <a href="${cleanPath}" target="_blank" class="btn-download">
+                            <i class="fas fa-download"></i> Download File
+                        </a>
+                    </div>
+                </div>
+            `;        }
+
+        // Show the modal
+        console.log('Showing modal...');
+        modal.classList.add('show');
+        
+        // Force reflow and ensure modal is visible
+        setTimeout(() => {
+            console.log('Modal should now be visible');
+            console.log('Modal classes:', modal.className);
+            console.log('Modal display style:', window.getComputedStyle(modal).display);
+        }, 100);
+    }    createCertificateViewerModal() {
+        console.log('Creating certificate viewer modal');
+        const modal = document.createElement('div');
+        modal.id = 'certificateViewerModal';
+        modal.className = 'modal certificate-viewer-modal';
+        
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title certificate-viewer-title">Certificate Viewer</h5>
+                        <button type="button" class="modal-close-btn" onclick="window.certificateManager.closeCertificateModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="certificate-viewer-content">
+                            <!-- Content will be dynamically inserted -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" onclick="window.certificateManager.closeCertificateModal()">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add click outside to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeCertificateModal();
+            }
+        });
+
+        console.log('Certificate viewer modal created successfully');
+        return modal;
+    }
+
+    closeCertificateModal() {
+        const modal = document.getElementById('certificateViewerModal');
+        if (modal) {
+            modal.classList.remove('show');
+        }
     }    hideModals() {
-        const modals = document.querySelectorAll('#addCertificateModal, #viewCertificatesModal');
+        const modals = document.querySelectorAll('#addCertificateModal, #viewCertificatesModal, #certificateViewerModal');
         modals.forEach(modal => {
             if (modal) {
                 modal.classList.remove('show');
@@ -612,6 +767,13 @@ class CertificateManager {
                 toast.parentNode.removeChild(toast);
             }
         }, 5000);
+    }
+
+    // Test function to manually show certificate modal
+    testCertificateModal() {
+        console.log('Testing certificate modal...');
+        const testFilePath = '/uploads/certificates/certificateFile-1750832283633-397345785.png';
+        this.showCertificateModal(testFilePath);
     }
 }
 

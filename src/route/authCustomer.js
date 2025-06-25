@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import {
   login,
   requestOTP,
@@ -25,19 +26,64 @@ import {
 
 const router = express.Router();
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
-});
-const fileFilter = (req, file, cb) => {
-  const ext = path.extname(file.originalname).toLowerCase();
-  if (ext === '.png' || ext === '.jpg' || ext === '.jpeg') {
-    cb(null, true);
-  } else {
-    cb(new Error('Only .png, .jpg and .jpeg files are allowed!'));
+// Ensure upload directories exist
+const ensureDirectoryExists = (dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 };
-const upload = multer({ storage, fileFilter });
+
+// Create necessary directories
+ensureDirectoryExists('uploads/customer-profiles');
+ensureDirectoryExists('uploads/customer-ids');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let uploadPath = 'uploads/';
+    
+    switch (file.fieldname) {
+      case 'profile_photo':
+        uploadPath += 'customer-profiles/';
+        break;
+      case 'valid_id':
+        uploadPath += 'customer-ids/';
+        break;
+      default:
+        uploadPath += 'general/';
+    }
+    
+    ensureDirectoryExists(uploadPath);
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  console.log('Customer file filter check:', {
+    fieldname: file.fieldname,
+    mimetype: file.mimetype,
+    originalname: file.originalname
+  });
+
+  // Only accept image files for customer uploads
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error(`${file.fieldname} must be an image file (JPG, PNG, GIF, etc.)`), false);
+  }
+};
+const upload = multer({ 
+  storage, 
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit per file
+    files: 2 // Maximum 2 files (1 profile + 1 ID)
+  }
+});
 
 router.post('/login', login);
 router.post('/request-otp', upload.fields([
