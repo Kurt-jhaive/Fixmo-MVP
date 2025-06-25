@@ -242,16 +242,13 @@
                 <div class="services-search">
                     <i class="fas fa-search search-icon"></i>
                     <input type="text" id="servicesSearchInput" placeholder="Search services...">
-                </div>
-                <div class="services-filters">
+                </div>                <div class="services-filters">
                     <button class="filter-btn active" data-filter="all">All</button>
                     <button class="filter-btn" data-filter="active">Active</button>
                     <button class="filter-btn" data-filter="inactive">Inactive</button>
                     <button class="filter-btn" data-filter="draft">Draft</button>
                 </div>
-            </div>
-
-            <div class="services-stats">
+            </div>            <div class="services-stats">
                 <div class="services-stat">
                     <i class="fas fa-tools"></i>
                     <span class="count" id="totalServicesCount">0</span>
@@ -380,11 +377,11 @@
                 <button class="modal-close" id="editServiceModalClose">
                     <i class="fas fa-times"></i>
                 </button>
-            </div>
-            <div class="modal-body">
+            </div>            <div class="modal-body">
                 <form id="editServiceForm">
                     <input type="hidden" id="editServiceId" name="serviceId">
-                      <div class="form-row">
+                    
+                    <div class="form-row">
                         <div class="form-group">
                             <label for="editServiceTitle">Service Title</label>
                             <input type="text" id="editServiceTitle" name="serviceTitle" class="form-control" 
@@ -526,27 +523,26 @@
                         <input type="text" id="certificateNumber" name="certificateNumber" 
                                class="form-control" placeholder="e.g., ABC-123-456" required>
                         <small class="form-help">Enter the official certificate number</small>
-                    </div>
-
-                    <div class="form-group">
+                    </div>                    <div class="form-group">
                         <label for="certificateFile">
                             <i class="fas fa-upload"></i> Certificate File *
-                        </label>                        <div class="file-upload-area" id="certificateFileUpload">
+                        </label>
+                        <div class="file-upload-container">
                             <input type="file" id="certificateFile" name="certificateFile" 
-                                   accept=".jpg,.jpeg,.png" required>
-                            <div class="file-upload-placeholder">
+                                   accept=".jpg,.jpeg,.png" required class="file-input">
+                            <label for="certificateFile" class="file-upload-label">
                                 <i class="fas fa-cloud-upload-alt"></i>
-                                <p>Click to upload or drag and drop</p>
-                                <small>JPG, JPEG, PNG images only (Max 10MB)</small>
-                            </div>
-                            <div class="file-upload-preview" style="display: none;">
-                                <i class="fas fa-file"></i>
-                                <span class="file-name"></span>
-                                <button type="button" class="remove-file-btn">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
+                                <span class="file-text">Choose File</span>
+                                <span class="file-help">No file chosen</span>
+                            </label>
                         </div>
+                        <div id="selectedFileInfo" class="selected-file-info" style="display: none;">
+                            <!-- File info will be displayed here -->
+                        </div>
+                        <small class="form-help">
+                            <i class="fas fa-info-circle"></i> 
+                            JPG, JPEG, PNG images only (Max 10MB)
+                        </small>
                     </div>
 
                     <div class="form-group">
@@ -609,9 +605,7 @@
                         <button class="filter-btn" data-filter="pending">Pending</button>
                         <button class="filter-btn" data-filter="rejected">Rejected</button>
                     </div>
-                </div>
-
-                <div class="certificates-stats">
+                </div>                <div class="certificates-stats">
                     <div class="certificates-stat">
                         <i class="fas fa-certificate"></i>
                         <span class="count" id="totalCertificatesCount">0</span>

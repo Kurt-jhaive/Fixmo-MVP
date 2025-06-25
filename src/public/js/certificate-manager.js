@@ -82,6 +82,32 @@ class CertificateManager {
             }
         });
 
+        // Certificate filters
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const filter = btn.getAttribute('data-filter');
+                
+                // Update active state
+                filterButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Update current filter and refresh display
+                this.currentFilter = filter;
+                this.filterAndDisplayCertificates();
+            });
+        });
+
+        // Search input
+        const searchInput = document.getElementById('certificatesSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.currentSearch = e.target.value;
+                this.filterAndDisplayCertificates();
+            });
+        }
+
         // Add certificate form submission
         const addCertificateForm = document.getElementById('addCertificateForm');
         if (addCertificateForm) {
@@ -150,7 +176,7 @@ class CertificateManager {
             console.log('Loading service categories...');
             const token = localStorage.getItem('fixmo_provider_token');
             
-            const response = await fetch('/api/service-categories', {
+            const response = await fetch('/api/services/categories', {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -285,9 +311,7 @@ class CertificateManager {
             infoContainer.innerHTML = '';
             infoContainer.style.display = 'none';
         }
-    }
-
-    handleFileSelect(file) {
+    }    handleFileSelect(file) {
         if (!file) return;
 
         const maxSize = 10 * 1024 * 1024; // 10MB
@@ -303,12 +327,21 @@ class CertificateManager {
             return;
         }
 
+        // Update the file upload label
+        const fileLabel = document.querySelector('.file-upload-label');
+        if (fileLabel) {
+            const fileText = fileLabel.querySelector('.file-text');
+            const fileHelp = fileLabel.querySelector('.file-help');
+            if (fileText) fileText.textContent = 'Change File';
+            if (fileHelp) fileHelp.textContent = file.name;
+        }
+
         // Show file info
         const fileInfo = document.getElementById('selectedFileInfo');
         if (fileInfo) {
             fileInfo.innerHTML = `
                 <div class="selected-file">
-                    <i class="fas fa-file-alt"></i>
+                    <i class="fas fa-file-image"></i>
                     <span class="file-name">${file.name}</span>
                     <span class="file-size">(${(file.size / 1024).toFixed(1)} KB)</span>
                     <button type="button" class="remove-file-btn" onclick="window.certificateManager.removeSelectedFile()">
@@ -320,16 +353,23 @@ class CertificateManager {
         }
 
         console.log('File selected:', file.name, file.size, file.type);
-    }
-
-    removeSelectedFile() {
+    }    removeSelectedFile() {
         const fileInput = document.getElementById('certificateFile');
         const fileInfo = document.getElementById('selectedFileInfo');
+        const fileLabel = document.querySelector('.file-upload-label');
         
         if (fileInput) fileInput.value = '';
         if (fileInfo) {
             fileInfo.innerHTML = '';
             fileInfo.style.display = 'none';
+        }
+        
+        // Reset the file upload label
+        if (fileLabel) {
+            const fileText = fileLabel.querySelector('.file-text');
+            const fileHelp = fileLabel.querySelector('.file-help');
+            if (fileText) fileText.textContent = 'Choose File';
+            if (fileHelp) fileHelp.textContent = 'No file chosen';
         }
     }
 
@@ -360,11 +400,11 @@ class CertificateManager {
             });
 
             if (response.ok) {
-                const result = await response.json();
-                this.showToast('Certificate uploaded successfully! It will be reviewed shortly.', 'success');
+                const result = await response.json();                this.showToast('Certificate uploaded successfully! It will be reviewed shortly.', 'success');
                 this.hideModals();
                 this.resetAddCertificateForm();
                 await this.loadCertificates();
+                this.updateCertificateStats();
                 this.populateCertificateDropdown();
             } else {
                 const error = await response.json();
@@ -406,6 +446,34 @@ class CertificateManager {
         }
     }
 
+    updateCertificateStats() {
+        console.log('Updating certificate stats...');
+        
+        const total = this.certificates.length;
+        const approved = this.certificates.filter(cert => 
+            cert.certificate_status && cert.certificate_status.toLowerCase() === 'approved'
+        ).length;
+        const pending = this.certificates.filter(cert => 
+            cert.certificate_status && cert.certificate_status.toLowerCase() === 'pending'
+        ).length;
+        const rejected = this.certificates.filter(cert => 
+            cert.certificate_status && cert.certificate_status.toLowerCase() === 'rejected'
+        ).length;
+
+        // Update the count elements
+        const totalElement = document.getElementById('totalCertificatesCount');
+        const approvedElement = document.getElementById('approvedCertificatesCount');
+        const pendingElement = document.getElementById('pendingCertificatesCount');
+        const rejectedElement = document.getElementById('rejectedCertificatesCount');
+
+        if (totalElement) totalElement.textContent = total;
+        if (approvedElement) approvedElement.textContent = approved;
+        if (pendingElement) pendingElement.textContent = pending;
+        if (rejectedElement) rejectedElement.textContent = rejected;
+
+        console.log('Certificate stats updated:', { total, approved, pending, rejected });
+    }
+
     filterAndDisplayCertificates() {
         let filteredCertificates = [...this.certificates];
 
@@ -424,8 +492,8 @@ class CertificateManager {
                 (cert.certificate_status && cert.certificate_status.toLowerCase().includes(searchTerm))
             );
         }
-        
-        this.displayCertificates(filteredCertificates);
+          this.displayCertificates(filteredCertificates);
+        this.updateCertificateStats();
     }
 
     displayCertificates(certificates = []) {

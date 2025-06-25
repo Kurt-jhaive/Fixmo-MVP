@@ -1,5 +1,6 @@
 // Service Management JavaScript
-class ServiceManager {    constructor() {
+class ServiceManager {
+    constructor() {
         this.services = [];
         this.categories = [];
         this.certificates = [];
@@ -18,9 +19,10 @@ class ServiceManager {    constructor() {
             console.log('Service manager already initialized');
             return;
         }
-
         try {
-            console.log('Initializing service manager...');            // Load initial data
+            console.log('Initializing service manager...');
+            
+            // Load initial data
             await Promise.all([
                 this.loadServices(),
                 this.loadCategories(),
@@ -36,17 +38,21 @@ class ServiceManager {    constructor() {
             console.error('Error initializing service manager:', error);
             this.showToast('Error loading service data', 'error');
         }
-    }    setupEventListeners() {
-        console.log('Setting up service manager event listeners...');        // Add service buttons (main button and empty state button)
+    }
+
+    setupEventListeners() {
+        console.log('Setting up service manager event listeners...');
+        
+        // Add service buttons (main button and empty state button)
         const setupAddServiceButtons = () => {
             const addServiceBtn = document.getElementById('addServiceBtn');
             const addFirstServiceBtn = document.getElementById('addFirstServiceBtn');
             const clearFiltersBtn = document.getElementById('clearFiltersBtn');
             
             console.log('Add service button found:', !!addServiceBtn);
-            console.log('Add first service button found:', !!addFirstServiceBtn);
-            console.log('Clear filters button found:', !!clearFiltersBtn);
-              // Handle main add service button
+            console.log('Add first service button found:', !!addFirstServiceBtn);            console.log('Clear filters button found:', !!clearFiltersBtn);
+            
+            // Handle main add service button
             if (addServiceBtn) {
                 // Remove any existing listeners
                 addServiceBtn.replaceWith(addServiceBtn.cloneNode(true));
@@ -137,13 +143,19 @@ class ServiceManager {    constructor() {
                 this.currentFilter = e.target.dataset.filter;
                 this.filterServices();
             });
-        });
-
-        // Confirm delete
+        });        // Confirm delete
         const confirmDeleteBtn = document.getElementById('confirmDelete');
         if (confirmDeleteBtn) {
             confirmDeleteBtn.addEventListener('click', () => {
                 this.confirmDeleteService();
+            });
+        }
+
+        // Certificate selection handling for duplicate prevention
+        const certificateSelect = document.getElementById('serviceCertificate');
+        if (certificateSelect) {
+            certificateSelect.addEventListener('change', (e) => {
+                this.handleCertificateSelection(e.target.value);
             });
         }
 
@@ -206,7 +218,9 @@ class ServiceManager {    constructor() {
             console.error('Error loading categories:', error);
             this.categories = [];
         }
-    }    async loadCertificates() {
+    }
+
+    async loadCertificates() {
         try {
             const token = localStorage.getItem('fixmo_provider_token');
             
@@ -347,7 +361,7 @@ class ServiceManager {    constructor() {
         if (this.setupAddServiceButtons) {
             this.setupAddServiceButtons();
         }
-    }updateServiceStats() {
+    }    updateServiceStats() {
         const total = this.services.length;
         const active = this.services.filter(s => s.is_available && s.status !== 'draft').length;
         const inactive = this.services.filter(s => !s.is_available && s.status !== 'draft').length;
@@ -366,9 +380,7 @@ class ServiceManager {    constructor() {
     }
 
     getFilteredServices() {
-        let filtered = [...this.services];
-
-        // Apply status filter
+        let filtered = [...this.services];        // Apply status filter
         if (this.currentFilter !== 'all') {
             filtered = filtered.filter(service => {
                 switch (this.currentFilter) {
@@ -466,9 +478,7 @@ class ServiceManager {    constructor() {
                 
                 <div class="service-details">
                     <strong>Certificates:</strong> ${this.escapeHtml(certificateNames)}
-                </div>
-                
-                <div class="service-actions">
+                </div>                <div class="service-actions">
                     <button class="btn btn-secondary" onclick="window.serviceManager.editService(${service.listing_id || service.service_id})">
                         <i class="fas fa-edit"></i> Edit
                     </button>
@@ -602,7 +612,6 @@ class ServiceManager {    constructor() {
             };
 
             console.log('Sending service data:', serviceData);
-
             const response = await fetch('/api/services/services', {
                 method: 'POST',
                 credentials: 'include',
@@ -658,8 +667,7 @@ class ServiceManager {    constructor() {
                 status: formData.get('serviceStatus'),
                 is_available: formData.get('serviceStatus') === 'active'
             };
-
-            const response = await fetch(`/api/services/service/${serviceId}`, {
+            const response = await fetch(`/api/services/services/${serviceId}`, {
                 method: 'PUT',
                 credentials: 'include',
                 headers: {
@@ -682,9 +690,7 @@ class ServiceManager {    constructor() {
             console.error('Error updating service:', error);
             this.showToast('Error updating service', 'error');
         }
-    }
-
-    async toggleService(serviceId) {
+    }    async toggleService(serviceId) {
         try {
             const response = await fetch(`/api/services/services/${serviceId}/toggle`, {
                 method: 'PATCH',
@@ -715,9 +721,10 @@ class ServiceManager {    constructor() {
         document.getElementById('deleteServiceName').textContent = serviceName;
           const modal = document.getElementById('confirmDeleteModal');
         if (modal) {
-            modal.classList.add('show');
-        }
-    }    async confirmDeleteService() {
+            modal.classList.add('show');        }
+    }
+
+    async confirmDeleteService() {
         if (!this.serviceToDelete) return;
 
         try {
@@ -950,6 +957,23 @@ class ServiceManager {    constructor() {
         try {
             const serviceData = JSON.parse(optionValue);
             
+            // Check if provider already has a service with this certificate
+            const certificateUsed = this.services.find(existingService => {
+                // Check if any of the existing service's certificates match the selected service's certificate
+                return existingService.certificates && 
+                       existingService.certificates.some(cert => cert.certificate_name === serviceData.certificate);
+            });
+
+            if (certificateUsed) {
+                this.showToast(`You already have a service "${certificateUsed.service_title}" using the certificate "${serviceData.certificate}". Please choose a different service or edit your existing service.`, 'error');
+                
+                // Reset the dropdown
+                const dropdown = document.getElementById('serviceDropdown');
+                if (dropdown) dropdown.value = '';
+                
+                return;
+            }
+            
             // Clear previous selections and add new one (single selection mode)
             this.selectedServices = [serviceData];
             
@@ -969,7 +993,7 @@ class ServiceManager {    constructor() {
             console.error('Error parsing selected service:', error);
             this.showToast('Error selecting service. Please try again.', 'error');
         }
-    }    updateServiceTitle(serviceName) {
+    }updateServiceTitle(serviceName) {
         const serviceTitleInput = document.getElementById('serviceTitle');
         if (serviceTitleInput) {
             serviceTitleInput.value = serviceName;
@@ -1084,8 +1108,7 @@ class ServiceManager {    constructor() {
         if (removedService) {
             this.showToast(`Service "${removedService.serviceName}" removed`, 'info');
         }
-        
-        console.log('Remaining selected services:', this.selectedServices.length);
+          console.log('Remaining selected services:', this.selectedServices.length);
     }
 
     // Toggle service status (activate/deactivate)
@@ -1096,15 +1119,12 @@ class ServiceManager {    constructor() {
 
         try {
             const token = localStorage.getItem('fixmo_provider_token');
-            
-            const response = await fetch(`/api/services/${serviceId}/status`, {
+              const response = await fetch(`/api/services/services/${serviceId}/toggle`, {
                 method: 'PATCH',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token && { 'Authorization': `Bearer ${token}` })
-                },
-                body: JSON.stringify({ status: 'inactive' })
+                    ...(token && { 'Authorization': `Bearer ${token}` })                }
             });
 
             if (response.ok) {
@@ -1116,23 +1136,20 @@ class ServiceManager {    constructor() {
                 this.showToast(errorData.message || 'Failed to deactivate service', 'error');
             }
         } catch (error) {
-            console.error('Error deactivating service:', error);
-            this.showToast('Error deactivating service', 'error');
+            console.error('Error deactivating service:', error);            this.showToast('Error deactivating service', 'error');
         }
     }
 
     async activateService(serviceId, serviceName) {
         try {
             const token = localStorage.getItem('fixmo_provider_token');
-            
-            const response = await fetch(`/api/services/${serviceId}/status`, {
+              const response = await fetch(`/api/services/services/${serviceId}/toggle`, {
                 method: 'PATCH',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     ...(token && { 'Authorization': `Bearer ${token}` })
-                },
-                body: JSON.stringify({ status: 'active' })
+                }
             });
 
             if (response.ok) {

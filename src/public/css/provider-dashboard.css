@@ -2217,3 +2217,46 @@ input[readonly] {
     font-weight: 500;
     font-size: 0.9rem;
 }
+
+/* Certificate Warning Styles */
+.certificate-warning {
+    margin-top: 0.5rem;
+}
+
+.certificate-warning .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.certificate-warning .alert-warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: var(--provider-warning);
+}
+
+.certificate-warning .alert i {
+    font-size: 1rem;
+}
+
+.certificate-warning .alert strong {
+    font-weight: 600;
+}
+
+/* Disabled submit button styles */
+button[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--provider-gray) !important;
+}
+
+button[disabled]:hover {
+    background-color: var(--provider-gray) !important;
+    transform: none !important;
+}
+
+/* Toast Container */
