@@ -381,16 +381,14 @@
                 <form id="editServiceForm">
                     <input type="hidden" id="editServiceId" name="serviceId">
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editServiceTitle">Service Title</label>
-                            <input type="text" id="editServiceTitle" name="serviceTitle" class="form-control" 
-                                   placeholder="Service title" readonly>
-                            <small class="form-help">
-                                <i class="fas fa-info-circle"></i>
-                                Service title is automatically set based on your selected certificate and cannot be changed.
-                            </small>
-                        </div>
+                    <div class="form-group">
+                        <label for="editServiceTitle">Service Title</label>
+                        <input type="text" id="editServiceTitle" name="serviceTitle" class="form-control" 
+                               placeholder="Service title" readonly>
+                        <small class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Service title is automatically set based on your selected certificate and cannot be changed.
+                        </small>
                     </div>
 
                     <div class="form-group">
@@ -399,42 +397,10 @@
                                   placeholder="Describe your service in detail. What do you offer? What makes your service special?" required></textarea>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editServicePrice">Starting Price (₱) *</label>
-                            <input type="number" id="editServicePrice" name="servicePrice" class="form-control" 
-                                   min="0" step="0.01" placeholder="500.00" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editServiceDuration">Estimated Duration (hours)</label>
-                            <input type="number" id="editServiceDuration" name="serviceDuration" class="form-control" 
-                                   min="0.5" step="0.5" placeholder="2.0">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editServiceLocation">Service Location</label>
-                            <select id="editServiceLocation" name="serviceLocation" class="form-control">
-                                <option value="customer">At Customer's Location</option>
-                                <option value="provider">At My Workshop</option>
-                                <option value="both">Both Locations</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="editServiceStatus">Status</label>
-                            <select id="editServiceStatus" name="serviceStatus" class="form-control">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="draft">Draft</option>
-                            </select>
-                        </div>
-                    </div>
-
                     <div class="form-group">
-                        <label for="editServiceRequirements">Requirements & Notes</label>
-                        <textarea id="editServiceRequirements" name="serviceRequirements" class="form-control" rows="3" 
-                                  placeholder="Any special requirements, tools needed, or additional notes for customers"></textarea>
+                        <label for="editServicePrice">Starting Price (₱) *</label>
+                        <input type="number" id="editServicePrice" name="servicePrice" class="form-control" 
+                               min="0" step="0.01" placeholder="500.00" required>
                     </div>
 
                     <div class="form-actions">

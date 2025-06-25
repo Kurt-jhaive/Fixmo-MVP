@@ -208,9 +208,7 @@ class CertificateManager {
             console.error('Error loading service categories:', error);
             this.serviceCategories = [];
         }
-    }
-
-    async populateCertificateDropdown() {
+    }    async populateCertificateDropdown() {
         const certificateSelect = document.getElementById('certificateSelect');
         if (!certificateSelect) {
             console.error('Certificate select element not found');
@@ -218,21 +216,17 @@ class CertificateManager {
         }
 
         try {
-            console.log('Loading certificate types from API...');
-            const token = localStorage.getItem('fixmo_provider_token');
+            console.log('Loading certificate types from servicecategories.json...');
             
-            const response = await fetch('/api/certificates/valid-types', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token && { 'Authorization': `Bearer ${token}` })
-                }
-            });
-
+            // Load the service categories JSON file
+            const response = await fetch('/data/servicecategories.json');
+            
             if (response.ok) {
-                const certificateTypes = await response.json();
-                console.log('Certificate types loaded:', certificateTypes);
+                const serviceCategories = await response.json();
+                console.log('Service categories loaded:', serviceCategories.length, 'certificates');
+                
+                // Extract certificate names from the JSON
+                const certificateTypes = serviceCategories.map(item => item.certificate);
                 
                 certificateSelect.innerHTML = '<option value="">Choose a certificate...</option>';
                 
@@ -242,34 +236,33 @@ class CertificateManager {
                     option.textContent = certType;
                     certificateSelect.appendChild(option);
                 });
+                
+                console.log('Certificate dropdown populated with', certificateTypes.length, 'certificates');
             } else {
-                console.error('Failed to load certificate types');
+                console.error('Failed to load service categories JSON');
                 this.populateFallbackCertificateTypes(certificateSelect);
             }
         } catch (error) {
-            console.error('Error loading certificate types:', error);
+            console.error('Error loading service categories:', error);
             this.populateFallbackCertificateTypes(certificateSelect);
         }
-    }
-
-    populateFallbackCertificateTypes(certificateSelect) {
+    }    populateFallbackCertificateTypes(certificateSelect) {
         certificateSelect.innerHTML = '<option value="">Choose a certificate...</option>';
         
+        // Fallback certificate types based on servicecategories.json structure
         const certificateTypes = [
-            'Electrical Technician Certificate',
-            'Plumbing License',
-            'HVAC Technician Certificate',
-            'Carpentry Skills Certificate',
-            'Electronics Repair Certificate',
             'Computer Systems Servicing NC II',
-            'Automotive Servicing NC I',
-            'Welding NC I',
-            'Food and Beverage Services NC II',
-            'Housekeeping NC II',
-            'Massage Therapy Certificate',
-            'Hair Care Services NC II',
-            'Nail Care Services NC II',
-            'Beauty Care NC II'
+            'Consumer Electronics Servicing NC II/III',
+            'Electronic Products Assembly and Servicing NC II',
+            'RAC Servicing NC I/II',
+            'Electrical Installation and Maintenance NC II/III',
+            'Plumbing NC I/II/III',
+            'Carpentry NC II/III',
+            'Masonry NC I/II',
+            'Tile Setting NC II',
+            'Shielded Metal Arc Welding (SMAW) NC I/II',
+            'Gas Metal Arc Welding (GMAW) NC II',
+            'Cable Television (CATV) Installation NC II'
         ];
         
         certificateTypes.forEach(certType => {
@@ -400,8 +393,7 @@ class CertificateManager {
 
         try {
             const token = localStorage.getItem('fixmo_provider_token');
-            
-            const response = await fetch('/api/certificates', {
+              const response = await fetch('/api/certificates/upload', {
                 method: 'POST',
                 credentials: 'include',
                 headers: {

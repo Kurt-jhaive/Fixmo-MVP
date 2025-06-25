@@ -263,19 +263,26 @@ class ManageServices {
             this.showNotification(error.message, 'error');
         } finally {
             this.hideLoading();
-        }
-    }
+        }    }
 
     async handleEditService() {
         const form = document.getElementById('editServiceForm');
         const formData = new FormData(form);
         
+        // Validate required fields (excluding title since it's readonly)
+        const description = formData.get('edit_service_description').trim();
+        const price = parseFloat(formData.get('edit_service_startingprice'));
+        
+        if (!description || isNaN(price)) {
+            this.showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+        
         const serviceId = parseInt(formData.get('service_id'));
         const serviceData = {
-            certificate_id: parseInt(formData.get('edit_certificate_id')),
             service_title: formData.get('edit_service_title').trim(),
-            service_description: formData.get('edit_service_description').trim(),
-            service_startingprice: parseFloat(formData.get('edit_service_startingprice'))
+            service_description: description,
+            service_startingprice: price
         };
 
         try {
@@ -367,7 +374,6 @@ class ManageServices {
 
         // Populate form with service data
         document.getElementById('edit_service_id').value = service.listing_id;
-        document.getElementById('edit_certificate_id').value = service.certificate_id || '';
         document.getElementById('edit_service_title').value = service.service_title;
         document.getElementById('edit_service_description').value = service.service_description;
         document.getElementById('edit_service_startingprice').value = service.service_startingprice;
