@@ -48,8 +48,8 @@ class ProviderDashboard {
             console.log('Checking authentication...');
             console.log('Token from localStorage:', this.token);
             
-            // Check if session is valid by making a request to profile endpoint
-            const response = await fetch('/auth/profile', {
+            // Check if session is valid by making a request to provider profile endpoint
+            const response = await fetch('/api/serviceProvider/profile', {
                 method: 'GET',
                 credentials: 'include', // Include session cookies
                 headers: {
@@ -165,7 +165,7 @@ class ProviderDashboard {
     }    async fetchProviderProfile() {
         try {
             console.log('Fetching provider profile...');
-            const response = await fetch('/auth/profile', {
+            const response = await fetch('/api/serviceProvider/profile', {
                 method: 'GET',
                 credentials: 'include', // Include session cookies
                 headers: {
@@ -241,91 +241,40 @@ class ProviderDashboard {
             };
             return this.statsData;
         }
-    }
-
-    async fetchProviderServices() {
-        try {
-            const response = await fetch('/auth/my-services', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(this.token && { 'Authorization': `Bearer ${this.token}` })
-                }
-            });
-
-            if (response.ok) {
-                const servicesData = await response.json();
-                this.servicesData = servicesData || [];
-                return servicesData;
-            } else if (response.status === 401) {
-                throw new Error('Authentication required');
-            } else {
-                this.servicesData = [];
-                return [];
-            }
+    }    async fetchProviderServices() {        try {
+            // For now, return empty array since endpoint doesn't exist yet
+            console.log('Fetching provider services... (using mock data)');
+            this.servicesData = [];
+            return this.servicesData;
         } catch (error) {
             console.error('Error fetching provider services:', error);
             this.servicesData = [];
-            return [];
+            return this.servicesData;
         }
-    }
-
-    async fetchProviderBookings() {
+    }    async fetchProviderBookings() {
         try {
-            const response = await fetch('/auth/my-bookings', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(this.token && { 'Authorization': `Bearer ${this.token}` })
-                }
-            });
-
-            if (response.ok) {
-                const bookingsData = await response.json();
-                this.bookingsData = bookingsData || [];
-                return bookingsData;
-            } else if (response.status === 401) {
-                throw new Error('Authentication required');
-            } else {
-                this.bookingsData = [];
-                return [];
-            }
+            // For now, return empty array since endpoint doesn't exist yet
+            console.log('Fetching provider bookings... (using mock data)');
+            this.bookingsData = [];
+            return this.bookingsData;
         } catch (error) {
             console.error('Error fetching provider bookings:', error);
             this.bookingsData = [];
-            return [];
+            return this.bookingsData;
         }
-    }
-
-    async fetchRecentActivity() {
+    }    async fetchRecentActivity() {
         try {
-            const response = await fetch('/auth/activity', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(this.token && { 'Authorization': `Bearer ${this.token}` })
-                }
-            });
-
-            if (response.ok) {
-                const activityData = await response.json();
-                this.activityData = activityData || [];
-                return activityData;
-            } else if (response.status === 401) {
-                throw new Error('Authentication required');
-            } else {
-                this.activityData = [];
-                return [];
-            }
+            // For now, return empty array since endpoint doesn't exist yet
+            console.log('Fetching recent activity... (using mock data)');
+            this.activityData = [];
+            return [];
         } catch (error) {
             console.error('Error fetching recent activity:', error);
             this.activityData = [];
-            return [];
-        }
-    }    updateProfileDisplay() {
+            return [];        }
+    }
+
+    updateProfileDisplay() {
         const profileNameEl = document.getElementById('profileName');
         if (profileNameEl && this.providerData) {
             console.log('Updating profile display with data:', this.providerData);
@@ -511,8 +460,7 @@ class ProviderDashboard {
                 await this.loadSettingsPage();
                 break;
         }
-    }    async loadManageServicesPage() {
-        console.log('Loading manage services page...');
+    }    async loadManageServicesPage() {        console.log('Loading manage services page...');
         try {
             // Initialize the service manager if it exists and hasn't been initialized
             if (typeof ServiceManager !== 'undefined') {
@@ -528,6 +476,22 @@ class ProviderDashboard {
             } else {
                 console.error('ServiceManager class not found');
                 this.showToast('Service manager not available', 'error');
+            }
+
+            // Initialize certificate manager
+            if (typeof CertificateManager !== 'undefined') {
+                if (!window.certificateManager) {
+                    console.log('Creating new certificate manager instance...');
+                    window.certificateManager = new CertificateManager();
+                }
+                
+                // Initialize or refresh
+                console.log('Initializing/refreshing certificate manager...');
+                await window.certificateManager.init();
+                console.log('Certificate manager loaded successfully');
+            } else {
+                console.error('CertificateManager class not found');
+                this.showToast('Certificate manager not available', 'error');
             }
         } catch (error) {
             console.error('Error loading manage services page:', error);

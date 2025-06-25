@@ -206,21 +206,42 @@ class ServiceManager {    constructor() {
             console.error('Error loading categories:', error);
             this.categories = [];
         }
-    }
-
-    async loadCertificates() {
+    }    async loadCertificates() {
         try {
-            const response = await fetch('/api/services/certificates', {
+            const token = localStorage.getItem('fixmo_provider_token');
+            
+            const response = await fetch('/api/certificates', {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
                 }
             });
 
             if (response.ok) {
-                const data = await response.json();
-                this.certificates = data.data || [];
+                const responseData = await response.json();
+                console.log('Service manager certificates response:', responseData);
+                
+                if (responseData.success && Array.isArray(responseData.data)) {
+                    this.certificates = responseData.data.map(cert => ({
+                        certificate_id: cert.certificate_id,
+                        certificate_name: cert.certificate_name,
+                        certificate_file_path: cert.certificate_file_path,
+                        certificate_status: cert.certificate_status || 'Pending',
+                        created_at: cert.created_at,
+                        expiry_date: cert.expiry_date,
+                        certificate_number: cert.certificate_number
+                    }));
+                } else if (Array.isArray(responseData)) {
+                    this.certificates = responseData;
+                } else {
+                    console.warn('Unexpected response format for certificates:', responseData);
+                    this.certificates = [];
+                }
+                
+                console.log('Service manager processed certificates:', this.certificates.length);
+                console.log('Approved certificates:', this.certificates.filter(c => c.certificate_status === 'Approved').length);
                 this.populateCertificateDropdown();
             } else {
                 throw new Error('Failed to load certificates');
@@ -765,12 +786,44 @@ class ServiceManager {    constructor() {
         const container = document.getElementById('certificateServiceSelector');
         if (!container) return;
 
-        if (this.certificates.length === 0 || this.certificateServices.length === 0) {
+        console.log('=== Certificate Service Selector Debug ===');
+        console.log('Total certificates loaded:', this.certificates.length);
+        console.log('Certificates data:', this.certificates);
+        
+        // Filter certificates to only include approved ones
+        const approvedCertificates = this.certificates.filter(cert => 
+            cert.certificate_status === 'Approved'
+        );
+        
+        console.log('Approved certificates:', approvedCertificates.length);
+        console.log('Certificate services:', this.certificateServices.length);
+
+        if (approvedCertificates.length === 0 || this.certificateServices.length === 0) {
+            const totalCertificates = this.certificates.length;
+            const pendingCount = this.certificates.filter(c => c.certificate_status === 'Pending').length;
+            const rejectedCount = this.certificates.filter(c => c.certificate_status === 'Rejected').length;
+            
             container.innerHTML = `
                 <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-                    <i class="fas fa-certificate" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                    <p>You need to upload your TESDA certificates first to add services.</p>
-                    <p>Go to your profile to upload certificates.</p>
+                    <i class="fas fa-certificate" style="font-size: 2rem; margin-bottom: 1rem; color: var(--provider-warning);"></i>
+                    ${totalCertificates === 0 ? `
+                        <h3>No Certificates Found</h3>
+                        <p>You need to upload your TESDA certificates first to add services.</p>
+                        <button class="btn-primary" onclick="window.certificateManager.showAddCertificateModal()" style="margin-top: 1rem;">
+                            <i class="fas fa-plus"></i> Add Certificate
+                        </button>
+                    ` : `
+                        <h3>No Approved Certificates</h3>
+                        <p>You have ${totalCertificates} certificate(s), but none are approved yet.</p>
+                        <div style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+                            <div><i class="fas fa-clock" style="color: var(--provider-warning);"></i> ${pendingCount} Pending Review</div>
+                            ${rejectedCount > 0 ? `<div><i class="fas fa-times-circle" style="color: var(--provider-error);"></i> ${rejectedCount} Rejected</div>` : ''}
+                        </div>
+                        <p style="margin-top: 1rem;">Only approved certificates can be used to create services.</p>
+                        <button class="btn-secondary" onclick="window.certificateManager.showViewCertificatesModal()" style="margin-top: 1rem;">
+                            <i class="fas fa-eye"></i> View My Certificates
+                        </button>
+                    `}
                 </div>
             `;
             return;
@@ -779,16 +832,16 @@ class ServiceManager {    constructor() {
         // Create a dropdown with all available services organized by category
         let options = '<option value="">Select a service to offer...</option>';
         
-        // Group certificate services by certificate
+        // Group certificate services by certificate (only approved certificates)
         const certificateGroups = this.certificateServices.filter(certData => 
-            this.certificates.some(cert => cert.certificate_name === certData.certificate)
+            approvedCertificates.some(cert => cert.certificate_name === certData.certificate)
         );
 
-        // Group all services by category across all certificates, avoiding duplicates
+        // Group all services by category across all approved certificates, avoiding duplicates
         const categorizedServices = {};
         
         certificateGroups.forEach(certData => {
-            const certificate = this.certificates.find(cert => cert.certificate_name === certData.certificate);
+            const certificate = approvedCertificates.find(cert => cert.certificate_name === certData.certificate);
             
             Object.entries(certData.categories).forEach(([categoryName, services]) => {
                 if (!categorizedServices[categoryName]) {
@@ -841,12 +894,11 @@ class ServiceManager {    constructor() {
                         Choose a service you're certified to offer. The service title will be automatically filled.
                     </small>
                 </div>
-                
-                <div class="certificates-summary" style="margin-top: 1rem;">
-                    <h4><i class="fas fa-certificate"></i> Your Certificates & Services:</h4>
+                  <div class="certificates-summary" style="margin-top: 1rem;">
+                    <h4><i class="fas fa-certificate"></i> Your Approved Certificates & Services:</h4>
                     <div class="certificates-grid">
                         ${certificateGroups.map(certData => {
-                            const certificate = this.certificates.find(cert => cert.certificate_name === certData.certificate);
+                            const certificate = approvedCertificates.find(cert => cert.certificate_name === certData.certificate);
                             const totalServices = Object.values(certData.categories).reduce((sum, services) => sum + services.length, 0);
                             return `
                                 <div class="certificate-card">
@@ -854,6 +906,9 @@ class ServiceManager {    constructor() {
                                         <i class="fas fa-award"></i> 
                                         <span class="certificate-name">${this.escapeHtml(certData.certificate)}</span>
                                         <span class="service-count">${totalServices} services</span>
+                                        <span class="certificate-status approved">
+                                            <i class="fas fa-check-circle"></i> Approved
+                                        </span>
                                     </div>
                                     <div class="certificate-categories">
                                         ${Object.entries(certData.categories).map(([categoryName, services]) => `
@@ -1021,8 +1076,7 @@ class ServiceManager {    constructor() {
         }
         
         // Clear the service title
-        this.updateServiceTitle('');
-        
+        this.updateServiceTitle('');        
         // Update the display
         this.updateSelectedServicesList();
         
@@ -1033,6 +1087,68 @@ class ServiceManager {    constructor() {
         
         console.log('Remaining selected services:', this.selectedServices.length);
     }
+
+    // Toggle service status (activate/deactivate)
+    async deactivateService(serviceId, serviceName) {
+        if (!confirm(`Are you sure you want to deactivate "${serviceName}"?`)) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('fixmo_provider_token');
+            
+            const response = await fetch(`/api/services/${serviceId}/status`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
+                },
+                body: JSON.stringify({ status: 'inactive' })
+            });
+
+            if (response.ok) {
+                this.showToast(`Service "${serviceName}" deactivated successfully`, 'success');
+                await this.loadServices();
+                this.renderServices();
+            } else {
+                const errorData = await response.json();
+                this.showToast(errorData.message || 'Failed to deactivate service', 'error');
+            }
+        } catch (error) {
+            console.error('Error deactivating service:', error);
+            this.showToast('Error deactivating service', 'error');
+        }
+    }
+
+    async activateService(serviceId, serviceName) {
+        try {
+            const token = localStorage.getItem('fixmo_provider_token');
+            
+            const response = await fetch(`/api/services/${serviceId}/status`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
+                },
+                body: JSON.stringify({ status: 'active' })
+            });
+
+            if (response.ok) {
+                this.showToast(`Service "${serviceName}" activated successfully`, 'success');
+                await this.loadServices();
+                this.renderServices();
+            } else {
+                const errorData = await response.json();
+                this.showToast(errorData.message || 'Failed to activate service', 'error');
+            }
+        } catch (error) {
+            console.error('Error activating service:', error);
+            this.showToast('Error activating service', 'error');
+        }
+    }
+
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -1041,4 +1157,16 @@ class ServiceManager {    constructor() {
 }
 
 // Service manager will be initialized by the dashboard when needed
-// Do not auto-initialize here
+// Ensure global availability
+window.ServiceManager = ServiceManager;
+
+// Initialize immediately if DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('ServiceManager class is available globally');
+    if (!window.serviceManager) {
+        console.log('Creating emergency service manager instance...');
+        // Create instance immediately for debugging
+        window.serviceManager = new ServiceManager();
+        console.log('Emergency service manager created');
+    }
+});

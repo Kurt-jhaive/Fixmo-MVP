@@ -191,10 +191,10 @@ export const providerLogin = async (req, res) => {
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid email or password' });
         }
-        
-        // Create JWT token
+          // Create JWT token
         const token = jwt.sign(
             { 
+                userId: provider.provider_id, // Use userId to match middleware expectation
                 id: provider.provider_id,
                 providerId: provider.provider_id,
                 userType: 'provider',

@@ -225,8 +225,13 @@
                 <div class="services-page-title">
                     <h1>Manage Services</h1>
                     <p class="services-page-subtitle">Create and manage your service offerings</p>
-                </div>
-                <div class="services-header-actions">
+                </div>                <div class="services-header-actions">
+                    <button class="btn-secondary" id="viewCertificatesBtn">
+                        <i class="fas fa-certificate"></i> View Certificates
+                    </button>
+                    <button class="btn-secondary" id="addCertificateBtn">
+                        <i class="fas fa-plus"></i> Add Certificate
+                    </button>
                     <button class="btn-primary" id="addServiceBtn">
                         <i class="fas fa-plus"></i> Add New Service
                     </button>
@@ -379,19 +384,15 @@
             <div class="modal-body">
                 <form id="editServiceForm">
                     <input type="hidden" id="editServiceId" name="serviceId">
-                    
-                    <div class="form-row">
+                      <div class="form-row">
                         <div class="form-group">
-                            <label for="editServiceTitle">Service Title *</label>
+                            <label for="editServiceTitle">Service Title</label>
                             <input type="text" id="editServiceTitle" name="serviceTitle" class="form-control" 
-                                   placeholder="e.g., AC Repair & Maintenance" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editServiceCategory">Category *</label>
-                            <select id="editServiceCategory" name="serviceCategory" class="form-control" required>
-                                <option value="">Select Category</option>
-                                <!-- Categories will be loaded dynamically -->
-                            </select>
+                                   placeholder="Service title" readonly>
+                            <small class="form-help">
+                                <i class="fas fa-info-circle"></i>
+                                Service title is automatically set based on your selected certificate and cannot be changed.
+                            </small>
                         </div>
                     </div>
 
@@ -491,6 +492,160 @@
                 <div id="availabilityForm">
                     <!-- Availability form will be loaded here -->
                 </div>
+            </div>        </div>
+    </div>
+
+    <!-- Add Certificate Modal -->
+    <div id="addCertificateModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3><i class="fas fa-certificate"></i> Add New Certificate</h3>
+                <button class="modal-close" id="addCertificateModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addCertificateForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="certificateSelect">
+                            <i class="fas fa-list"></i> Select TESDA Certificate *
+                        </label>
+                        <select id="certificateSelect" name="certificateSelect" class="form-control" required>
+                            <option value="">Choose a certificate...</option>
+                        </select>
+                        <small class="form-help">
+                            <i class="fas fa-info-circle"></i> 
+                            Select the certificate you want to upload
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="certificateNumber">
+                            <i class="fas fa-hashtag"></i> Certificate Number *
+                        </label>
+                        <input type="text" id="certificateNumber" name="certificateNumber" 
+                               class="form-control" placeholder="e.g., ABC-123-456" required>
+                        <small class="form-help">Enter the official certificate number</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="certificateFile">
+                            <i class="fas fa-upload"></i> Certificate File *
+                        </label>                        <div class="file-upload-area" id="certificateFileUpload">
+                            <input type="file" id="certificateFile" name="certificateFile" 
+                                   accept=".jpg,.jpeg,.png" required>
+                            <div class="file-upload-placeholder">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Click to upload or drag and drop</p>
+                                <small>JPG, JPEG, PNG images only (Max 10MB)</small>
+                            </div>
+                            <div class="file-upload-preview" style="display: none;">
+                                <i class="fas fa-file"></i>
+                                <span class="file-name"></span>
+                                <button type="button" class="remove-file-btn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="expiryDate">
+                            <i class="fas fa-calendar"></i> Expiry Date (Optional)
+                        </label>
+                        <input type="date" id="expiryDate" name="expiryDate" class="form-control">
+                        <small class="form-help">Leave blank if certificate doesn't expire</small>
+                    </div>
+
+                    <div class="certificate-preview" id="certificatePreview" style="display: none;">
+                        <h4><i class="fas fa-eye"></i> Certificate Preview</h4>
+                        <div class="preview-content">
+                            <div class="preview-info">
+                                <div class="preview-item">
+                                    <span class="label">Certificate Name:</span>
+                                    <span class="value" id="previewCertName"></span>
+                                </div>
+                                <div class="preview-item">
+                                    <span class="label">Certificate Number:</span>
+                                    <span class="value" id="previewCertNumber"></span>
+                                </div>
+                                <div class="preview-item">
+                                    <span class="label">Services Covered:</span>
+                                    <div class="services-preview" id="previewServices"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelAddCertificate">Cancel</button>
+                        <button type="submit" class="btn-primary" id="submitCertificateBtn">
+                            <i class="fas fa-plus"></i> Add Certificate
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Certificates Modal -->
+    <div id="viewCertificatesModal" class="modal">
+        <div class="modal-content extra-large">
+            <div class="modal-header">
+                <h3><i class="fas fa-certificate"></i> My Certificates</h3>
+                <button class="modal-close" id="viewCertificatesModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="certificates-controls">
+                    <div class="certificates-search">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="certificatesSearchInput" placeholder="Search certificates...">
+                    </div>
+                    <div class="certificates-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="approved">Approved</button>
+                        <button class="filter-btn" data-filter="pending">Pending</button>
+                        <button class="filter-btn" data-filter="rejected">Rejected</button>
+                    </div>
+                </div>
+
+                <div class="certificates-stats">
+                    <div class="certificates-stat">
+                        <i class="fas fa-certificate"></i>
+                        <span class="count" id="totalCertificatesCount">0</span>
+                        <span>Total</span>
+                    </div>
+                    <div class="certificates-stat">
+                        <i class="fas fa-check-circle"></i>
+                        <span class="count" id="approvedCertificatesCount">0</span>
+                        <span>Approved</span>
+                    </div>
+                    <div class="certificates-stat">
+                        <i class="fas fa-clock"></i>
+                        <span class="count" id="pendingCertificatesCount">0</span>
+                        <span>Pending</span>
+                    </div>
+                    <div class="certificates-stat">
+                        <i class="fas fa-times-circle"></i>
+                        <span class="count" id="rejectedCertificatesCount">0</span>
+                        <span>Rejected</span>
+                    </div>
+                </div>
+
+                <div class="certificates-container" id="certificatesContainer">
+                    <!-- Certificates will be loaded here -->
+                </div>
+
+                <div class="certificates-empty" id="certificatesEmpty" style="display: none;">
+                    <i class="fas fa-certificate"></i>
+                    <h3>No Certificates Found</h3>
+                    <p>You haven't uploaded any certificates yet.</p>
+                    <button class="btn-primary" onclick="window.certificateManager.showAddCertificateModal()">
+                        <i class="fas fa-plus"></i> Add Your First Certificate
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -506,6 +661,7 @@
     <!-- Toast Notifications -->
     <div id="toastContainer" class="toast-container"></div>    <!-- Scripts -->
     <script src="js/dashboard-utils.js"></script>
+    <script src="js/certificate-manager.js"></script>
     <script src="js/service-manager.js"></script>
     <script src="js/provider-dashboard.js"></script>
 </body>
