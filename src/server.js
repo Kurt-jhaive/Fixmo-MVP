@@ -8,6 +8,7 @@ import authCustomerRoutes from './route/authCustomer.js'; // Use .js extension f
 import serviceProviderRoutes from './route/serviceProvider.js'; // Use .js extension for ESM
 import serviceRoutes from './route/serviceRoutes.js'; // New service management routes
 import certificateRoutes from './route/certificateRoutes.js'; // New certificate management routes
+import availabilityRoutes from './route/availabilityRoutes.js'; // New availability management routes
 import adminRoute from './route/adminRoute.js'; // Use .js extension for ESM
 import cors from 'cors';
 
@@ -108,6 +109,7 @@ app.use('/auth', authCustomerRoutes, serviceProviderRoutes, adminRoute); // Use 
 app.use('/api/serviceProvider', serviceProviderRoutes); // Mount service provider routes for API access
 app.use('/api/services', serviceRoutes); // Mount service management routes
 app.use('/api/certificates', certificateRoutes); // Mount certificate management routes
+app.use('/api/availability', availabilityRoutes); // Mount availability management routes
 
 // app.use('/users', usersRouter); // Uncomment if usersRouter is defined
 

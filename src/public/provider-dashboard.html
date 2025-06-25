@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Provider Dashboard - Fixmo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Service Provider Dashboard - Fixmo</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/provider-dashboard.css">
+    <link rel="stylesheet" href="css/availability.css">
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -474,13 +474,11 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Availability Modal -->
-    <div id="availabilityModal" class="modal">
+    </div>    <!-- Availability Modal -->
+    <div id="availabilityModal" class="modal availability-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Set Availability</h3>
+                <h3><i class="fas fa-clock"></i> Manage Your Availability</h3>
                 <button class="modal-close" id="availabilityModalClose">
                     <i class="fas fa-times"></i>
                 </button>
@@ -489,7 +487,8 @@
                 <div id="availabilityForm">
                     <!-- Availability form will be loaded here -->
                 </div>
-            </div>        </div>
+            </div>
+        </div>
     </div>
 
     <!-- Add Certificate Modal -->
@@ -653,9 +652,9 @@
     </div>
 
     <!-- Toast Notifications -->
-    <div id="toastContainer" class="toast-container"></div>    <!-- Scripts -->
-    <script src="js/dashboard-utils.js"></script>
+    <div id="toastContainer" class="toast-container"></div>    <!-- Scripts -->    <script src="js/dashboard-utils.js"></script>
     <script src="js/certificate-manager.js"></script>
+    <script src="js/availability-manager.js"></script>
     <script src="js/service-manager.js"></script>
     <script src="js/provider-dashboard.js"></script>
 </body>

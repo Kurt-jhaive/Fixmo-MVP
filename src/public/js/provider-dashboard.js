@@ -476,9 +476,7 @@ class ProviderDashboard {
             } else {
                 console.error('ServiceManager class not found');
                 this.showToast('Service manager not available', 'error');
-            }
-
-            // Initialize certificate manager
+            }            // Initialize certificate manager
             if (typeof CertificateManager !== 'undefined') {
                 if (!window.certificateManager) {
                     console.log('Creating new certificate manager instance...');
@@ -492,6 +490,22 @@ class ProviderDashboard {
             } else {
                 console.error('CertificateManager class not found');
                 this.showToast('Certificate manager not available', 'error');
+            }
+
+            // Initialize availability manager
+            if (typeof AvailabilityManager !== 'undefined') {
+                if (!window.availabilityManager) {
+                    console.log('Creating new availability manager instance...');
+                    window.availabilityManager = new AvailabilityManager();
+                }
+                
+                // Initialize or refresh
+                console.log('Initializing/refreshing availability manager...');
+                await window.availabilityManager.init();
+                console.log('Availability manager loaded successfully');
+            } else {
+                console.error('AvailabilityManager class not found');
+                this.showToast('Availability manager not available', 'error');
             }
         } catch (error) {
             console.error('Error loading manage services page:', error);
@@ -845,57 +859,25 @@ class ProviderDashboard {
             this.showToast(`Booking ${bookingId} accepted!`, 'success');
             // TODO: Implement booking acceptance logic
         }
-    }
-
-    showAvailabilityModal() {
+    }    showAvailabilityModal() {
         const modal = document.getElementById('availabilityModal');
         if (modal) {
-            modal.classList.add('active');
-            this.loadAvailabilityForm();
+            modal.classList.add('show');
+            
+            // Initialize availability manager if not already done
+            if (!window.availabilityManager) {
+                window.availabilityManager = new AvailabilityManager();
+                window.availabilityManager.init();
+            }
+            
+            // Load the availability form
+            window.availabilityManager.loadAvailabilityForm();
         }
-    }
-
-    loadAvailabilityForm() {
-        const container = document.getElementById('availabilityForm');
-        if (!container) return;
-
-        container.innerHTML = `
-            <div class="availability-form">
-                <h4>Set Your Working Hours</h4>
-                <div class="days-grid">
-                    ${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => `
-                        <div class="day-item">
-                            <label class="day-label">
-                                <input type="checkbox" class="day-checkbox" data-day="${day.toLowerCase()}">
-                                <span>${day}</span>
-                            </label>
-                            <div class="time-inputs">
-                                <input type="time" class="start-time" data-day="${day.toLowerCase()}" value="09:00">
-                                <span>to</span>
-                                <input type="time" class="end-time" data-day="${day.toLowerCase()}" value="17:00">
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="window.dashboard.closeAvailabilityModal()">Cancel</button>
-                    <button type="button" class="btn-primary" onclick="window.dashboard.saveAvailability()">Save Availability</button>
-                </div>
-            </div>
-        `;
-    }
-
-    closeAvailabilityModal() {
+    }    closeAvailabilityModal() {
         const modal = document.getElementById('availabilityModal');
         if (modal) {
-            modal.classList.remove('active');
+            modal.classList.remove('show');
         }
-    }
-
-    saveAvailability() {
-        // Implement save availability logic
-        this.showToast('Availability updated successfully!', 'success');
-        this.closeAvailabilityModal();
     }
 }
 
