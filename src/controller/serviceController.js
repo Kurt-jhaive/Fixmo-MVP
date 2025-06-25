@@ -282,11 +282,12 @@ export const updateService = async (req, res) => {
         if (!service_description || !service_description.trim() || !service_startingprice || isNaN(parseFloat(service_startingprice))) {
             console.log('Validation failed - missing required fields');
             return res.status(400).json({ success: false, message: 'Service description and starting price are required.' });
-        }
-
-        const serviceListingId = parseInt(serviceId);
+        }        const serviceListingId = parseInt(serviceId);
+        console.log('Parsed serviceListingId:', serviceListingId);
 
         await prisma.$transaction(async (prisma) => {
+            console.log('Starting database transaction...');
+            
             const existingService = await prisma.serviceListing.findFirst({
                 where: {
                     service_id: serviceListingId,
@@ -296,10 +297,14 @@ export const updateService = async (req, res) => {
                     specific_services: true
                 }
             });
+            
+            console.log('Existing service found:', !!existingService);
+            console.log('Existing service data:', existingService);
 
             if (!existingService) {
+                console.log('Service not found - throwing error');
                 throw new Error('Service not found or access denied');
-            }            // Update basic service information
+            }// Update basic service information
             const updateData = {
                 service_description: service_description.trim(),
                 service_startingprice: parseFloat(service_startingprice)
