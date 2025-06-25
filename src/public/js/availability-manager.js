@@ -89,11 +89,10 @@ class AvailabilityManager {
             console.error('Error loading availability:', error);
             this.availability = [];
         }
-    }
-
-    processAvailabilityData() {
+    }    processAvailabilityData() {
         // Convert availability array to day-based object
         this.currentAvailability = {};
+        this.dayActiveStates = {}; // Track which days are active
         
         this.availability.forEach(avail => {
             const day = avail.dayOfWeek.toLowerCase();
@@ -104,11 +103,18 @@ class AvailabilityManager {
                 id: avail.availability_id,
                 startTime: avail.startTime,
                 endTime: avail.endTime,
-                isBooked: avail.availability_isBooked
+                isBooked: avail.availability_isBooked,
+                isActive: avail.availability_isActive
             });
+            
+            // Set day as active if any slot is active
+            if (avail.availability_isActive) {
+                this.dayActiveStates[day] = true;
+            }
         });
 
         console.log('Processed availability:', this.currentAvailability);
+        console.log('Day active states:', this.dayActiveStates);
     }
 
     async loadAvailabilityForm() {
@@ -167,7 +173,14 @@ class AvailabilityManager {
             console.error('Error loading availability summary:', error);
         }
     }    generateAvailabilityForm() {
-        const summary = this.availabilitySummary || { totalSlots: 0, bookedSlots: 0, availableSlots: 0 };
+        const summary = this.availabilitySummary || { 
+            totalSlots: 0, 
+            activeSlots: 0, 
+            bookedSlots: 0, 
+            availableSlots: 0, 
+            configuredSlots: 0,
+            activeDays: 0
+        };
         
         return `
             <div class="availability-form">
@@ -177,18 +190,26 @@ class AvailabilityManager {
                     <div class="availability-stats">
                         <div class="availability-stat">
                             <h5>${summary.totalSlots}</h5>
-                            <p>Total Time Slots</p>
+                            <p>Total Configured</p>
+                        </div>
+                        <div class="availability-stat">
+                            <h5>${summary.activeSlots}</h5>
+                            <p>Active Slots</p>
                         </div>
                         <div class="availability-stat">
                             <h5>${summary.availableSlots}</h5>
-                            <p>Available Slots</p>
+                            <p>Available Now</p>
                         </div>
                         <div class="availability-stat">
                             <h5>${summary.bookedSlots}</h5>
                             <p>Booked Slots</p>
                         </div>
                         <div class="availability-stat">
-                            <h5>${this.getActiveDaysCount()}</h5>
+                            <h5>${summary.configuredSlots || 0}</h5>
+                            <p>Inactive Slots</p>
+                        </div>
+                        <div class="availability-stat">
+                            <h5>${summary.activeDays}</h5>
                             <p>Active Days</p>
                         </div>
                     </div>
@@ -243,24 +264,28 @@ class AvailabilityManager {
             }
         });
         return activeDays;
-    }generateDayItem(day) {
+    }    generateDayItem(day) {
         const dayLower = day.toLowerCase();
         const daySlots = this.currentAvailability[dayLower] || [];
         const hasAvailability = daySlots.length > 0;
+        const isActive = this.dayActiveStates && this.dayActiveStates[dayLower];
 
         return `
-            <div class="day-item ${hasAvailability ? 'active' : ''}" data-day="${dayLower}">
+            <div class="day-item ${isActive ? 'active' : ''}" data-day="${dayLower}">
                 <div class="day-header">
                     <label class="day-label">
-                        <input type="checkbox" class="day-checkbox" data-day="${dayLower}" ${hasAvailability ? 'checked' : ''}>
+                        <input type="checkbox" class="day-checkbox" data-day="${dayLower}" ${isActive ? 'checked' : ''}>
                         <span>${day}</span>
                     </label>
-                    <div class="day-status ${hasAvailability ? 'available' : 'unavailable'}">
-                        ${hasAvailability ? `${daySlots.length} slot${daySlots.length > 1 ? 's' : ''}` : 'Unavailable'}
+                    <div class="day-status ${isActive ? 'available' : hasAvailability ? 'configured' : 'unavailable'}">
+                        ${hasAvailability ? 
+                            `${daySlots.length} slot${daySlots.length > 1 ? 's' : ''} ${isActive ? '(Active)' : '(Inactive)'}` : 
+                            'Unavailable'
+                        }
                     </div>
                 </div>
                 
-                <!-- Time Slots Container -->
+                <!-- Time Slots Container - Show if slots exist, regardless of active state -->
                 <div class="time-slots-container" ${!hasAvailability ? 'style="display: none;"' : ''}>
                     <div class="time-slots-list" id="timeSlots-${dayLower}">
                         ${hasAvailability ? this.generateTimeSlots(dayLower, daySlots) : this.generateTimeSlots(dayLower, [])}
@@ -327,16 +352,21 @@ class AvailabilityManager {
                 ${slot.isBooked ? `<div class="slot-status booked">Booked</div>` : ''}
             </div>
         `;
-    }
-
-    populateCurrentAvailability() {
+    }    populateCurrentAvailability() {
         // This method is called after the form is generated to ensure all elements exist
         this.daysOfWeek.forEach(day => {
             const dayLower = day.toLowerCase();
             const hasAvailability = this.currentAvailability[dayLower] && this.currentAvailability[dayLower].length > 0;
+            const isActive = this.dayActiveStates[dayLower] || false;
+            
+            // Set checkbox state based on isActive, not just existence of slots
+            const checkbox = document.querySelector(`.day-checkbox[data-day="${dayLower}"]`);
+            if (checkbox) {
+                checkbox.checked = isActive;
+            }
             
             if (hasAvailability) {
-                this.updateDayDisplay(dayLower, true);
+                this.updateDayDisplay(dayLower, isActive);
             }
         });
     }
@@ -350,10 +380,16 @@ class AvailabilityManager {
         const dayItem = document.querySelector(`.day-item[data-day="${day}"]`);
         const timeSlotsContainer = dayItem.querySelector('.time-slots-container');
         const statusElement = dayItem.querySelector('.day-status');
+        const timeSlots = dayItem.querySelectorAll('.time-slot');
+        const hasTimeSlots = timeSlots.length > 0;
         
         if (isAvailable) {
             dayItem.classList.add('active');
-            timeSlotsContainer.style.display = 'block';
+            
+            // Always show time slots container if slots exist or day is active
+            if (hasTimeSlots || isAvailable) {
+                timeSlotsContainer.style.display = 'block';
+            }
             
             // Enable all time inputs for this day
             dayItem.querySelectorAll('.time-input').forEach(input => {
@@ -363,32 +399,47 @@ class AvailabilityManager {
             this.updateDayStatus(day);
         } else {
             dayItem.classList.remove('active');
-            timeSlotsContainer.style.display = 'none';
             
-            // Disable all time inputs for this day
-            dayItem.querySelectorAll('.time-input').forEach(input => {
-                input.disabled = true;
-            });
-            
-            statusElement.textContent = 'Unavailable';
-            statusElement.className = 'day-status unavailable';
+            // Keep time slots visible if they exist, just mark as inactive
+            if (hasTimeSlots) {
+                timeSlotsContainer.style.display = 'block';
+                
+                // Keep inputs enabled so user can still edit
+                dayItem.querySelectorAll('.time-input').forEach(input => {
+                    input.disabled = false;
+                });
+                
+                // Update status to show slots exist but are inactive
+                const slotsText = timeSlots.length === 1 ? 'slot' : 'slots';
+                statusElement.textContent = `${timeSlots.length} ${slotsText} (Inactive)`;
+                statusElement.className = 'day-status configured';
+            } else {
+                timeSlotsContainer.style.display = 'none';
+                statusElement.textContent = 'Unavailable';
+                statusElement.className = 'day-status unavailable';
+            }
         }
-    }
-
-    updateDayStatus(day) {
+    }    updateDayStatus(day) {
         const dayItem = document.querySelector(`.day-item[data-day="${day}"]`);
         const statusElement = dayItem.querySelector('.day-status');
         const timeSlots = dayItem.querySelectorAll('.time-slot');
+        const checkbox = dayItem.querySelector('.day-checkbox');
+        const isActive = checkbox.checked;
         
         if (timeSlots.length > 0) {
             const slotsText = timeSlots.length === 1 ? 'slot' : 'slots';
-            statusElement.textContent = `${timeSlots.length} ${slotsText}`;
-            statusElement.className = 'day-status available';
+            if (isActive) {
+                statusElement.textContent = `${timeSlots.length} ${slotsText} (Active)`;
+                statusElement.className = 'day-status available';
+            } else {
+                statusElement.textContent = `${timeSlots.length} ${slotsText} (Inactive)`;
+                statusElement.className = 'day-status configured';
+            }
         } else {
             statusElement.textContent = 'Unavailable';
             statusElement.className = 'day-status unavailable';
         }
-    }    handleTimeChange(event) {
+    }handleTimeChange(event) {
         const input = event.target;
         const day = input.dataset.day;
         const slotIndex = input.dataset.slotIndex;
@@ -973,7 +1024,8 @@ class AvailabilityManager {
             const checkbox = document.querySelector(`.day-checkbox[data-day="${dayLower}"]`);
             const timeSlots = document.querySelectorAll(`.time-slot[data-day="${dayLower}"]`);
             
-            if (checkbox.checked && timeSlots.length > 0) {
+            // Always collect time slots if they exist, regardless of checkbox state
+            if (timeSlots.length > 0) {
                 // Collect all time slots for this day
                 timeSlots.forEach(slot => {
                     const startTimeInput = slot.querySelector('.start-time');
@@ -982,14 +1034,14 @@ class AvailabilityManager {
                     if (startTimeInput.value && endTimeInput.value) {
                         availabilityData.push({
                             dayOfWeek: day,
-                            isAvailable: true,
+                            isAvailable: checkbox.checked, // Save the checkbox state
                             startTime: startTimeInput.value,
                             endTime: endTimeInput.value
                         });
                     }
                 });
-            } else {
-                // Day is not available
+            } else if (!checkbox.checked) {
+                // Only add "unavailable" record if day is unchecked AND has no time slots
                 availabilityData.push({
                     dayOfWeek: day,
                     isAvailable: false,

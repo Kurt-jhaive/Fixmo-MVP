@@ -111,6 +111,7 @@ model Availability{
     serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
     provider_id Int
     availability_isBooked Boolean @default(false)
+    availability_isActive Boolean @default(true)
 }
 
 model Appointment{

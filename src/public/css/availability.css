@@ -29,7 +29,7 @@
 
 .availability-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 15px;
     margin-top: 15px;
 }
@@ -83,6 +83,18 @@
 .day-item.disabled {
     opacity: 0.6;
     background: #f1f3f4;
+}
+
+/* Status for days with configured but inactive slots */
+.day-status.configured {
+    background: linear-gradient(135deg, #ffc107, #f0ad4e);
+    color: #212529;
+}
+
+.day-item .day-status.configured::after {
+    content: " (Click to activate)";
+    font-size: 0.8em;
+    opacity: 0.8;
 }
 
 /* Day Header */

@@ -77,15 +77,14 @@ class AvailabilityController {
                 }
             });
 
-            console.log('Deleted existing availability records');
-
-            // Insert new availability records
+            console.log('Deleted existing availability records');            // Insert new availability records
             const availabilityRecords = [];
             
             for (const dayData of availabilityData) {
                 const { dayOfWeek, isAvailable, startTime, endTime } = dayData;
                 
-                if (isAvailable && startTime && endTime) {
+                // Save time slots if they exist, regardless of isAvailable status
+                if (startTime && endTime) {
                     // Validate time format
                     const timePattern = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
                     if (!timePattern.test(startTime) || !timePattern.test(endTime)) {
@@ -108,7 +107,8 @@ class AvailabilityController {
                         dayOfWeek: dayOfWeek,
                         startTime: startTime,
                         endTime: endTime,
-                        availability_isBooked: false
+                        availability_isBooked: false,
+                        availability_isActive: isAvailable // Store the checkbox state
                     });
                 }
             }
@@ -189,9 +189,7 @@ class AvailabilityController {
                 message: 'Error deleting availability'
             });
         }
-    }
-
-    // Get availability summary
+    }    // Get availability summary
     static async getAvailabilitySummary(req, res) {
         try {
             const providerId = req.userId;
@@ -209,6 +207,13 @@ class AvailabilityController {
                 }
             });
 
+            const activeSlots = await prisma.availability.count({
+                where: {
+                    provider_id: providerId,
+                    availability_isActive: true
+                }
+            });
+
             const bookedSlots = await prisma.availability.count({
                 where: {
                     provider_id: providerId,
@@ -216,7 +221,8 @@ class AvailabilityController {
                 }
             });
 
-            const availableSlots = totalSlots - bookedSlots;
+            const availableSlots = activeSlots - bookedSlots;
+            const configuredSlots = totalSlots - activeSlots;
 
             // Get availability by day
             const availabilityByDay = await prisma.availability.groupBy({
@@ -229,12 +235,27 @@ class AvailabilityController {
                 }
             });
 
+            // Get active days count
+            const activeDays = await prisma.availability.groupBy({
+                by: ['dayOfWeek'],
+                where: {
+                    provider_id: providerId,
+                    availability_isActive: true
+                },
+                _count: {
+                    availability_id: true
+                }
+            });
+
             res.json({
                 success: true,
                 data: {
                     totalSlots,
+                    activeSlots,
                     bookedSlots,
                     availableSlots,
+                    configuredSlots,
+                    activeDays: activeDays.length,
                     availabilityByDay
                 }
             });
