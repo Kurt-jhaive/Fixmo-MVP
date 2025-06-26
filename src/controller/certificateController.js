@@ -108,12 +108,13 @@ export const uploadCertificate = async (req, res) => {
             });
         }
 
-        // Check if certificate number already exists
-        const existingCert = await prisma.certificate.findUnique({
+        // Check for duplicates
+        // 1. Check if certificate number already exists
+        const existingCertNumber = await prisma.certificate.findUnique({
             where: { certificate_number: certificateNumber }
         });
 
-        if (existingCert) {
+        if (existingCertNumber) {
             // Delete uploaded file if certificate number already exists
             try {
                 await fs.unlink(req.file.path);
@@ -123,7 +124,29 @@ export const uploadCertificate = async (req, res) => {
             
             return res.status(400).json({
                 success: false,
-                message: 'Certificate number already exists'
+                message: 'Certificate number already exists. Each certificate must have a unique number.'
+            });
+        }
+
+        // 2. Check if provider already has this certificate type
+        const existingCertType = await prisma.certificate.findFirst({
+            where: { 
+                certificate_name: certificateName,
+                provider_id: providerId
+            }
+        });
+
+        if (existingCertType) {
+            // Delete uploaded file if certificate type already exists for this provider
+            try {
+                await fs.unlink(req.file.path);
+            } catch (unlinkError) {
+                console.error('Error deleting file:', unlinkError);
+            }
+            
+            return res.status(400).json({
+                success: false,
+                message: `You already have a "${certificateName}" certificate. You cannot upload duplicate certificate types.`
             });
         }
 

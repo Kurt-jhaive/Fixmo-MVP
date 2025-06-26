@@ -233,7 +233,21 @@ class CertificateManager {
                 certificateTypes.forEach(certType => {
                     const option = document.createElement('option');
                     option.value = certType;
-                    option.textContent = certType;
+                    
+                    // Check if provider already has this certificate type
+                    const hasThisCert = this.certificates.find(cert => 
+                        cert.certificate_name === certType
+                    );
+                    
+                    if (hasThisCert) {
+                        option.textContent = `${certType} (Already owned - ${hasThisCert.certificate_status})`;
+                        option.disabled = true;
+                        option.style.color = '#666';
+                        option.style.fontStyle = 'italic';
+                    } else {
+                        option.textContent = certType;
+                    }
+                    
                     certificateSelect.appendChild(option);
                 });
                 
@@ -268,7 +282,21 @@ class CertificateManager {
         certificateTypes.forEach(certType => {
             const option = document.createElement('option');
             option.value = certType;
-            option.textContent = certType;
+            
+            // Check if provider already has this certificate type
+            const hasThisCert = this.certificates.find(cert => 
+                cert.certificate_name === certType
+            );
+            
+            if (hasThisCert) {
+                option.textContent = `${certType} (Already owned - ${hasThisCert.certificate_status})`;
+                option.disabled = true;
+                option.style.color = '#666';
+                option.style.fontStyle = 'italic';
+            } else {
+                option.textContent = certType;
+            }
+            
             certificateSelect.appendChild(option);
         });
     }
@@ -388,6 +416,27 @@ class CertificateManager {
 
         if (!certificateName || !certificateNumber || !certificateFile) {
             this.showToast('Please fill in all required fields', 'error');
+            return;
+        }
+
+        // Check for duplicates before uploading
+        // 1. Check if certificate number already exists
+        const existingCertNumber = this.certificates.find(cert => 
+            cert.certificate_number === certificateNumber
+        );
+
+        if (existingCertNumber) {
+            this.showToast(`Certificate number "${certificateNumber}" already exists. Each certificate must have a unique number.`, 'error');
+            return;
+        }
+
+        // 2. Check if provider already has this certificate type
+        const existingCertType = this.certificates.find(cert => 
+            cert.certificate_name === certificateName
+        );
+
+        if (existingCertType) {
+            this.showToast(`You already have a "${certificateName}" certificate. You cannot upload duplicate certificate types.`, 'error');
             return;
         }
 
