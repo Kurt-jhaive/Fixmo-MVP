@@ -63,8 +63,10 @@ export const verifyProviderOTPAndRegister = async (req, res) => {
             provider_password,
             provider_userName,
             provider_email,
+            provider_birthday,
             provider_phone_number,
             provider_location,
+            provider_exact_location,
             provider_uli,
             otp,
             certificateNames,
@@ -77,6 +79,7 @@ export const verifyProviderOTPAndRegister = async (req, res) => {
             provider_userName,
             provider_first_name,
             provider_last_name,
+            provider_birthday,
             provider_phone_number,
             provider_location,
             provider_uli,
@@ -90,6 +93,22 @@ export const verifyProviderOTPAndRegister = async (req, res) => {
         const existingProvider = await prisma.serviceProviderDetails.findUnique({ where: { provider_email } });
         if (existingProvider) {
             return res.status(400).json({ message: 'Provider already exists' });
+        }
+
+        // Check for duplicate phone number
+        const existingPhoneProvider = await prisma.serviceProviderDetails.findFirst({ 
+            where: { provider_phone_number: provider_phone_number } 
+        });
+        if (existingPhoneProvider) {
+            return res.status(400).json({ message: 'Phone number is already registered with another provider account' });
+        }
+
+        // Also check if phone number exists in customer table
+        const existingPhoneCustomer = await prisma.user.findFirst({ 
+            where: { phone_number: provider_phone_number } 
+        });
+        if (existingPhoneCustomer) {
+            return res.status(400).json({ message: 'Phone number is already registered with a customer account' });
         }        // Parse certificate data if it's JSON
         let parsedCertificateNames, parsedCertificateNumbers, parsedExpiryDates;
         try {
@@ -131,10 +150,12 @@ export const verifyProviderOTPAndRegister = async (req, res) => {
                 provider_password: hashedPassword,
                 provider_userName,
                 provider_email,
+                provider_birthday: provider_birthday ? new Date(provider_birthday) : null,
                 provider_phone_number,
                 provider_profile_photo: provider_profile_photo || null,
                 provider_valid_id: provider_valid_id || null,
                 provider_location: provider_location || null,
+                provider_exact_location: provider_exact_location || null,
                 provider_uli
             }
         });        // Create certificates if provided
@@ -821,7 +842,7 @@ export const getProviderStats = async (req, res) => {
         });
 
         const totalEarnings = completedAppointments.reduce((sum, appointment) => {
-            return sum + (appointment.actual_price || 0);
+            return sum + (appointment.final_price || 0);
         }, 0);        // Get active bookings (pending, confirmed, in_progress)
         const activeBookings = await prisma.appointment.count({
             where: {
@@ -860,7 +881,7 @@ export const getProviderStats = async (req, res) => {
         });
 
         const monthlyRevenue = monthlyCompletedAppointments.reduce((sum, appointment) => {
-            return sum + (appointment.actual_price || 0);
+            return sum + (appointment.final_price || 0);
         }, 0);
 
         // Calculate completion rate

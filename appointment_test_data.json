@@ -1,0 +1,427 @@
+{
+  "appointment_api_test_data": {
+    "description": "Test data for Appointment API endpoints",
+    "base_url": "http://localhost:3000/api/appointments",
+    "authentication": {
+      "note": "Include in headers for all requests",
+      "header": "Authorization: Bearer YOUR_TOKEN_HERE",
+      "content_type": "Content-Type: application/json"
+    },
+    
+    "test_scenarios": {
+      
+      "1_create_appointment": {
+        "method": "POST",
+        "url": "/api/appointments",
+        "description": "Create a new appointment",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": 1,
+          "provider_id": 1,
+          "scheduled_date": "2025-06-28T10:00:00.000Z",
+          "appointment_status": "pending",
+          "final_price": 150.50,
+          "repairDescription": "Fix broken kitchen sink faucet and replace washers"
+        }
+      },
+
+      "2_create_appointment_minimal": {
+        "method": "POST",
+        "url": "/api/appointments",
+        "description": "Create appointment with minimal required fields",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": 2,
+          "provider_id": 1,
+          "scheduled_date": "2025-06-29T14:30:00.000Z"
+        }
+      },
+
+      "3_create_appointment_plumbing": {
+        "method": "POST",
+        "url": "/api/appointments",
+        "description": "Create plumbing service appointment",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": 3,
+          "provider_id": 2,
+          "scheduled_date": "2025-06-30T09:00:00.000Z",
+          "appointment_status": "confirmed",
+          "final_price": 250.00,
+          "repairDescription": "Install new toilet and fix water pressure issues in bathroom"
+        }
+      },
+
+      "4_create_appointment_electrical": {
+        "method": "POST",
+        "url": "/api/appointments",
+        "description": "Create electrical service appointment",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "customer_id": 1,
+          "provider_id": 3,
+          "scheduled_date": "2025-07-01T11:00:00.000Z",
+          "appointment_status": "pending",
+          "final_price": 180.75,
+          "repairDescription": "Replace electrical outlet and install ceiling fan in living room"
+        }
+      },
+
+      "5_get_all_appointments": {
+        "method": "GET",
+        "url": "/api/appointments",
+        "description": "Get all appointments with default pagination",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        }
+      },
+
+      "6_get_appointments_filtered": {
+        "method": "GET",
+        "url": "/api/appointments?status=pending&page=1&limit=5&sort_order=asc",
+        "description": "Get pending appointments with pagination and sorting",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        }
+      },
+
+      "7_get_appointments_by_provider": {
+        "method": "GET",
+        "url": "/api/appointments/provider/1?status=confirmed&from_date=2025-06-27&to_date=2025-07-31",
+        "description": "Get confirmed appointments for provider 1 within date range",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        }
+      },
+
+      "8_get_appointments_by_customer": {
+        "method": "GET",
+        "url": "/api/appointments/customer/1?page=1&limit=10",
+        "description": "Get all appointments for customer 1",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        }
+      },
+
+      "9_get_appointment_by_id": {
+        "method": "GET",
+        "url": "/api/appointments/1",
+        "description": "Get specific appointment by ID",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        }
+      },
+
+      "10_update_appointment": {
+        "method": "PUT",
+        "url": "/api/appointments/1",
+        "description": "Update appointment details",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "scheduled_date": "2025-06-28T15:00:00.000Z",
+          "appointment_status": "confirmed",
+          "final_price": 175.00,
+          "repairDescription": "Fix broken kitchen sink faucet, replace washers, and check water pressure"
+        }
+      },
+
+      "11_update_appointment_status": {
+        "method": "PATCH",
+        "url": "/api/appointments/1/status",
+        "description": "Update only appointment status",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "status": "in-progress"
+        }
+      },
+
+      "12_reschedule_appointment": {
+        "method": "PATCH",
+        "url": "/api/appointments/1/reschedule",
+        "description": "Reschedule appointment to new date",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "new_scheduled_date": "2025-07-02T10:00:00.000Z"
+        }
+      },
+
+      "13_get_appointment_stats": {
+        "method": "GET",
+        "url": "/api/appointments/stats",
+        "description": "Get overall appointment statistics",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        }
+      },
+
+      "14_get_provider_stats": {
+        "method": "GET",
+        "url": "/api/appointments/stats?provider_id=1",
+        "description": "Get appointment statistics for specific provider",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        }
+      },
+
+      "15_delete_appointment": {
+        "method": "DELETE",
+        "url": "/api/appointments/1",
+        "description": "Delete appointment (use with caution)",
+        "headers": {
+          "Authorization": "Bearer YOUR_TOKEN_HERE"
+        }
+      }
+    },
+
+    "status_values": {
+      "valid_statuses": [
+        "pending",
+        "confirmed", 
+        "in-progress",
+        "completed",
+        "cancelled",
+        "no-show"
+      ]
+    },
+
+    "error_test_scenarios": {
+      
+      "invalid_customer": {
+        "method": "POST",
+        "url": "/api/appointments",
+        "description": "Test with non-existent customer_id",
+        "body": {
+          "customer_id": 99999,
+          "provider_id": 1,
+          "scheduled_date": "2025-06-28T10:00:00.000Z"
+        },
+        "expected_error": "Customer not found"
+      },
+
+      "invalid_provider": {
+        "method": "POST",
+        "url": "/api/appointments",
+        "description": "Test with non-existent provider_id",
+        "body": {
+          "customer_id": 1,
+          "provider_id": 99999,
+          "scheduled_date": "2025-06-28T10:00:00.000Z"
+        },
+        "expected_error": "Service provider not found"
+      },
+
+      "missing_required_fields": {
+        "method": "POST",
+        "url": "/api/appointments",
+        "description": "Test with missing required fields",
+        "body": {
+          "customer_id": 1
+        },
+        "expected_error": "Customer ID, Provider ID, and scheduled date are required"
+      },
+
+      "invalid_date_format": {
+        "method": "POST",
+        "url": "/api/appointments",
+        "description": "Test with invalid date format",
+        "body": {
+          "customer_id": 1,
+          "provider_id": 1,
+          "scheduled_date": "invalid-date-format"
+        },
+        "expected_error": "Invalid scheduled date format"
+      },
+
+      "past_date": {
+        "method": "POST",
+        "url": "/api/appointments",
+        "description": "Test with past date",
+        "body": {
+          "customer_id": 1,
+          "provider_id": 1,
+          "scheduled_date": "2025-01-01T10:00:00.000Z"
+        },
+        "expected_error": "Scheduled date must be in the future"
+      },
+
+      "conflicting_appointment": {
+        "method": "POST",
+        "url": "/api/appointments",
+        "description": "Test creating appointment at same time as existing one",
+        "body": {
+          "customer_id": 2,
+          "provider_id": 1,
+          "scheduled_date": "2025-06-28T10:00:00.000Z"
+        },
+        "expected_error": "Provider already has an appointment at this time"
+      },
+
+      "invalid_status": {
+        "method": "PATCH",
+        "url": "/api/appointments/1/status",
+        "description": "Test with invalid status value",
+        "body": {
+          "status": "invalid-status"
+        },
+        "expected_error": "Invalid status"
+      },
+
+      "appointment_not_found": {
+        "method": "GET",
+        "url": "/api/appointments/99999",
+        "description": "Test getting non-existent appointment",
+        "expected_error": "Appointment not found"
+      }
+    },
+
+    "sample_response_formats": {
+      
+      "create_appointment_success": {
+        "status": 201,
+        "response": {
+          "success": true,
+          "message": "Appointment created successfully",
+          "data": {
+            "appointment_id": 1,
+            "customer_id": 1,
+            "provider_id": 1,
+            "appointment_status": "pending",
+            "scheduled_date": "2025-06-28T10:00:00.000Z",
+            "final_price": 150.5,
+            "repairDescription": "Fix broken kitchen sink faucet and replace washers",
+            "created_at": "2025-06-27T08:30:00.000Z",
+            "customer": {
+              "user_id": 1,
+              "first_name": "John",
+              "last_name": "Doe",
+              "email": "john@example.com",
+              "phone_number": "1234567890"
+            },
+            "serviceProvider": {
+              "provider_id": 1,
+              "provider_first_name": "Jane",
+              "provider_last_name": "Smith",
+              "provider_email": "jane@example.com",
+              "provider_phone_number": "0987654321"
+            }
+          }
+        }
+      },
+
+      "get_appointments_success": {
+        "status": 200,
+        "response": {
+          "success": true,
+          "data": [
+            {
+              "appointment_id": 1,
+              "customer_id": 1,
+              "provider_id": 1,
+              "appointment_status": "pending",
+              "scheduled_date": "2025-06-28T10:00:00.000Z",
+              "final_price": 150.5,
+              "repairDescription": "Fix broken kitchen sink faucet and replace washers",
+              "created_at": "2025-06-27T08:30:00.000Z",
+              "customer": {
+                "user_id": 1,
+                "first_name": "John",
+                "last_name": "Doe",
+                "email": "john@example.com",
+                "phone_number": "1234567890",
+                "user_location": "Manila"
+              },
+              "serviceProvider": {
+                "provider_id": 1,
+                "provider_first_name": "Jane",
+                "provider_last_name": "Smith",
+                "provider_email": "jane@example.com",
+                "provider_phone_number": "0987654321",
+                "provider_location": "Manila",
+                "provider_rating": 4.5
+              },
+              "appointment_rating": []
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "total_pages": 1,
+            "total_count": 1,
+            "limit": 10,
+            "has_next": false,
+            "has_prev": false
+          }
+        }
+      },
+
+      "stats_success": {
+        "status": 200,
+        "response": {
+          "success": true,
+          "data": {
+            "total_appointments": 25,
+            "pending_appointments": 5,
+            "confirmed_appointments": 8,
+            "completed_appointments": 10,
+            "cancelled_appointments": 2,
+            "monthly_appointments": 15,
+            "yearly_appointments": 25,
+            "total_revenue": 3750.50,
+            "average_rating": 4.2,
+            "completion_rate": 85
+          }
+        }
+      },
+
+      "error_response": {
+        "status": 400,
+        "response": {
+          "success": false,
+          "message": "Customer ID, Provider ID, and scheduled date are required"
+        }
+      }
+    },
+
+    "testing_tips": {
+      "1": "Start by creating appointments with valid customer_id and provider_id (usually 1, 2, 3, etc.)",
+      "2": "Make sure to use future dates for scheduled_date",
+      "3": "Test with both ISO date strings and various date formats",
+      "4": "Replace YOUR_TOKEN_HERE with actual JWT token from login",
+      "5": "Test pagination by creating multiple appointments first",
+      "6": "Try different status values and filtering options",
+      "7": "Test error scenarios to ensure proper validation",
+      "8": "Use actual customer and provider IDs that exist in your database"
+    },
+
+    "postman_collection_setup": {
+      "environment_variables": {
+        "base_url": "http://localhost:3000",
+        "auth_token": "YOUR_JWT_TOKEN_HERE"
+      },
+      "headers_preset": {
+        "Authorization": "Bearer {{auth_token}}",
+        "Content-Type": "application/json"
+      }
+    }
+  }
+}

@@ -188,6 +188,15 @@ body::before {
     color: #e53e3e;
 }
 
+/* Form helper text */
+.form-text {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 5px;
+    display: block;
+    font-style: italic;
+}
+
 /* Input Styles */
 .input-wrapper {
     position: relative;
@@ -220,6 +229,27 @@ body::before {
 }
 
 .form-control:focus + .input-icon {
+    color: #66B2B2;
+}
+
+/* Date Input Specific Styling */
+.form-control[type="date"] {
+    padding-left: 45px;
+    padding-right: 15px;
+    color: #333;
+}
+
+.form-control[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+.form-control[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* Ensure birthday icon is positioned correctly for date inputs */
+.input-wrapper:has(input[type="date"]) .fa-birthday-cake {
     color: #66B2B2;
 }
 

@@ -1,0 +1,160 @@
+{
+  "phone_validation_test_scenarios": {
+    "description": "Test scenarios for duplicate phone number validation",
+    "test_cases": [
+      {
+        "scenario": "Customer tries to register with existing customer phone",
+        "steps": [
+          "1. Register a customer with phone: 09123456789",
+          "2. Try to register another customer with same phone: 09123456789",
+          "3. Should receive error: 'Phone number is already registered with another account'"
+        ]
+      },
+      {
+        "scenario": "Customer tries to register with existing provider phone",
+        "steps": [
+          "1. Register a service provider with phone: 09987654321",
+          "2. Try to register a customer with same phone: 09987654321", 
+          "3. Should receive error: 'Phone number is already registered with a service provider account'"
+        ]
+      },
+      {
+        "scenario": "Provider tries to register with existing customer phone",
+        "steps": [
+          "1. Register a customer with phone: 09111222333",
+          "2. Try to register a service provider with same phone: 09111222333",
+          "3. Should receive error: 'Phone number is already registered with a customer account'"
+        ]
+      },
+      {
+        "scenario": "Provider tries to register with existing provider phone",
+        "steps": [
+          "1. Register a service provider with phone: 09444555666",
+          "2. Try to register another service provider with same phone: 09444555666",
+          "3. Should receive error: 'Phone number is already registered with another provider account'"
+        ]
+      }
+    ]
+  },
+  
+  "location_picker_test_scenarios": {
+    "description": "Test scenarios for GPS location picker functionality",
+    "test_cases": [
+      {
+        "scenario": "GPS Current Location (HTTPS required)",
+        "steps": [
+          "1. Open registration form on HTTPS URL",
+          "2. Click 'Use Current Location' button",
+          "3. Allow location permission when prompted",
+          "4. Should see map center on user's current location with pin"
+        ],
+        "fallback": "On HTTP, should show helpful error message with alternatives"
+      },
+      {
+        "scenario": "Search Location by Name",
+        "steps": [
+          "1. Type 'Manila City Hall' in search box",
+          "2. Click search button or press Enter",
+          "3. Should see map center on Manila City Hall with pin placed",
+          "4. Should display coordinates and full address"
+        ]
+      },
+      {
+        "scenario": "Manual Pin Placement",
+        "steps": [
+          "1. Click anywhere on the map",
+          "2. Should see pin placed at clicked location",
+          "3. Should display coordinates and address information",
+          "4. Pin should be draggable for fine-tuning"
+        ]
+      },
+      {
+        "scenario": "Clear Location",
+        "steps": [
+          "1. Set a location using any method",
+          "2. Click 'Clear Location' button",
+          "3. Should remove pin from map",
+          "4. Should clear coordinates and address display",
+          "5. Should reset map to default view"
+        ]
+      },
+      {
+        "scenario": "Form Integration",
+        "steps": [
+          "1. Pin a location on the map",
+          "2. Complete rest of registration form",
+          "3. Submit form",
+          "4. Check that exact_location field contains GPS coordinates in JSON format"
+        ]
+      }
+    ]
+  },
+
+  "sample_test_data": {
+    "phone_numbers_for_testing": [
+      "09123456789",
+      "09987654321", 
+      "09111222333",
+      "09444555666",
+      "09777888999"
+    ],
+    
+    "test_locations": [
+      {
+        "name": "Manila City Hall",
+        "coordinates": "14.5995, 120.9842"
+      },
+      {
+        "name": "Quezon City Hall", 
+        "coordinates": "14.6760, 121.0437"
+      },
+      {
+        "name": "BGC Taguig",
+        "coordinates": "14.5515, 121.0451"
+      }
+    ],
+    
+    "expected_location_format": {
+      "exact_location": {
+        "lat": 14.5995,
+        "lng": 120.9842,
+        "coordinates": "14.5995, 120.9842"
+      }
+    }
+  },
+
+  "validation_endpoints": {
+    "customer_registration": {
+      "url": "/auth/verify-register",
+      "method": "POST",
+      "content_type": "multipart/form-data",
+      "required_fields": [
+        "first_name",
+        "last_name", 
+        "userName",
+        "email",
+        "password",
+        "phone_number",
+        "user_location",
+        "exact_location"
+      ]
+    },
+    
+    "provider_registration": {
+      "url": "/auth/provider-verify-register", 
+      "method": "POST",
+      "content_type": "multipart/form-data",
+      "required_fields": [
+        "provider_first_name",
+        "provider_last_name",
+        "provider_userName", 
+        "provider_email",
+        "provider_password",
+        "provider_phone_number",
+        "provider_location",
+        "provider_exact_location",
+        "provider_uli"
+      ]
+    }
+  }
+}

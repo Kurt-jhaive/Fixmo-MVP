@@ -9,6 +9,7 @@ import serviceProviderRoutes from './route/serviceProvider.js'; // Use .js exten
 import serviceRoutes from './route/serviceRoutes.js'; // New service management routes
 import certificateRoutes from './route/certificateRoutes.js'; // New certificate management routes
 import availabilityRoutes from './route/availabilityRoutes.js'; // New availability management routes
+import appointmentRoutes from './route/appointmentRoutes.js'; // New appointment management routes
 import adminRoute from './route/adminRoute.js'; // Use .js extension for ESM
 import cors from 'cors';
 
@@ -110,6 +111,7 @@ app.use('/api/serviceProvider', serviceProviderRoutes); // Mount service provide
 app.use('/api/services', serviceRoutes); // Mount service management routes
 app.use('/api/certificates', certificateRoutes); // Mount certificate management routes
 app.use('/api/availability', availabilityRoutes); // Mount availability management routes
+app.use('/api/appointments', appointmentRoutes); // Mount appointment management routes
 
 // app.use('/users', usersRouter); // Uncomment if usersRouter is defined
 

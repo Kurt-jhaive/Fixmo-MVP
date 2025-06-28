@@ -111,14 +111,21 @@
             <div class="modal-header">
                 <h2>Edit Service</h2>
                 <span class="close" onclick="closeEditServiceModal()">&times;</span>
-            </div>            <div class="modal-body">
+            </div>
+            <div class="modal-body">
                 <form id="editServiceForm">
                     <input type="hidden" id="edit_service_id" name="service_id">
                     
                     <div class="form-group">
+                        <label for="edit_certificate_id">Certificate:</label>
+                        <select id="edit_certificate_id" name="certificate_id" required>
+                            <option value="">Select a certificate</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
                         <label for="edit_service_title">Service Title:</label>
-                        <input type="text" id="edit_service_title" name="service_title" readonly>
-                        <small class="form-help">Service title cannot be changed</small>
+                        <input type="text" id="edit_service_title" name="service_title" required>
                     </div>
                     
                     <div class="form-group">
@@ -126,10 +133,12 @@
                         <textarea id="edit_service_description" name="service_description" rows="4" required></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="edit_service_startingprice">Starting Price (₱):</label>
-                        <input type="number" id="edit_service_startingprice" name="service_startingprice" 
-                               min="0" step="0.01" required>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit_service_startingprice">Starting Price (₱):</label>
+                            <input type="number" id="edit_service_startingprice" name="service_startingprice" 
+                                   min="0" step="0.01" required>
+                        </div>
                     </div>
                     
                     <div class="form-actions">

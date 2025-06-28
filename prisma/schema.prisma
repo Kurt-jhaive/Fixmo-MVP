@@ -12,11 +12,13 @@ model User{
     last_name String
     userName String @unique
     email String @unique
+    birthday DateTime?
     password String
     phone_number String @unique
     profile_photo String?
     valid_id String?
     user_location String?
+    exact_location String? // JSON string with GPS coordinates
     created_at DateTime @default(now())
     user_rating Rating[]
     user_appointments Appointment[]
@@ -31,6 +33,7 @@ model ServiceProviderDetails{
     provider_password String
     provider_userName String @unique
     provider_email String @unique
+    provider_birthday DateTime?
     provider_phone_number String @unique
     provider_profile_photo String?
     provider_valid_id String?
@@ -38,6 +41,7 @@ model ServiceProviderDetails{
     created_at DateTime @default(now())
     provider_rating Float @default(0.0)
     provider_location String?
+    provider_exact_location String? // JSON string with GPS coordinates
     provider_appointments Appointment[]
     provider_services ServiceListing[]
     provider_ratings Rating[]
@@ -123,7 +127,7 @@ model Appointment{
 
     appointment_status String
     scheduled_date DateTime
-    actual_price Float?
+    final_price Float?
     repairDescription String?
     created_at DateTime @default(now())
     appointment_rating Rating[]

@@ -4,8 +4,12 @@
     <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Fixmo - Register Account</title>    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Fixmo Registration Styles -->
     <link href="css/fixmo-registration.css" rel="stylesheet">
+    <!-- Location Picker Styles -->
+    <link href="css/location-picker.css" rel="stylesheet">
     <!-- Reusable OTP Verification -->
     <script src="js/otp-verifier.js"></script>
+    <!-- Location Picker Component -->
+    <script src="js/location-picker.js"></script>
 </head>
 <body>
     <div class="register-container">
@@ -113,6 +117,15 @@
                             <i class="fas fa-at input-icon"></i>
                         </div>
                     </div>
+
+                    <div class="form-group">
+                        <label for="birthday">Birthday (Must be at least 18 years old)</label>
+                        <div class="input-wrapper">
+                            <input type="date" id="birthday" class="form-control" max="" placeholder="Select your birth date">
+                            <i class="fas fa-birthday-cake input-icon"></i>
+                        </div>
+                        <small class="form-text">You must be 18 or older to create an account</small>
+                    </div>
                 </div>
 
                 <!-- Contact Information -->
@@ -171,6 +184,13 @@
                             <input type="text" id="userAddress" class="form-control" placeholder="Street name, Building, Unit number (optional)">
                             <i class="fas fa-road input-icon"></i>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationPicker">Pin Your Exact Location <span class="required">*</span></label>
+                        <div id="customerLocationPicker"></div>
+                        <small class="form-text">Your location will be automatically set based on your address selections above. You can adjust the pin for precise location.</small>
+                        <input type="hidden" id="exactLocation" name="exactLocation" required>
                     </div>
                 </div>
 
@@ -241,9 +261,11 @@
             Already have an account? <a href="/fixmo-login">Sign in here</a>
         </div>
     </div>    <script>        let verifiedEmail = '';
+        let verifiedOTP = '';
         let resendCooldown = 0;
         let locationData;
         let otpVerifier;
+        let customerLocationPicker;
 
         // Initialize OTP verifier
         function initializeOTPVerifier() {
@@ -263,6 +285,30 @@
                     const otpTiles = document.querySelectorAll('.otp-tile');
                     otpVerifier.showOTPError(otpTiles);
                     otpVerifier.clearOTPTiles(otpTiles);
+                }
+            });
+        }
+
+        // Initialize location picker
+        function initializeLocationPicker() {
+            customerLocationPicker = new LocationPicker('customerLocationPicker', {
+                defaultZoom: 15,
+                defaultLat: 14.5995, // Manila default
+                defaultLng: 120.9842,
+                showSearchBox: true,
+                allowManualPin: true,
+                showCurrentLocation: true,
+                onLocationSelect: (location) => {
+                    const hiddenInput = document.getElementById('exactLocation');
+                    if (location) {
+                        hiddenInput.value = JSON.stringify({
+                            lat: location.lat,
+                            lng: location.lng,
+                            coordinates: location.latLng
+                        });
+                    } else {
+                        hiddenInput.value = '';
+                    }
                 }
             });
         }
@@ -318,6 +364,9 @@
             const barangaySelect = document.getElementById('userBarangay');
             barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
             barangaySelect.disabled = true;
+            
+            // Update location picker search
+            updateLocationPickerSearch();
         }
 
         function handleCityChange(cities) {
@@ -335,7 +384,26 @@
                     option.textContent = barangay;
                     barangaySelect.appendChild(option);
                 });
+                
+                // Add change listener for barangay
+                barangaySelect.addEventListener('change', updateLocationPickerSearch);
             }
+            
+            // Update location picker search
+            updateLocationPickerSearch();
+        }
+
+        // Function to update location picker search based on address selections
+        function updateLocationPickerSearch() {
+            if (!customerLocationPicker) return;
+            
+            const district = document.getElementById('userDistrict').value;
+            const city = document.getElementById('userCity').value;
+            const barangay = document.getElementById('userBarangay').value;
+            const address = document.getElementById('userAddress').value;
+            
+            // Use the new updateAddressFromComboBox method
+            customerLocationPicker.updateAddressFromComboBox(district, city, barangay, address);
         }
 
         function getFullCustomerAddress() {
@@ -394,7 +462,11 @@
             }
 
             // Verify OTP with backend
-            await otpVerifier.verifyOTP(verifiedEmail, otp);
+            const result = await otpVerifier.verifyOTP(verifiedEmail, otp);
+            if (result && result.success) {
+                // Store the verified OTP for later use in registration
+                verifiedOTP = otp;
+            }
         });
 
         function proceedToRegistration() {
@@ -414,6 +486,30 @@
             
             // Focus on first name field
             document.getElementById('firstName').focus();
+            
+            // Initialize location picker after showing registration form
+            setTimeout(() => {
+                initializeLocationPicker();
+                
+                // Add listener for street address changes
+                const addressInput = document.getElementById('userAddress');
+                if (addressInput) {
+                    addressInput.addEventListener('input', debounce(updateLocationPickerSearch, 1000));
+                }
+            }, 500);
+        }
+
+        // Debounce function to limit API calls
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
 
         // Customer registration form handler (Step 2)
@@ -435,17 +531,33 @@
                 return;
             }
 
+            // Validate exact location is selected using LocationPicker validation
+            if (!customerLocationPicker || !customerLocationPicker.isLocationSelected()) {
+                showError('Please pin your exact location on the map. Your location will be automatically set based on your address selections.');
+                return;
+            }
+
+            // Get the selected location from the location picker
+            const selectedLocation = customerLocationPicker.getSelectedLocation();
+            if (!selectedLocation) {
+                showError('Please pin your exact location on the map.');
+                return;
+            }
+
             // Prepare form data for final registration
             const formData = new FormData();
             
-            // Add form data using the verified email            formData.append('first_name', document.getElementById('firstName').value);
+            // Add form data using the verified email
+            formData.append('first_name', document.getElementById('firstName').value);
             formData.append('last_name', document.getElementById('lastName').value);
             formData.append('userName', document.getElementById('userName').value);
             formData.append('email', verifiedEmail);
+            formData.append('birthday', document.getElementById('birthday').value);
             formData.append('password', password);
             formData.append('phone_number', document.getElementById('phoneNumber').value);
             formData.append('user_location', getFullCustomerAddress());
-            formData.append('otp', '123456'); // Dummy OTP since email is already verified
+            formData.append('exact_location', JSON.stringify(selectedLocation));
+            formData.append('otp', verifiedOTP); // Use the actual verified OTP
             
             // Add file uploads if present
             const profilePhoto = document.getElementById('profilePhoto').files[0];
@@ -587,6 +699,57 @@
                 if (otpVerifier) {
                     otpVerifier.setupOTPTiles(otpTiles);                }
             }, 100);
+
+            // Set birthday field restrictions (at least 18 years old)
+            const birthdayInput = document.getElementById('birthday');
+            if (birthdayInput) {
+                const today = new Date();
+                const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+                const hundredYearsAgo = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+                
+                // Set max date to exactly 18 years ago (no current year visible)
+                const maxDate = eighteenYearsAgo.toISOString().split('T')[0];
+                const minDate = hundredYearsAgo.toISOString().split('T')[0];
+                
+                birthdayInput.setAttribute('max', maxDate);
+                birthdayInput.setAttribute('min', minDate);
+                
+                // Set default value to show a reasonable age (e.g., 25 years old)
+                const twentyFiveYearsAgo = new Date(today.getFullYear() - 25, today.getMonth(), today.getDate());
+                const defaultDate = twentyFiveYearsAgo.toISOString().split('T')[0];
+                
+                // Add validation on change
+                birthdayInput.addEventListener('change', function() {
+                    const selectedDate = new Date(this.value);
+                    const today = new Date();
+                    let age = today.getFullYear() - selectedDate.getFullYear();
+                    const monthDiff = today.getMonth() - selectedDate.getMonth();
+                    
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < selectedDate.getDate())) {
+                        age--;
+                    }
+                    
+                    if (age < 18) {
+                        showError('You must be at least 18 years old to register.');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    if (age > 100) {
+                        showError('Please enter a valid birth date.');
+                        this.value = '';
+                        return;
+                    }
+                });
+                
+                // Add focus event to show placeholder year when calendar opens
+                birthdayInput.addEventListener('focus', function() {
+                    if (!this.value) {
+                        // Don't set default value automatically, let user choose
+                        // but restrict the year range in the picker
+                    }
+                });
+            }
         });
     </script>
 </body>

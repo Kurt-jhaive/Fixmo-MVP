@@ -560,7 +560,8 @@ class ServiceManager {
           // Show edit modal
         const modal = document.getElementById('editServiceModal');
         if (modal) {
-            modal.classList.add('show');        }
+            modal.classList.add('show');
+        }
     }
 
     populateEditForm(service) {
@@ -568,18 +569,24 @@ class ServiceManager {
         document.getElementById('editServiceTitle').value = service.service_name || '';
         document.getElementById('editServiceDescription').value = service.description || service.service_description || '';
         document.getElementById('editServicePrice').value = service.price_per_hour || service.price || '';
-    }
-
-    hideModals() {
+        document.getElementById('editServiceDuration').value = service.estimated_duration || service.duration || '';
+        document.getElementById('editServiceLocation').value = service.service_location || 'customer';
+        document.getElementById('editServiceStatus').value = service.status || (service.is_available ? 'active' : 'inactive');
+        document.getElementById('editServiceRequirements').value = service.requirements || '';
+        
+        // Set category
+        const categorySelect = document.getElementById('editServiceCategory');
+        if (categorySelect && service.category_id) {
+            categorySelect.value = service.category_id;
+        }
+    }    hideModals() {
         document.querySelectorAll('.modal').forEach(modal => {
             modal.classList.remove('active', 'show');
         });
         this.currentEditingService = null;
         this.serviceToDelete = null;
         this.modalOpen = false; // Reset modal state
-    }
-
-    async handleAddService() {
+    }async handleAddService() {
         try {
             const form = document.getElementById('addServiceForm');
             const formData = new FormData(form);
@@ -630,72 +637,46 @@ class ServiceManager {
             console.error('Error creating service:', error);
             this.showToast('Error creating service', 'error');
         }
-    }    async handleEditService() {
+    }
+
+    async handleEditService() {
         const form = document.getElementById('editServiceForm');
-        const formData = new FormData(form);        // Validate required fields - get values directly from DOM as fallback
-        let description = formData.get('serviceDescription');
-        let price = formData.get('servicePrice');
+        const formData = new FormData(form);
         
-        // Fallback to DOM values if FormData is empty
-        if (!description) {
-            description = document.getElementById('editServiceDescription')?.value;
-        }
-        if (!price) {
-            price = document.getElementById('editServicePrice')?.value;
-        }
+        // Validate required fields
+        const title = formData.get('serviceTitle');
+        const description = formData.get('serviceDescription');
+        const price = formData.get('servicePrice');
+        const category = formData.get('serviceCategory');
         
-        console.log('Final values:', { description, price });
-        
-        if (!description || !description.trim() || !price || isNaN(parseFloat(price))) {
+        if (!title || !description || !price || !category) {
             this.showToast('Please fill in all required fields', 'error');
             return;
-        }        try {
+        }
+
+        try {
             const serviceId = formData.get('serviceId');
-            const title = formData.get('serviceTitle'); // Get title for submission but don't validate
             const serviceData = {
-                service_title: title,
-                service_description: description,
-                service_startingprice: parseFloat(price)
+                service_name: title,
+                description: description,
+                price_per_hour: parseFloat(price),
+                category_id: parseInt(category),
+                estimated_duration: formData.get('serviceDuration') ? parseFloat(formData.get('serviceDuration')) : null,
+                service_location: formData.get('serviceLocation'),
+                requirements: formData.get('serviceRequirements'),
+                status: formData.get('serviceStatus'),
+                is_available: formData.get('serviceStatus') === 'active'
             };
-              console.log('Sending to backend:', serviceData); // Debug log
-            
-            // Check for auth token
-            const token = localStorage.getItem('fixmo_provider_token');
-            console.log('Auth token:', token ? 'Present' : 'Not found'); // Debug log
-            
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-            
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            
             const response = await fetch(`/api/services/services/${serviceId}`, {
                 method: 'PUT',
                 credentials: 'include',
-                headers: headers,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(serviceData)
-            });            console.log('Response status:', response.status); // Debug log
-            
-            if (!response.ok) {
-                // Try to get the error response
-                const errorText = await response.text();
-                console.log('Error response text:', errorText);
-                
-                try {
-                    const errorData = JSON.parse(errorText);
-                    console.log('Error response data:', errorData);
-                    this.showToast(errorData.message || 'Error updating service', 'error');
-                } catch (parseError) {
-                    console.log('Could not parse error response as JSON');
-                    this.showToast('Error updating service: ' + errorText, 'error');
-                }
-                return;
-            }
-            
+            });
+
             const result = await response.json();
-            console.log('Success response data:', result); // Debug log
             
             if (response.ok) {
                 this.showToast('Service updated successfully!', 'success');
@@ -705,12 +686,11 @@ class ServiceManager {
             } else {
                 this.showToast(result.message || 'Error updating service', 'error');
             }
-        } catch (error) {            console.error('Error updating service:', error);
+        } catch (error) {
+            console.error('Error updating service:', error);
             this.showToast('Error updating service', 'error');
         }
-    }
-
-    async toggleService(serviceId) {
+    }    async toggleService(serviceId) {
         try {
             const response = await fetch(`/api/services/services/${serviceId}/toggle`, {
                 method: 'PATCH',

@@ -119,9 +119,11 @@ export const verifyOTPAndRegister = async (req, res) => {
       last_name,
       userName,
       email,
+      birthday,
       password,
       phone_number,
       user_location,
+      exact_location,
       otp
     } = req.body;
     
@@ -134,6 +136,22 @@ export const verifyOTPAndRegister = async (req, res) => {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Check for duplicate phone number
+    const existingPhoneUser = await prisma.user.findFirst({ 
+      where: { phone_number: phone_number } 
+    });
+    if (existingPhoneUser) {
+      return res.status(400).json({ message: 'Phone number is already registered with another account' });
+    }
+
+    // Also check if phone number exists in service provider table
+    const existingPhoneProvider = await prisma.serviceProviderDetails.findFirst({ 
+      where: { provider_phone_number: phone_number } 
+    });
+    if (existingPhoneProvider) {
+      return res.status(400).json({ message: 'Phone number is already registered with a service provider account' });
     }
 
     // Verify OTP using the reusable utility
@@ -152,11 +170,13 @@ export const verifyOTPAndRegister = async (req, res) => {
         last_name,
         userName,
         email,
+        birthday: birthday ? new Date(birthday) : null,
         password: hashedPassword,
         phone_number,
         profile_photo: profilePhotoPath || null,
         valid_id: validIdPath || null,
-        user_location: user_location || null
+        user_location: user_location || null,
+        exact_location: exact_location || null
       }
     });    // Send registration success email
     await sendRegistrationSuccessEmail(email, first_name, userName); 
@@ -315,7 +335,7 @@ export const addAppointment = async (req, res) => {
                 provider_id: parseInt(provider_id),
                 appointment_status: 'pending',
                 scheduled_date: scheduledDateTime,
-                actual_price: estimated_price ? parseFloat(estimated_price) : (serviceListing ? serviceListing.service_startingprice : null),
+                final_price: estimated_price ? parseFloat(estimated_price) : (serviceListing ? serviceListing.service_startingprice : null),
                 repairDescription: service_description || (serviceListing ? serviceListing.service_description : null)
             },
             include: {

@@ -1,11 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Fixmo - Service Provider Registration</title>    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Fixmo - Service Provi                    <div class="form-group">
+                        <label for="providerAddress">Service Area Details</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="providerAddress" class="form-control" placeholder="Specific service area, Building, Unit details (optional)">
+                            <i class="fas fa-road input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationPicker">Pin Your Service Area Location <span class="required">*</span></label>
+                        <div id="providerLocationPicker"></div>
+                        <small class="form-text">Your service area location will be automatically set based on your address selections above. Adjust the pin for precise location visibility to customers.</small>
+                        <input type="hidden" id="exactLocation" name="exactLocation" required>
+                    </div>istration</title>    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Fixmo Registration Styles -->
     <link href="css/fixmo-registration.css" rel="stylesheet">
+    <!-- Location Picker Styles -->
+    <link href="css/location-picker.css" rel="stylesheet">
     <!-- Reusable OTP Verification -->
     <script src="js/otp-verifier.js"></script>
+    <!-- Location Picker Component -->
+    <script src="js/location-picker.js"></script>
     
 </head>
 <body>
@@ -108,6 +125,15 @@
                             <input type="text" id="userName" class="form-control" placeholder="Choose a unique username" required>
                             <i class="fas fa-at input-icon"></i>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="birthday">Birthday (Must be at least 18 years old)</label>
+                        <div class="input-wrapper">
+                            <input type="date" id="birthday" class="form-control" max="" placeholder="Select your birth date">
+                            <i class="fas fa-birthday-cake input-icon"></i>
+                        </div>
+                        <small class="form-text">You must be 18 or older to register as a service provider</small>
                     </div>
                 </div>
 
@@ -341,6 +367,31 @@
         let resendCooldown = 0;
         let locationData;
         let otpVerifier;
+        let providerLocationPicker;
+
+        // Initialize location picker
+        function initializeLocationPicker() {
+            providerLocationPicker = new LocationPicker('providerLocationPicker', {
+                defaultZoom: 15,
+                defaultLat: 14.5995, // Manila default
+                defaultLng: 120.9842,
+                showSearchBox: true,
+                allowManualPin: true,
+                showCurrentLocation: true,
+                onLocationSelect: (location) => {
+                    const hiddenInput = document.getElementById('exactLocation');
+                    if (location) {
+                        hiddenInput.value = JSON.stringify({
+                            lat: location.lat,
+                            lng: location.lng,
+                            coordinates: location.latLng
+                        });
+                    } else {
+                        hiddenInput.value = '';
+                    }
+                }
+            });
+        }
 
         // Initialize OTP verifier
         function initializeOTPVerifier() {
@@ -370,6 +421,17 @@
                     
                     // Focus on first name field
                     document.getElementById('firstName').focus();
+                    
+                    // Initialize location picker after showing registration form
+                    setTimeout(() => {
+                        initializeLocationPicker();
+                        
+                        // Add listener for street address changes
+                        const addressInput = document.getElementById('providerAddress');
+                        if (addressInput) {
+                            addressInput.addEventListener('input', debounce(updateProviderLocationPickerSearch, 1000));
+                        }
+                    }, 500);
                 },
                 onError: (error) => {
                     const otpTiles = document.querySelectorAll('.otp-tile');                    otpVerifier.showOTPError(otpTiles);
@@ -429,6 +491,9 @@
             const barangaySelect = document.getElementById('providerBarangay');
             barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
             barangaySelect.disabled = true;
+            
+            // Update location picker search
+            updateProviderLocationPickerSearch();
         }
 
         function handleProviderCityChange(cities) {
@@ -446,7 +511,53 @@
                     option.textContent = barangay;
                     barangaySelect.appendChild(option);
                 });
+                
+                // Add change listener for barangay
+                barangaySelect.addEventListener('change', updateProviderLocationPickerSearch);
             }
+            
+            // Update location picker search
+            updateProviderLocationPickerSearch();
+        }
+
+        // Function to update provider location picker search based on address selections
+        function updateProviderLocationPickerSearch() {
+            if (!providerLocationPicker) return;
+            
+            const district = document.getElementById('providerDistrict').value;
+            const city = document.getElementById('providerCity').value;
+            const barangay = document.getElementById('providerBarangay').value;
+            const address = document.getElementById('providerAddress').value;
+            
+            // Build search query from selected address components
+            let searchQuery = '';
+            if (address) searchQuery += address + ', ';
+            if (barangay) searchQuery += barangay + ', ';
+            if (city) searchQuery += city + ', ';
+            if (district) searchQuery += district + ', ';
+            searchQuery += 'Metro Manila, Philippines';
+            
+            // Update the search input and trigger search
+            if (searchQuery.trim() !== 'Metro Manila, Philippines') {
+                const searchInput = document.getElementById('providerLocationPicker-search');
+                if (searchInput) {
+                    searchInput.value = searchQuery;
+                    providerLocationPicker.searchLocation(searchQuery);
+                }
+            }
+        }
+
+        // Debounce function to limit API calls
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
 
         function getFullProviderAddress() {
@@ -603,6 +714,13 @@
                 return;
             }
 
+            // Validate exact location is selected
+            const exactLocationValue = document.getElementById('exactLocation').value;
+            if (!exactLocationValue || exactLocationValue.trim() === '') {
+                showError('Please pin your exact service area location on the map. Your location will be automatically set based on your address selections.');
+                return;
+            }
+
             // Prepare form data for final registration
             const formData = new FormData();
               // Add form data using the verified email
@@ -610,9 +728,11 @@
             formData.append('provider_last_name', document.getElementById('lastName').value);
             formData.append('provider_userName', document.getElementById('userName').value);
             formData.append('provider_email', verifiedEmail);
+            formData.append('provider_birthday', document.getElementById('birthday').value);
             formData.append('provider_password', password);
             formData.append('provider_phone_number', document.getElementById('phoneNumber').value);
             formData.append('provider_location', getFullProviderAddress());
+            formData.append('provider_exact_location', document.getElementById('exactLocation').value);
             formData.append('provider_uli', document.getElementById('providerUli').value);
             formData.append('otp', '123456'); // Dummy OTP since email is already verified
             
@@ -719,6 +839,53 @@
                     otpVerifier.setupOTPTiles(otpTiles);
                 }
             }, 100);
+
+            // Set birthday field restrictions (at least 18 years old)
+            const birthdayInput = document.getElementById('birthday');
+            if (birthdayInput) {
+                const today = new Date();
+                const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+                const hundredYearsAgo = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+                
+                // Set max date to exactly 18 years ago (no current year visible)
+                const maxDate = eighteenYearsAgo.toISOString().split('T')[0];
+                const minDate = hundredYearsAgo.toISOString().split('T')[0];
+                
+                birthdayInput.setAttribute('max', maxDate);
+                birthdayInput.setAttribute('min', minDate);
+                
+                // Add validation on change
+                birthdayInput.addEventListener('change', function() {
+                    const selectedDate = new Date(this.value);
+                    const today = new Date();
+                    let age = today.getFullYear() - selectedDate.getFullYear();
+                    const monthDiff = today.getMonth() - selectedDate.getMonth();
+                    
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < selectedDate.getDate())) {
+                        age--;
+                    }
+                    
+                    if (age < 18) {
+                        showError('You must be at least 18 years old to register as a service provider.');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    if (age > 100) {
+                        showError('Please enter a valid birth date.');
+                        this.value = '';
+                        return;
+                    }
+                });
+                
+                // Add focus event to show placeholder year when calendar opens
+                birthdayInput.addEventListener('focus', function() {
+                    if (!this.value) {
+                        // Don't set default value automatically, let user choose
+                        // but restrict the year range in the picker
+                    }
+                });
+            }
         });
 
         // Add Certificate functionality

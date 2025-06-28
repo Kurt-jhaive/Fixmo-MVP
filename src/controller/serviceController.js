@@ -133,7 +133,6 @@ export const getServiceById = async (req, res) => {
 
 // Create a new service
 export const createService = async (req, res) => {
-    console.log('=== CREATE SERVICE FUNCTION CALLED (This should NOT be called for edit) ===');
     try {
         const providerId = req.userId;
         const {
@@ -251,43 +250,24 @@ export const createService = async (req, res) => {
 
 // Update a service
 export const updateService = async (req, res) => {
-    console.log('=== UPDATE SERVICE FUNCTION CALLED ===');
     try {
         const { serviceId } = req.params;
         const providerId = req.userId;
-        
-        console.log('Update service request:', { 
-            serviceId, 
-            providerId, 
-            body: req.body,
-            headers: req.headers,
-            userId: req.userId 
-        }); // Debug log
-        
         const {
             service_title,
             service_description,
             service_startingprice,
             certificate_id
-        } = req.body;        // Validate required fields - certificate_id is optional for updates
-        console.log('Validation check:', { 
-            service_description, 
-            service_startingprice,
-            hasDescription: !!service_description,
-            hasPrice: !!service_startingprice,
-            descriptionTrimmed: service_description?.trim(),
-            priceAsNumber: service_startingprice ? parseFloat(service_startingprice) : null
-        });
-        
-        if (!service_description || !service_description.trim() || !service_startingprice || isNaN(parseFloat(service_startingprice))) {
-            console.log('Validation failed - missing required fields');
-            return res.status(400).json({ success: false, message: 'Service description and starting price are required.' });
-        }        const serviceListingId = parseInt(serviceId);
-        console.log('Parsed serviceListingId:', serviceListingId);
+        } = req.body;
+
+        // Validate input
+        if (!service_title || !service_description || !service_startingprice || !certificate_id) {
+            return res.status(400).json({ success: false, message: 'All fields are required.' });
+        }
+
+        const serviceListingId = parseInt(serviceId);
 
         await prisma.$transaction(async (prisma) => {
-            console.log('Starting database transaction...');
-            
             const existingService = await prisma.serviceListing.findFirst({
                 where: {
                     service_id: serviceListingId,
@@ -297,90 +277,65 @@ export const updateService = async (req, res) => {
                     specific_services: true
                 }
             });
-            
-            console.log('Existing service found:', !!existingService);
-            console.log('Existing service data:', existingService);
 
             if (!existingService) {
-                console.log('Service not found - throwing error');
                 throw new Error('Service not found or access denied');
-            }// Update basic service information
-            const updateData = {
-                service_description: service_description.trim(),
-                service_startingprice: parseFloat(service_startingprice)
-            };
-            
-            // Only update title if provided (for backwards compatibility)
-            if (service_title) {
-                updateData.service_title = service_title.trim();
             }
 
             await prisma.serviceListing.update({
                 where: { service_id: serviceListingId },
-                data: updateData
+                data: {
+                    service_title: service_title.trim(),
+                    service_description: service_description.trim(),
+                    service_startingprice: parseFloat(service_startingprice)
+                }
             });
 
             const specificService = existingService.specific_services[0];
             if (specificService) {
-                // Update specific service description
-                const updateSpecificData = {
-                    specific_service_description: service_description.trim()
-                };
-                
-                // Only update title if provided
-                if (service_title) {
-                    updateSpecificData.specific_service_title = service_title.trim();
-                }
-                
-                await prisma.specificService.update({
-                    where: { specific_service_id: specificService.specific_service_id },
-                    data: updateSpecificData
+                const certificate = await prisma.certificate.findUnique({
+                    where: { certificate_id: parseInt(certificate_id) }
                 });
 
-                // Only update certificate and category if certificate_id is provided
-                if (certificate_id) {
-                    const certificate = await prisma.certificate.findUnique({
-                        where: { certificate_id: parseInt(certificate_id) }
+                if (!certificate || certificate.provider_id !== providerId) {
+                    throw new Error('New certificate not found or does not belong to you.');
+                }
+
+                const categoryName = certificate.certificate_name.split(' ')[0];
+                let category = await prisma.serviceCategory.findFirst({
+                    where: { category_name: categoryName }
+                });
+                if (!category) {
+                    category = await prisma.serviceCategory.create({
+                        data: { category_name: categoryName }
                     });
+                }
 
-                    if (!certificate || certificate.provider_id !== providerId) {
-                        throw new Error('New certificate not found or does not belong to you.');
+                await prisma.specificService.update({
+                    where: { specific_service_id: specificService.specific_service_id },
+                    data: {
+                        category_id: category.category_id,
+                        specific_service_title: service_title.trim(),
+                        specific_service_description: service_description.trim()
                     }
+                });
 
-                    const categoryName = certificate.certificate_name.split(' ')[0];
-                    let category = await prisma.serviceCategory.findFirst({
-                        where: { category_name: categoryName }
+                const existingCoveredService = await prisma.coveredService.findFirst({
+                    where: { specific_service_id: specificService.specific_service_id }
+                });
+
+                if (existingCoveredService) {
+                    await prisma.coveredService.update({
+                        where: { covered_service_id: existingCoveredService.covered_service_id },
+                        data: { certificate_id: parseInt(certificate_id) }
                     });
-                    if (!category) {
-                        category = await prisma.serviceCategory.create({
-                            data: { category_name: categoryName }
-                        });
-                    }
-
-                    await prisma.specificService.update({
-                        where: { specific_service_id: specificService.specific_service_id },
+                } else {
+                    await prisma.coveredService.create({
                         data: {
-                            category_id: category.category_id,
-                            specific_service_title: service_title?.trim() || specificService.specific_service_title
-                        }                    });
-
-                    const existingCoveredService = await prisma.coveredService.findFirst({
-                        where: { specific_service_id: specificService.specific_service_id }
+                            specific_service_id: specificService.specific_service_id,
+                            certificate_id: parseInt(certificate_id)
+                        }
                     });
-
-                    if (existingCoveredService) {
-                        await prisma.coveredService.update({
-                            where: { covered_service_id: existingCoveredService.covered_service_id },
-                            data: { certificate_id: parseInt(certificate_id) }
-                        });
-                    } else {
-                        await prisma.coveredService.create({
-                            data: {
-                                specific_service_id: specificService.specific_service_id,
-                                certificate_id: parseInt(certificate_id)
-                            }
-                        });
-                    }
                 }
             }
         });
