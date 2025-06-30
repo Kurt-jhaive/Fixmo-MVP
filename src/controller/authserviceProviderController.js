@@ -1115,3 +1115,306 @@ export const providerLogout = async (req, res) => {
     }
 };
 
+// Request OTP for profile update
+export const requestProviderProfileUpdateOTP = async (req, res) => {
+    const { provider_email } = req.body;
+    
+    try {
+        // Check if provider exists
+        const existingProvider = await prisma.serviceProviderDetails.findUnique({ 
+            where: { provider_email } 
+        });
+        
+        if (!existingProvider) {
+            return res.status(404).json({ message: 'Provider not found' });
+        }
+
+        // Delete any previous OTPs for this email to prevent re-use
+        await prisma.oTPVerification.deleteMany({ where: { email: provider_email } });
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        
+        await prisma.oTPVerification.create({
+            data: {
+                email: provider_email,
+                otp,
+                expires_at: expiresAt
+            }
+        });
+
+        await sendOTPEmail(provider_email, otp);
+        res.status(200).json({ message: 'OTP sent to your current email for profile update verification' });
+    } catch (err) {
+        console.error('Profile update OTP request error:', err);
+        res.status(500).json({ message: 'Error sending OTP' });
+    }
+};
+
+// Step 1: Verify original email OTP and request new email OTP (for email changes)
+export const verifyOriginalEmailAndRequestNewEmailOTP = async (req, res) => {
+    try {
+        const {
+            provider_email,
+            provider_phone_number,
+            new_email,
+            otp
+        } = req.body;
+
+        console.log('Step 1 - Original email verification:', { provider_email, new_email, otp });
+
+        // Verify OTP for original email first
+        const verificationResult = await verifyOTP(provider_email, otp);
+        if (!verificationResult.success) {
+            return res.status(400).json({ message: verificationResult.message });
+        }
+
+        // Check if provider exists
+        const existingProvider = await prisma.serviceProviderDetails.findUnique({ 
+            where: { provider_email } 
+        });
+        
+        if (!existingProvider) {
+            return res.status(404).json({ message: 'Provider not found' });
+        }
+
+        // Check if email is being changed
+        const emailChanged = new_email && new_email !== provider_email;
+        
+        if (emailChanged) {
+            // Validate new email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(new_email)) {
+                return res.status(400).json({ message: 'Invalid email format' });
+            }
+
+            // Check if new email is already taken
+            const emailExists = await prisma.serviceProviderDetails.findFirst({ 
+                where: { provider_email: new_email } 
+            });
+            
+            if (emailExists) {
+                return res.status(400).json({ message: 'Email address is already registered with another provider account' });
+            }
+
+            // Also check customer table
+            const customerEmailExists = await prisma.user.findFirst({ 
+                where: { email: new_email } 
+            });
+            
+            if (customerEmailExists) {
+                return res.status(400).json({ message: 'Email address is already registered with a customer account' });
+            }
+
+            // Clean up any existing OTPs for the new email
+            await prisma.oTPVerification.deleteMany({ where: { email: new_email } });
+
+            // Generate 6-digit OTP for new email
+            const newEmailOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+            
+            await prisma.oTPVerification.create({
+                data: {
+                    email: new_email,
+                    otp: newEmailOtp,
+                    expires_at: expiresAt
+                }
+            });
+
+            // Store pending profile update data temporarily (you could use a separate table for this)
+            // For now, we'll store it in a way that can be retrieved in the next step
+            await prisma.oTPVerification.create({
+                data: {
+                    email: `temp_${provider_email}`, // Temporary key
+                    otp: JSON.stringify({
+                        provider_email,
+                        provider_phone_number,
+                        new_email,
+                        step: 'pending_new_email_verification'
+                    }),
+                    expires_at: expiresAt
+                }
+            });
+
+            await sendOTPEmail(new_email, newEmailOtp);
+            
+            // Clean up original email OTP after successful verification
+            await prisma.oTPVerification.deleteMany({ where: { email: provider_email } });
+
+            res.status(200).json({ 
+                message: 'Original email verified. OTP sent to new email address for verification.',
+                nextStep: 'verify_new_email',
+                newEmail: new_email
+            });
+        } else {
+            // No email change, proceed with regular profile update
+            await updateProviderProfileDirectly(req, res, provider_email, provider_phone_number, null);
+        }
+
+    } catch (err) {
+        console.error('Original email verification error:', err);
+        res.status(500).json({ message: 'Error processing verification' });
+    }
+};
+
+// Step 2: Verify new email OTP and complete profile update
+export const verifyNewEmailAndUpdateProfile = async (req, res) => {
+    try {
+        const {
+            new_email,
+            otp
+        } = req.body;
+
+        console.log('Step 2 - New email verification:', { new_email, otp });
+
+        // Verify OTP for new email
+        const verificationResult = await verifyOTP(new_email, otp);
+        if (!verificationResult.success) {
+            return res.status(400).json({ message: verificationResult.message });
+        }
+
+        // Retrieve pending profile update data
+        const pendingUpdate = await prisma.oTPVerification.findFirst({
+            where: {
+                email: { startsWith: 'temp_' },
+                otp: { contains: new_email }
+            }
+        });
+
+        if (!pendingUpdate) {
+            return res.status(400).json({ message: 'No pending profile update found. Please start the process again.' });
+        }
+
+        const updateData = JSON.parse(pendingUpdate.otp);
+        
+        // Proceed with profile update
+        await updateProviderProfileDirectly(req, res, updateData.provider_email, updateData.provider_phone_number, new_email);
+
+        // Clean up temporary data
+        await prisma.oTPVerification.deleteMany({ 
+            where: { 
+                OR: [
+                    { email: new_email },
+                    { email: { startsWith: 'temp_' } }
+                ]
+            }
+        });
+
+    } catch (err) {
+        console.error('New email verification error:', err);
+        res.status(500).json({ message: 'Error completing profile update' });
+    }
+};
+
+// Helper function to update provider profile directly
+const updateProviderProfileDirectly = async (req, res, provider_email, provider_phone_number, new_email) => {
+    try {
+        // Check if provider exists
+        const existingProvider = await prisma.serviceProviderDetails.findUnique({ 
+            where: { provider_email } 
+        });
+        
+        if (!existingProvider) {
+            return res.status(404).json({ message: 'Provider not found' });
+        }
+
+        // Check if new phone number is already taken (if phone is being changed)
+        if (provider_phone_number && provider_phone_number !== existingProvider.provider_phone_number) {
+            const phoneExists = await prisma.serviceProviderDetails.findFirst({ 
+                where: { 
+                    provider_phone_number: provider_phone_number,
+                    provider_email: { not: provider_email }
+                } 
+            });
+            
+            if (phoneExists) {
+                return res.status(400).json({ message: 'Phone number is already registered with another provider account' });
+            }
+
+            // Also check customer table
+            const customerPhoneExists = await prisma.user.findFirst({ 
+                where: { phone_number: provider_phone_number } 
+            });
+            
+            if (customerPhoneExists) {
+                return res.status(400).json({ message: 'Phone number is already registered with a customer account' });
+            }
+        }
+
+        // Handle profile photo upload (if any)
+        const profilePhotoFile = req.files && req.files['provider_profile_photo'] ? req.files['provider_profile_photo'][0] : null;
+        const provider_profile_photo = profilePhotoFile ? profilePhotoFile.path : undefined;
+
+        // Prepare update data
+        const updateData = {};
+        
+        if (provider_phone_number) updateData.provider_phone_number = provider_phone_number;
+        if (new_email) updateData.provider_email = new_email;
+        if (provider_profile_photo) updateData.provider_profile_photo = provider_profile_photo;
+
+        // Update provider profile
+        const updatedProvider = await prisma.serviceProviderDetails.update({
+            where: { provider_email },
+            data: updateData,
+            select: {
+                provider_id: true,
+                provider_first_name: true,
+                provider_last_name: true,
+                provider_email: true,
+                provider_phone_number: true,
+                provider_location: true,
+                provider_exact_location: true,
+                provider_profile_photo: true,
+                provider_birthday: true,
+                provider_uli: true,
+                provider_userName: true,
+                provider_isVerified: true
+            }
+        });
+
+        res.status(200).json({ 
+            message: 'Profile updated successfully',
+            provider: updatedProvider 
+        });
+
+    } catch (err) {
+        console.error('Profile update error:', err);
+        res.status(500).json({ message: 'Error updating profile' });
+    }
+};
+
+// Legacy function - now routes to appropriate step based on email change
+export const updateProviderProfileWithOTP = async (req, res) => {
+    try {
+        const {
+            provider_email,
+            provider_phone_number,
+            new_email,
+            otp
+        } = req.body;
+
+        console.log('Profile update request:', { provider_email, provider_phone_number, new_email, otp });
+
+        // Check if email is being changed
+        const emailChanged = new_email && new_email !== provider_email;
+        
+        if (emailChanged) {
+            // Route to step 1: verify original email and request new email OTP
+            await verifyOriginalEmailAndRequestNewEmailOTP(req, res);
+        } else {
+            // No email change, proceed with regular verification and update
+            const verificationResult = await verifyOTP(provider_email, otp);
+            if (!verificationResult.success) {
+                return res.status(400).json({ message: verificationResult.message });
+            }
+            
+            await updateProviderProfileDirectly(req, res, provider_email, provider_phone_number, null);
+        }
+
+    } catch (err) {
+        console.error('Profile update error:', err);
+        res.status(500).json({ message: 'Error updating profile' });
+    }
+};
+

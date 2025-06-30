@@ -17,8 +17,11 @@ import {
   updateAvailability,
   deleteAvailability,
   getProviderDayAvailability,
-  getProviderProfile
-
+  getProviderProfile,
+  requestProviderProfileUpdateOTP,
+  updateProviderProfileWithOTP,
+  verifyOriginalEmailAndRequestNewEmailOTP,
+  verifyNewEmailAndUpdateProfile
 } from '../controller/authserviceProviderController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import { PrismaClient } from '@prisma/client';
@@ -156,6 +159,29 @@ const certificateUpload = multer({
   }
 });
 
+// Configure multer for profile updates
+const profileUpdateUpload = multer({ 
+  storage: registrationStorage, // Reuse the same storage configuration
+  fileFilter: (req, file, cb) => {
+    // Only accept profile photo for profile updates
+    if (file.fieldname === 'provider_profile_photo') {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Profile photo must be an image file (JPG, PNG, GIF, etc.)'), false);
+      }
+    } else {
+      cb(new Error('Only profile photo uploads are allowed'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit per file
+    files: 1 // Only 1 profile photo
+  }
+}).fields([
+  { name: 'provider_profile_photo', maxCount: 1 }
+]);
+
 const prisma = new PrismaClient();
 
 // Step 1: Service provider requests OTP
@@ -209,6 +235,102 @@ router.post('/provider-reset-password', providerResetPassword);
 router.get('/profile', authMiddleware, getProviderProfile);
 // Get provider profile (protected route)
 router.get('/profile', authMiddleware, getProviderProfile);
+
+// Profile update OTP routes
+router.post('/profile-update-request-otp', authMiddleware, requestProviderProfileUpdateOTP);
+
+// Two-step email verification for profile updates
+router.post('/profile-update-verify-original-email', authMiddleware, (req, res, next) => {
+  profileUpdateUpload(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      console.error('Profile update multer error:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          message: 'Profile photo too large. Maximum size is 5MB.'
+        });
+      } else if (err.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({
+          success: false,
+          message: 'Only one profile photo is allowed.'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'File upload error: ' + err.message
+      });
+    } else if (err) {
+      console.error('Profile update upload error:', err);
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+    next();
+  });
+}, verifyOriginalEmailAndRequestNewEmailOTP);
+
+router.post('/profile-update-verify-new-email', authMiddleware, (req, res, next) => {
+  profileUpdateUpload(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      console.error('Profile update multer error:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          message: 'Profile photo too large. Maximum size is 5MB.'
+        });
+      } else if (err.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({
+          success: false,
+          message: 'Only one profile photo is allowed.'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'File upload error: ' + err.message
+      });
+    } else if (err) {
+      console.error('Profile update upload error:', err);
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+    next();
+  });
+}, verifyNewEmailAndUpdateProfile);
+
+// Legacy route (still works for non-email changes)
+router.post('/profile-update-verify-otp', authMiddleware, (req, res, next) => {
+  profileUpdateUpload(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      console.error('Profile update multer error:', err);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          message: 'Profile photo too large. Maximum size is 5MB.'
+        });
+      } else if (err.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({
+          success: false,
+          message: 'Only one profile photo is allowed.'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'File upload error: ' + err.message
+      });
+    } else if (err) {
+      console.error('Profile update upload error:', err);
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+    next();
+  });
+}, updateProviderProfileWithOTP);
+
 // Upload service provider certificate (with multer)
 router.post('/upload-certificate', certificateUpload.single('certificate_file'), uploadCertificate);
 

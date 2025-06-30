@@ -574,75 +574,24 @@ class ProviderDashboard {
     }
 
     async loadProfilePage() {
-        const container = document.getElementById('profileContainer');
-        if (!container) {
-            console.warn('Profile container not found');
-            return;
-        }
-
-        container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i> Loading profile...</div>';
-
-        try {
-            // Use existing provider data
-            const provider = this.providerData;
-            
-            container.innerHTML = `
-                <div class="profile-form-container">
-                    <div class="profile-form">
-                        <h3>Provider Information</h3>
-                        <form id="updateProfileForm">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>First Name</label>
-                                    <input type="text" id="firstName" value="${provider.provider_first_name || ''}" class="form-control">
-                                </div>
-                                <div class="form-group">
-                                    <label>Last Name</label>
-                                    <input type="text" id="lastName" value="${provider.provider_last_name || ''}" class="form-control">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Username</label>
-                                <input type="text" id="userName" value="${provider.provider_userName || ''}" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label>Email</label>
-                                <input type="email" id="email" value="${provider.provider_email || ''}" class="form-control" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label>Phone Number</label>
-                                <input type="tel" id="phone" value="${provider.provider_phone_number || ''}" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label>Location</label>
-                                <input type="text" id="location" value="${provider.provider_location || ''}" class="form-control">
-                            </div>
-                            <div class="form-actions">
-                                <button type="submit" class="btn-primary">Update Profile</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-
-            // Setup form submission
-            const form = document.getElementById('updateProfileForm');
-            if (form) {
-                form.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.updateProfile();
-                });
+        console.log('Loading profile page...');
+        
+        // Wait a bit for the page to be shown
+        setTimeout(async () => {
+            // Initialize ProfileManager if not already done
+            if (!window.profileManager) {
+                console.log('Creating new ProfileManager instance...');
+                window.profileManager = new ProfileManager();
+                // Pass the provider data directly
+                window.profileManager.currentProvider = this.providerData;
+                await window.profileManager.init();
+            } else {
+                console.log('Updating existing ProfileManager with latest data...');
+                // Re-initialize with latest data
+                window.profileManager.currentProvider = this.providerData;
+                window.profileManager.renderStaticProfile();
             }
-        } catch (error) {
-            console.error('Error loading profile:', error);
-            container.innerHTML = `
-                <div class="error-state">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <h3>Error loading profile</h3>
-                    <p>Please try again later.</p>
-                </div>
-            `;
-        }
+        }, 100);
     }
 
     async loadSettingsPage() {
