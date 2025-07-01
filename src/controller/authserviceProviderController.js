@@ -368,13 +368,21 @@ export const addServiceListing = async (req, res) => {
       return res.status(400).json({ message: 'Service title is required when no specific service is selected' });
     }
 
+    // Handle service picture path
+    let servicePicturePath = null;
+    if (req.file) {
+      // Store web-accessible path for database
+      servicePicturePath = '/uploads/' + req.file.path.replace(/\\/g, '/').split('/uploads/')[1];
+    }
+
     // Create the listing
     const listing = await prisma.serviceListing.create({
       data: {
         service_title: serviceTitle,
         service_description,
         service_startingprice: parseFloat(service_price),
-        provider_id: parseInt(provider_id)
+        provider_id: parseInt(provider_id),
+        service_picture: servicePicturePath
       }
     });
 
@@ -964,7 +972,14 @@ export const getProviderServices = async (req, res) => {
             orderBy: { service_id: 'desc' }
         });
 
-        res.status(200).json(services);
+        // Transform services to include service_picture and proper field mapping
+        const transformedServices = services.map(service => ({
+            ...service,
+            listing_id: service.service_id, // Add alias for consistency
+            service_picture: service.service_picture // Ensure service_picture is included
+        }));
+
+        res.status(200).json(transformedServices);
     } catch (error) {
         console.error('Error fetching provider services:', error);
         res.status(500).json({ message: 'Internal server error' });

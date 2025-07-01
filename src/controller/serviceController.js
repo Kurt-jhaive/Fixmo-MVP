@@ -59,10 +59,13 @@ export const getProviderServices = async (req, res) => {
             service_title: service.service_title, // Add both for compatibility
             description: service.service_description,
             service_description: service.service_description, // Add both for compatibility
+            service_picture: service.service_picture, // Add service picture
             price: service.service_startingprice,
             service_startingprice: service.service_startingprice, // Add both for compatibility
             price_per_hour: service.service_startingprice,
-            provider_id: service.provider_id,            is_available: service.servicelisting_isActive, // Use actual field from database
+            provider_id: service.provider_id,
+
+            is_available: service.servicelisting_isActive, // Use actual field from database
             status: service.servicelisting_isActive ? 'active' : 'inactive', // Based on database field
             specific_services: service.specific_services,
             category_name: service.specific_services.length > 0 ? service.specific_services[0].category.category_name : 'Uncategorized',
@@ -142,12 +145,18 @@ export const createService = async (req, res) => {
             service_startingprice
         } = req.body;
 
+        // Get the uploaded file path if image was uploaded
+        const servicePicture = req.file ? 
+            '/uploads/' + req.file.path.replace(/\\/g, '/').split('/uploads/')[1] : 
+            null;
+
         console.log('Create service request:', {
             providerId,
             certificate_id,
             service_title,
             service_description,
-            service_startingprice
+            service_startingprice,
+            servicePicture
         });
 
         // Validation
@@ -209,6 +218,7 @@ export const createService = async (req, res) => {
                     service_title: service_title,
                     service_description: service_description,
                     service_startingprice: parseFloat(service_startingprice),
+                    service_picture: servicePicture,
                     provider_id: providerId
                 }
             });

@@ -376,6 +376,14 @@ class CustomerDashboard {
             this.totalServices = response.pagination?.totalCount || 0;
             this.hasMoreServices = response.pagination?.hasNext || false;
             
+            // Debug: Log service picture data
+            console.log('Services loaded:', this.services.length);
+            this.services.forEach((service, index) => {
+                console.log(`Service ${index + 1}: ${service.title}`);
+                console.log(`  - service_picture: ${service.service_picture}`);
+                console.log(`  - provider profilePhoto: ${service.provider.profilePhoto}`);
+            });
+            
             this.displayServices();
             this.updateResultsCount();
         } catch (error) {
@@ -492,6 +500,14 @@ class CustomerDashboard {
         const container = document.getElementById('recommendedServices');
         if (!container) return;
 
+        // Debug: Log the services data to see what we're getting
+        console.log('Recommended services data received:', services);
+        console.log('First service data:', services[0]);
+        if (services[0]) {
+            console.log('First service service_picture:', services[0].service_picture);
+            console.log('First service provider photo:', services[0].provider?.provider_profile_photo);
+        }
+
         container.innerHTML = '';
 
         if (services.length === 0) {
@@ -517,12 +533,24 @@ class CustomerDashboard {
         const primaryCategory = service.categories && service.categories.length > 0 
             ? service.categories[0].toLowerCase() 
             : 'general';
+        
+        // Debug: Log image decision
+        console.log('Service for card:', {
+            title: service.title,
+            service_picture: service.service_picture,
+            service_picture_type: typeof service.service_picture,
+            service_picture_value: service.service_picture,
+            provider_profilePhoto: service.provider?.profilePhoto,
+            provider_profile_photo: service.provider?.provider_profile_photo
+        });
             
         card.innerHTML = `
             <div class="service-image">
-                ${service.provider.profilePhoto ? 
-                    `<img src="${service.provider.profilePhoto}" alt="${service.title}">` : 
-                    `<i class="fas fa-${this.getCategoryIcon(primaryCategory)}"></i>`
+                ${service.service_picture && service.service_picture !== 'undefined' && service.service_picture !== null ? 
+                    `<img src="/${service.service_picture}" alt="${service.title}" class="service-photo">` : 
+                    service.provider.profilePhoto ? 
+                        `<img src="${service.provider.profilePhoto}" alt="${service.title}" class="provider-photo">` : 
+                        `<div class="service-icon"><i class="fas fa-${this.getCategoryIcon(primaryCategory)}"></i></div>`
                 }
             </div>
             <div class="service-content">

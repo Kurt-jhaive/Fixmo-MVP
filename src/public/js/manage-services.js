@@ -173,6 +173,12 @@ class ManageServices {
 
         const servicesHTML = this.services.map(service => `
             <div class="service-card" data-service-id="${service.listing_id}">
+                ${service.service_picture ? `
+                <div class="service-image">
+                    <img src="/${service.service_picture}" alt="${service.service_title}" 
+                         style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0;">
+                </div>
+                ` : ''}
                 <div class="service-header">
                     <h3>${service.service_title}</h3>
                     <div class="service-category">
@@ -213,22 +219,38 @@ class ManageServices {
         const form = document.getElementById('addServiceForm');
         const formData = new FormData(form);
         
-        const serviceData = {
-            certificate_id: parseInt(formData.get('certificate_id')),
-            service_title: formData.get('service_title').trim(),
-            service_description: formData.get('service_description').trim(),
-            service_startingprice: parseFloat(formData.get('service_startingprice'))
-        };
+        // Add provider_id to formData
+        if (this.providerData && this.providerData.provider_id) {
+            formData.append('provider_id', this.providerData.provider_id);
+        }
 
         // Validation
-        if (!serviceData.certificate_id) {
+        const certificateId = formData.get('certificate_id');
+        const serviceTitle = formData.get('service_title');
+        const serviceDescription = formData.get('service_description');
+        const servicePicture = formData.get('service_picture');
+
+        if (!certificateId) {
             this.showNotification('Please select a certificate', 'error');
             return;
         }
 
-        if (!serviceData.service_title || !serviceData.service_description) {
+        if (!serviceTitle || !serviceDescription) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
+        }
+
+        // Validate image if provided
+        if (servicePicture && servicePicture.size > 0) {
+            if (servicePicture.size > 5 * 1024 * 1024) { // 5MB limit
+                this.showNotification('Image file must be less than 5MB', 'error');
+                return;
+            }
+            
+            if (!servicePicture.type.startsWith('image/')) {
+                this.showNotification('Please select a valid image file', 'error');
+                return;
+            }
         }
 
         try {
@@ -237,10 +259,10 @@ class ManageServices {
             const response = await fetch('/auth/addListing', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.token}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${this.token}`
+                    // Note: Don't set Content-Type for FormData, browser will set it automatically
                 },
-                body: JSON.stringify(serviceData)
+                body: formData
             });
 
             if (!response.ok) {
@@ -482,6 +504,57 @@ function deleteService(serviceId) {
 
 function logout() {
     manageServices.logout();
+}
+
+// Image validation and preview functions
+function validateImageOrientation(input) {
+    const file = input.files[0];
+    const previewContainer = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    
+    if (!file) {
+        previewContainer.style.display = 'none';
+        return;
+    }
+    
+    // Check file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        input.value = '';
+        previewContainer.style.display = 'none';
+        return;
+    }
+    
+    // Check if it's an image
+    if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file');
+        input.value = '';
+        previewContainer.style.display = 'none';
+        return;
+    }
+    
+    // Create image object to check dimensions
+    const img = new Image();
+    img.onload = function() {
+        if (this.width <= this.height) {
+            alert('Please select a landscape image (width must be greater than height)');
+            input.value = '';
+            previewContainer.style.display = 'none';
+            return;
+        }
+        
+        // Show preview if validation passes
+        previewImg.src = URL.createObjectURL(file);
+        previewContainer.style.display = 'block';
+    };
+    
+    img.onerror = function() {
+        alert('Invalid image file');
+        input.value = '';
+        previewContainer.style.display = 'none';
+    };
+    
+    img.src = URL.createObjectURL(file);
 }
 
 // Initialize manage services when DOM is loaded

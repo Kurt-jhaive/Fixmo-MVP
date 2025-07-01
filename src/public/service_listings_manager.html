@@ -149,6 +149,42 @@
             min-height: 100px;
         }
 
+        /* File input styling */
+        .form-group input[type="file"] {
+            padding: 8px;
+            border: 2px dashed #007bff;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+
+        .form-group input[type="file"]:hover {
+            background: #e9ecef;
+            border-color: #0056b3;
+        }
+
+        .form-group input[type="file"]:focus {
+            border-color: #0056b3;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        /* Image preview styling */
+        #imagePreview {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        #previewImg {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+
+        #previewImg:hover {
+            transform: scale(1.02);
+        }
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -334,6 +370,17 @@
                     <textarea id="serviceDescription" placeholder="Describe your service in detail..." required></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label for="servicePicture">Service Image (Landscape only)</label>
+                    <input type="file" id="servicePicture" name="service_picture" accept="image/*" onchange="validateImageOrientation(this)">
+                    <small style="color: #666; font-size: 0.85rem; margin-top: 5px; display: block;">
+                        Upload a landscape image (width > height) to showcase your service. Max 5MB.
+                    </small>
+                    <div id="imagePreview" style="margin-top: 10px; display: none;">
+                        <img id="previewImg" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 2px solid #ddd;" alt="Preview">
+                    </div>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="serviceCategory">Service Category</label>
@@ -396,6 +443,8 @@
         function hideAddListingForm() {
             document.getElementById('addListingSection').style.display = 'none';
             document.getElementById('addListingForm').reset();
+            // Hide image preview when form is reset
+            document.getElementById('imagePreview').style.display = 'none';
         }
 
         // Handle add listing form submission
@@ -408,23 +457,29 @@
                 return;
             }
 
-            const listingData = {
-                provider_id: parseInt(providerId),
-                service_title: document.getElementById('serviceTitle').value,
-                service_description: document.getElementById('serviceDescription').value,
-                service_price: parseFloat(document.getElementById('servicePrice').value),
-                category_id: parseInt(document.getElementById('serviceCategory').value),
-                specific_service_id: document.getElementById('specificServiceId').value ? 
-                    parseInt(document.getElementById('specificServiceId').value) : null
-            };
+            // Create FormData to handle file upload
+            const formData = new FormData();
+            formData.append('provider_id', providerId);
+            formData.append('service_title', document.getElementById('serviceTitle').value);
+            formData.append('service_description', document.getElementById('serviceDescription').value);
+            formData.append('service_startingprice', document.getElementById('servicePrice').value);
+            formData.append('category_id', document.getElementById('serviceCategory').value);
+            
+            const specificServiceId = document.getElementById('specificServiceId').value;
+            if (specificServiceId) {
+                formData.append('specific_service_id', specificServiceId);
+            }
+
+            // Add image file if selected
+            const serviceImage = document.getElementById('servicePicture').files[0];
+            if (serviceImage) {
+                formData.append('service_picture', serviceImage);
+            }
 
             try {
                 const response = await fetch('http://192.168.100.165:3000/auth/addListing', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(listingData)
+                    body: formData // Don't set Content-Type header, browser will set it automatically for FormData
                 });
 
                 const result = await response.json();
@@ -578,6 +633,58 @@
         document.getElementById('providerId').addEventListener('change', function() {
             currentProviderId = this.value;
         });
+
+        // Image validation and preview functions
+        function validateImageOrientation(input) {
+            const file = input.files[0];
+            const previewContainer = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            
+            if (!file) {
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            // Check file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                showMessage('File size must be less than 5MB', 'error');
+                input.value = '';
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            // Check if it's an image
+            if (!file.type.startsWith('image/')) {
+                showMessage('Please select a valid image file', 'error');
+                input.value = '';
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            // Create image object to check dimensions
+            const img = new Image();
+            img.onload = function() {
+                if (this.width <= this.height) {
+                    showMessage('Please select a landscape image (width must be greater than height)', 'error');
+                    input.value = '';
+                    previewContainer.style.display = 'none';
+                    return;
+                }
+                
+                // Show preview if validation passes
+                previewImg.src = URL.createObjectURL(file);
+                previewContainer.style.display = 'block';
+                showMessage('Image looks good! ✓', 'success');
+            };
+            
+            img.onerror = function() {
+                showMessage('Invalid image file', 'error');
+                input.value = '';
+                previewContainer.style.display = 'none';
+            };
+            
+            img.src = URL.createObjectURL(file);
+        }
     </script>
 </body>
 </html>

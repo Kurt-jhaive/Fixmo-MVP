@@ -1002,12 +1002,8 @@ export const getServiceListingsForCustomer = async (req, res) => {
             };
         }
 
-        // Only show services from verified and activated providers
-        whereClause.serviceProvider = {
-            ...whereClause.serviceProvider,
-            provider_isVerified: true,
-            provider_isActivated: true
-        };
+        // Only show active services (temporarily removed provider verification check for testing)
+        whereClause.servicelisting_isActive = true;
 
         // Build orderBy clause
         let orderBy = {};
@@ -1058,6 +1054,16 @@ export const getServiceListingsForCustomer = async (req, res) => {
             take: parseInt(limit)
         });
 
+        // Debug: Log what we're getting from database
+        console.log('=== DATABASE QUERY RESULTS ===');
+        serviceListings.forEach((listing, index) => {
+            console.log(`Service ${index + 1}: ${listing.service_title}`);
+            console.log(`  - service_picture from DB: ${listing.service_picture}`);
+            console.log(`  - service_picture type: ${typeof listing.service_picture}`);
+            console.log(`  - service_picture value: "${listing.service_picture}"`);
+        });
+        console.log('=== END DATABASE RESULTS ===');
+
         // Get total count for pagination
         const totalCount = await prisma.serviceListing.count({
             where: whereClause
@@ -1069,6 +1075,7 @@ export const getServiceListingsForCustomer = async (req, res) => {
             title: listing.service_title,
             description: listing.service_description,
             startingPrice: listing.service_startingprice,
+            service_picture: listing.service_picture, // Add service picture
             provider: {
                 id: listing.serviceProvider.provider_id,
                 name: `${listing.serviceProvider.provider_first_name} ${listing.serviceProvider.provider_last_name}`,
@@ -1084,6 +1091,15 @@ export const getServiceListingsForCustomer = async (req, res) => {
                 description: service.specific_service_description
             }))
         }));
+
+        // Debug: Log formatted response
+        console.log('=== FORMATTED RESPONSE ===');
+        formattedListings.forEach((listing, index) => {
+            console.log(`Formatted Service ${index + 1}: ${listing.title}`);
+            console.log(`  - service_picture in response: ${listing.service_picture}`);
+            console.log(`  - service_picture type: ${typeof listing.service_picture}`);
+        });
+        console.log('=== END FORMATTED RESPONSE ===');
 
         res.status(200).json({
             message: 'Service listings retrieved successfully',

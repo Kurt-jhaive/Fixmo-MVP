@@ -443,8 +443,19 @@ class ServiceManager {
         const statusClass = isActive ? 'active' : 'inactive';
         const statusText = isActive ? 'Active' : 'Inactive';
         
+        // Check if service has an image
+        const hasServiceImage = service.service_picture;
+        const imageSrc = hasServiceImage ? `/${service.service_picture}` : null;
+        
         return `
             <div class="service-card ${statusClass}">
+                ${hasServiceImage ? `
+                <div class="service-image">
+                    <img src="${imageSrc}" alt="${this.escapeHtml(serviceName)}" 
+                         style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px;">
+                </div>
+                ` : ''}
+                
                 <div class="service-category">${this.escapeHtml(categoryName)}</div>
                 
                 <div class="service-status ${statusClass}">
@@ -478,7 +489,9 @@ class ServiceManager {
                 
                 <div class="service-details">
                     <strong>Certificates:</strong> ${this.escapeHtml(certificateNames)}
-                </div>                <div class="service-actions">
+                </div>
+
+                <div class="service-actions">
                     <button class="btn btn-secondary" onclick="window.serviceManager.editService(${service.listing_id || service.service_id})">
                         <i class="fas fa-edit"></i> Edit
                     </button>
@@ -589,36 +602,42 @@ class ServiceManager {
     }async handleAddService() {
         try {
             const form = document.getElementById('addServiceForm');
-            const formData = new FormData(form);
             
             // Validate required fields
-            const serviceTitle = formData.get('serviceTitle');
-            const serviceDescription = formData.get('serviceDescription');
-            const servicePrice = formData.get('servicePrice');
+            const serviceTitle = form.querySelector('#serviceTitle').value;
+            const serviceDescription = form.querySelector('#serviceDescription').value;
+            const servicePrice = form.querySelector('#servicePrice').value;
+            const servicePicture = form.querySelector('#servicePicture').files[0];
             
             if (!serviceTitle || !serviceDescription || !servicePrice) {
                 this.showToast('Please fill in all required fields', 'error');
                 return;
-            }            if (this.selectedServices.length === 0) {
+            }
+
+            if (this.selectedServices.length === 0) {
                 this.showToast('Please select at least one service based on your certificates', 'error');
                 return;
-            }            // Create service for the selected option
-            const selectedService = this.selectedServices[0];
-            const serviceData = {
-                service_title: serviceTitle.trim(),
-                service_description: serviceDescription.trim(),
-                service_startingprice: parseFloat(servicePrice),
-                certificate_id: selectedService.certificate_id
-            };
+            }
 
-            console.log('Sending service data:', serviceData);
+            // Create FormData for multipart/form-data submission
+            const formData = new FormData();
+            const selectedService = this.selectedServices[0];
+            
+            formData.append('service_title', serviceTitle.trim());
+            formData.append('service_description', serviceDescription.trim());
+            formData.append('service_startingprice', parseFloat(servicePrice));
+            formData.append('certificate_id', selectedService.certificate_id);
+            
+            // Add image file if selected
+            if (servicePicture) {
+                formData.append('service_picture', servicePicture);
+            }
+
+            console.log('Sending service data via FormData');
             const response = await fetch('/api/services/services', {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(serviceData)
+                body: formData // No Content-Type header for FormData
             });
 
             const result = await response.json();
@@ -1171,6 +1190,47 @@ class ServiceManager {
         div.textContent = text;
         return div.innerHTML;
     }
+}
+
+// Global function for image validation (called from HTML)
+function validateImageOrientation(input) {
+    const file = input.files[0];
+    const previewDiv = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    
+    if (!file) {
+        previewDiv.style.display = 'none';
+        return;
+    }
+    
+    // Check file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        input.value = '';
+        previewDiv.style.display = 'none';
+        return;
+    }
+    
+    const img = new Image();
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        img.onload = function() {
+            if (this.width <= this.height) {
+                alert('Please upload a landscape image (width must be greater than height)');
+                input.value = '';
+                previewDiv.style.display = 'none';
+                return;
+            }
+            
+            // Show preview
+            previewImg.src = e.target.result;
+            previewDiv.style.display = 'block';
+        };
+        img.src = e.target.result;
+    };
+    
+    reader.readAsDataURL(file);
 }
 
 // Service manager will be initialized by the dashboard when needed

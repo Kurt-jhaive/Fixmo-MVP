@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import sharp from 'sharp';
 import {
   requestProviderOTP,
   verifyProviderOTPOnly,
@@ -18,12 +19,14 @@ import {
   deleteAvailability,
   getProviderDayAvailability,
   getProviderProfile,
+  getProviderServices,
   requestProviderProfileUpdateOTP,
   updateProviderProfileWithOTP,
   verifyOriginalEmailAndRequestNewEmailOTP,
   verifyNewEmailAndUpdateProfile
 } from '../controller/authserviceProviderController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import { uploadServiceImage, validateLandscapeImage } from '../middleware/multer.js';
 import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
@@ -39,6 +42,7 @@ const ensureDirectoryExists = (dir) => {
 ensureDirectoryExists('uploads/profiles');
 ensureDirectoryExists('uploads/ids');
 ensureDirectoryExists('uploads/certificates');
+ensureDirectoryExists('uploads/service-images');
 
 // Configure multer storage for registration files
 const registrationStorage = multer.diskStorage({
@@ -236,6 +240,9 @@ router.get('/profile', authMiddleware, getProviderProfile);
 // Get provider profile (protected route)
 router.get('/profile', authMiddleware, getProviderProfile);
 
+// Get provider services (protected route)
+router.get('/my-services', authMiddleware, getProviderServices);
+
 // Profile update OTP routes
 router.post('/profile-update-request-otp', authMiddleware, requestProviderProfileUpdateOTP);
 
@@ -334,7 +341,7 @@ router.post('/profile-update-verify-otp', authMiddleware, (req, res, next) => {
 // Upload service provider certificate (with multer)
 router.post('/upload-certificate', certificateUpload.single('certificate_file'), uploadCertificate);
 
-router.post('/addListing', addServiceListing);
+router.post('/addListing', uploadServiceImage.single('service_picture'), validateLandscapeImage, addServiceListing);
 
 //Add Availability to the provider
 router.post('/addAvailability', addAvailability);
@@ -370,4 +377,33 @@ router.get('/certificates', async (req, res) => {
     res.status(500).json({ message: 'Error fetching certificates' });
   }
 });
+
+// Debug route to check services in database
+router.get('/debug-services', async (req, res) => {
+  try {
+    const services = await prisma.serviceListing.findMany({
+      select: {
+        service_id: true,
+        service_title: true,
+        service_picture: true,
+        provider_id: true
+      }
+    });
+    
+    console.log('All services in database:');
+    services.forEach(service => {
+      console.log(`ID: ${service.service_id}, Title: ${service.service_title}, Picture: ${service.service_picture}`);
+    });
+    
+    res.json({
+      message: 'Services found',
+      count: services.length,
+      services: services
+    });
+  } catch (error) {
+    console.error('Error fetching services:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
