@@ -14,6 +14,8 @@ class CustomerDashboard {
         };
         this.servicesLoaded = 0;
         this.servicesPerPage = 12;
+        this.isSubmittingBooking = false; // Prevent duplicate submissions
+        this.eventListenersSetup = false; // Prevent duplicate event listeners
         
         this.init();
     }
@@ -35,6 +37,7 @@ class CustomerDashboard {
             
             // Setup event listeners
             this.setupEventListeners();
+            this.setupBookingEventListeners();
             
             // Load initial data
             await this.loadDashboardData();
@@ -234,6 +237,9 @@ class CustomerDashboard {
                 this.showVerificationModal();
             });
         }
+
+        // Booking modal events
+        this.setupBookingEventListeners();
     }
 
     setupVerificationModal() {
@@ -376,14 +382,6 @@ class CustomerDashboard {
             this.totalServices = response.pagination?.totalCount || 0;
             this.hasMoreServices = response.pagination?.hasNext || false;
             
-            // Debug: Log service picture data
-            console.log('Services loaded:', this.services.length);
-            this.services.forEach((service, index) => {
-                console.log(`Service ${index + 1}: ${service.title}`);
-                console.log(`  - service_picture: ${service.service_picture}`);
-                console.log(`  - provider profilePhoto: ${service.provider.profilePhoto}`);
-            });
-            
             this.displayServices();
             this.updateResultsCount();
         } catch (error) {
@@ -500,14 +498,6 @@ class CustomerDashboard {
         const container = document.getElementById('recommendedServices');
         if (!container) return;
 
-        // Debug: Log the services data to see what we're getting
-        console.log('Recommended services data received:', services);
-        console.log('First service data:', services[0]);
-        if (services[0]) {
-            console.log('First service service_picture:', services[0].service_picture);
-            console.log('First service provider photo:', services[0].provider?.provider_profile_photo);
-        }
-
         container.innerHTML = '';
 
         if (services.length === 0) {
@@ -528,21 +518,10 @@ class CustomerDashboard {
     }    createServiceCard(service) {
         const card = document.createElement('div');
         card.className = 'service-card';
-        
-        // Get primary category for icon
+          // Get primary category for icon
         const primaryCategory = service.categories && service.categories.length > 0 
             ? service.categories[0].toLowerCase() 
             : 'general';
-        
-        // Debug: Log image decision
-        console.log('Service for card:', {
-            title: service.title,
-            service_picture: service.service_picture,
-            service_picture_type: typeof service.service_picture,
-            service_picture_value: service.service_picture,
-            provider_profilePhoto: service.provider?.profilePhoto,
-            provider_profile_photo: service.provider?.provider_profile_photo
-        });
             
         card.innerHTML = `
             <div class="service-image">
@@ -921,12 +900,6 @@ class CustomerDashboard {
         }
     }
 
-    bookService(serviceId) {
-        // Navigate to booking page or show booking modal
-        DashboardUtils.showToast(`Booking service ${serviceId}...`, 'info');
-        // Implement booking logic here
-    }
-
     viewServiceDetails(serviceId) {
         // Show service details modal or navigate to details page
         DashboardUtils.showToast(`Viewing details for service ${serviceId}`, 'info');
@@ -936,6 +909,417 @@ class CustomerDashboard {
     signOut() {
         if (confirm('Are you sure you want to sign out?')) {
             DashboardUtils.logout();
+        }
+    }
+
+    // Booking functionality
+    async bookService(serviceId) {
+        try {
+            // Find service data
+            const service = this.services.find(s => s.id === serviceId);
+            if (!service) {
+                DashboardUtils.showToast('Service not found', 'error');
+                return;
+            }
+
+            // Populate booking modal with service information
+            this.populateBookingModal(service);
+            
+            // Show booking modal
+            const modal = document.getElementById('bookingModal');
+            modal.style.display = 'flex';
+            modal.classList.add('show');
+
+            // Reset form
+            this.resetBookingForm();
+
+            // Auto-load time slots for today
+            const today = new Date().toISOString().split('T')[0];
+            const providerId = service.provider.id;
+            
+            // Update summary for today's date
+            const date = new Date(today);
+            document.getElementById('summaryDate').textContent = date.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            // Load time slots for today
+            await this.loadAvailableTimeSlots(providerId, today);
+
+        } catch (error) {
+            console.error('Error opening booking modal:', error);
+            DashboardUtils.showToast('Error opening booking form', 'error');
+        }
+    }
+
+    populateBookingModal(service) {
+        // Service information
+        document.getElementById('bookingServiceTitle').textContent = service.title;
+        document.getElementById('bookingServiceProvider').textContent = `by ${service.provider.name}`;
+        document.getElementById('bookingServicePrice').textContent = DashboardUtils.formatCurrency(service.startingPrice);
+        
+        // Hidden form fields
+        document.getElementById('bookingProviderId').value = service.provider.id;
+        document.getElementById('bookingServiceId').value = service.id;
+
+        // Service image
+        const imageContainer = document.getElementById('bookingServiceImage');
+        if (service.service_picture && service.service_picture !== 'undefined' && service.service_picture !== null) {
+            imageContainer.innerHTML = `<img src="/${service.service_picture}" alt="${service.title}">`;
+        } else if (service.provider.profilePhoto) {
+            imageContainer.innerHTML = `<img src="${service.provider.profilePhoto}" alt="${service.title}">`;
+        } else {
+            const primaryCategory = service.categories && service.categories.length > 0 
+                ? service.categories[0].toLowerCase() 
+                : 'general';
+            imageContainer.innerHTML = `<i class="fas fa-${this.getCategoryIcon(primaryCategory)}"></i>`;
+        }
+
+        // Booking summary
+        document.getElementById('summaryServiceTitle').textContent = service.title;
+        document.getElementById('summaryProviderName').textContent = service.provider.name;
+        document.getElementById('summaryPrice').textContent = DashboardUtils.formatCurrency(service.startingPrice);
+    }
+
+    resetBookingForm() {
+        // Clear form
+        document.getElementById('bookingForm').reset();
+        document.getElementById('selectedTimeSlot').value = '';
+        
+        // Reset time slots
+        const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+        timeSlotsContainer.innerHTML = `
+            <div class="time-slots-loading">
+                <i class="fas fa-calendar-alt"></i>
+                <p>Select a date to view available time slots</p>
+            </div>
+        `;
+
+        // Reset summary
+        document.getElementById('summaryDate').textContent = '-';
+        document.getElementById('summaryTime').textContent = '-';
+        
+        // Disable confirm button
+        document.getElementById('confirmBooking').disabled = true;
+
+        // Set minimum date to today and max date to 30 days from now
+        const today = new Date();
+        const todayString = today.toISOString().split('T')[0];
+        const maxDate = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+        const maxDateString = maxDate.toISOString().split('T')[0];
+        
+        const dateInput = document.getElementById('bookingDate');
+        dateInput.min = todayString;
+        dateInput.max = maxDateString;
+        dateInput.value = todayString; // Default to today
+    }
+
+    async loadAvailableTimeSlots(providerId, date) {
+        const timeSlotsContainer = document.getElementById('timeSlotsContainer');
+        
+        try {
+            // Show loading state
+            timeSlotsContainer.innerHTML = `
+                <div class="time-slots-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading available time slots...</p>
+                </div>
+            `;
+
+            // Fetch availability using the new endpoint structure
+            const response = await DashboardUtils.makeRequest(`/auth/provider/${providerId}/booking-availability?date=${date}`);
+            
+            console.log('=== FRONTEND DEBUG ===');
+            console.log('Provider ID:', providerId);
+            console.log('Date:', date);
+            console.log('API Response:', response);
+            console.log('Availability slots:', response.data?.availability);
+            
+            // The response structure is { success, message, data: { availability, ... } }
+            if (response.success && response.data.availability && response.data.availability.length > 0) {
+                const allSlots = response.data.availability;
+                
+                const slotsHTML = allSlots.map(slot => {
+                    let statusClass = '';
+                    let statusText = '';
+                    let statusIcon = '';
+                    let isClickable = false;
+                    
+                    switch(slot.status) {
+                        case 'available':
+                            statusClass = 'available';
+                            statusText = 'Available';
+                            statusIcon = '✅';
+                            isClickable = true;
+                            break;
+                        case 'booked':
+                            statusClass = 'booked';
+                            statusText = 'Booked';
+                            statusIcon = '🚫';
+                            isClickable = false;
+                            break;
+                        case 'past':
+                            statusClass = 'past';
+                            statusText = 'Past';
+                            statusIcon = '⏰';
+                            isClickable = false;
+                            break;
+                        default:
+                            statusClass = 'available';
+                            statusText = 'Available';
+                            statusIcon = '✅';
+                            isClickable = true;
+                    }
+                    
+                    return `
+                        <button type="button" 
+                                class="time-slot ${statusClass}" 
+                                data-time="${slot.startTime}"
+                                data-end-time="${slot.endTime}"
+                                data-available="${isClickable}"
+                                ${!isClickable ? 'disabled' : ''}
+                                title="${statusText} - ${this.formatTime(slot.startTime)} to ${this.formatTime(slot.endTime)}">
+                            <div class="slot-time">
+                                <span class="time-text">${this.formatTime(slot.startTime)} - ${this.formatTime(slot.endTime)}</span>
+                            </div>
+                            <div class="slot-status">
+                                <span class="status-icon">${statusIcon}</span>
+                                <small class="status-text">${statusText}</small>
+                            </div>
+                        </button>
+                    `;
+                }).join('');
+
+                timeSlotsContainer.innerHTML = `
+                    <div class="time-slots-grid">
+                        ${slotsHTML}
+                    </div>
+                `;
+
+                // Add click handlers to available time slots only
+                timeSlotsContainer.querySelectorAll('.time-slot.available').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        // Remove previous selection
+                        timeSlotsContainer.querySelectorAll('.time-slot').forEach(b => b.classList.remove('selected'));
+                        
+                        // Select this slot
+                        e.target.classList.add('selected');
+                        
+                        // Update hidden field and summary
+                        const selectedTime = e.target.dataset.time;
+                        document.getElementById('selectedTimeSlot').value = selectedTime;
+                        document.getElementById('summaryTime').textContent = e.target.textContent;
+                        
+                        // Enable confirm button if date and time are selected
+                        this.validateBookingForm();
+                    });
+                });
+
+            } else {
+                const selectedDate = new Date(date);
+                const dayOfWeek = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
+                
+                timeSlotsContainer.innerHTML = `
+                    <div class="time-slots-empty">
+                        <i class="fas fa-calendar-times"></i>
+                        <p>No available time slots for ${dayOfWeek}</p>
+                        <small>This provider is not available on this day</small>
+                    </div>
+                `;
+            }
+
+        } catch (error) {
+            console.error('Error loading time slots:', error);
+            timeSlotsContainer.innerHTML = `
+                <div class="time-slots-empty">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Error loading time slots</p>
+                    <small>Please try again or contact support</small>
+                </div>
+            `;
+        }
+    }
+
+    formatTime(timeString) {
+        // Convert 24-hour format to 12-hour format
+        const [hours, minutes] = timeString.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
+    }
+
+    validateBookingForm() {
+        const date = document.getElementById('bookingDate').value;
+        const time = document.getElementById('selectedTimeSlot').value;
+        const confirmButton = document.getElementById('confirmBooking');
+        
+        if (date && time) {
+            confirmButton.disabled = false;
+        } else {
+            confirmButton.disabled = true;
+        }
+    }
+
+    async submitBooking(formData) {
+        // Prevent duplicate submissions
+        if (this.isSubmittingBooking) {
+            console.log('Booking submission already in progress');
+            return;
+        }
+        this.isSubmittingBooking = true;
+        try {
+            // Show loading state
+            DashboardUtils.showLoading();
+
+            console.log('=== BOOKING SUBMISSION DEBUG ===');
+            console.log('Form data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+
+            const bookingData = {
+                customer_id: DashboardUtils.getUserData()?.userId || localStorage.getItem('fixmo_user_id'),
+                provider_id: parseInt(formData.get('provider_id')),
+                service_listing_id: parseInt(formData.get('service_id')),
+                scheduled_date: formData.get('scheduled_date'),
+                scheduled_time: formData.get('scheduled_time'),
+                service_description: formData.get('repairDescription'),
+                estimated_price: formData.get('estimated_price') || 0
+            };
+
+            console.log('Booking data to send:', bookingData);
+
+            // Submit booking using the correct endpoint
+            const response = await DashboardUtils.makeRequest('/auth/book-appointment', {
+                method: 'POST',
+                body: JSON.stringify(bookingData)
+            });
+
+            console.log('Server response:', response);
+
+            if (response.success || response.message === 'Appointment booked successfully') {
+                // Get provider and appointment details for notification
+                const provider = this.currentProviders?.find(p => p.provider_id === parseInt(formData.get('provider_id'))) || {};
+                const appointmentDetails = {
+                    provider_name: `${provider.provider_first_name || 'Provider'} ${provider.provider_last_name || ''}`.trim(),
+                    date: new Date(formData.get('scheduled_date')).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    }),
+                    time: formData.get('scheduled_time'),
+                    status: 'Automatically Accepted'
+                };
+
+                // Show success notification
+                window.notificationManager.bookingSuccess(appointmentDetails);
+                
+                this.closeBookingModal();
+                
+                // Refresh bookings data if on bookings page
+                if (this.currentPage === 'bookings') {
+                    setTimeout(() => {
+                        this.loadCustomerBookings();
+                    }, 1000);
+                }
+                
+            } else {
+                // Show error notification with specific message
+                const errorMessage = response.message || 'Failed to book appointment. Please try again.';
+                window.notificationManager.bookingError(errorMessage);
+            }
+
+        } catch (error) {
+            console.error('Error submitting booking:', error);
+            
+            // Parse error message for better user experience
+            let errorMessage = 'Unable to complete booking. Please try again.';
+            
+            if (error.message.includes('400')) {
+                errorMessage = 'Invalid booking data. Please check your selection and try again.';
+            } else if (error.message.includes('401')) {
+                errorMessage = 'Your session has expired. Please log in again.';
+            } else if (error.message.includes('409')) {
+                errorMessage = 'This time slot is no longer available. Please select a different time.';
+            } else if (error.message.includes('500')) {
+                errorMessage = 'Server error. Our team has been notified. Please try again later.';
+            }
+            
+            window.notificationManager.bookingError(errorMessage);
+        } finally {
+            DashboardUtils.hideLoading();
+            this.isSubmittingBooking = false; // Reset flag
+        }
+    }
+
+    closeBookingModal() {
+        const modal = document.getElementById('bookingModal');
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        this.resetBookingForm();
+    }
+
+    setupBookingEventListeners() {
+        // Booking modal close buttons
+        const closeButtons = ['bookingModalClose', 'cancelBooking'];
+        closeButtons.forEach(id => {
+            const button = document.getElementById(id);
+            if (button) {
+                button.addEventListener('click', () => this.closeBookingModal());
+            }
+        });
+
+        // Date change handler
+        const bookingDate = document.getElementById('bookingDate');
+        if (bookingDate) {
+            bookingDate.addEventListener('change', (e) => {
+                const selectedDate = e.target.value;
+                const providerId = document.getElementById('bookingProviderId').value;
+                
+                if (selectedDate && providerId) {
+                    // Update summary
+                    const date = new Date(selectedDate);
+                    document.getElementById('summaryDate').textContent = date.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    
+                    // Load time slots
+                    this.loadAvailableTimeSlots(providerId, selectedDate);
+                    
+                    // Reset time selection
+                    document.getElementById('selectedTimeSlot').value = '';
+                    document.getElementById('summaryTime').textContent = '-';
+                    this.validateBookingForm();
+                }
+            });
+        }
+
+        // Booking form submission
+        const bookingForm = document.getElementById('bookingForm');
+        if (bookingForm) {
+            bookingForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(bookingForm);
+                this.submitBooking(formData);
+            });
+        }
+
+        // Close modal when clicking outside
+        const bookingModal = document.getElementById('bookingModal');
+        if (bookingModal) {
+            bookingModal.addEventListener('click', (e) => {
+                if (e.target === bookingModal) {
+                    this.closeBookingModal();
+                }
+            });
         }
     }
 }

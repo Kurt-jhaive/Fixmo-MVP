@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Call Button Example</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f9f9f9;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 400px;
+      width: 100%;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 16px;
+      font-size: 1.8rem;
+    }
+
+    p {
+      color: #666;
+      margin-bottom: 24px;
+      font-size: 1rem;
+    }
+
+    .call-button {
+      background-color: #25D366;
+      color: white;
+      padding: 16px 32px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 600;
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .call-button:hover {
+      background-color: #1da851;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Contact Service Provider</h1>
+    <p>Need help? Click the button below to call:</p>
+
+    <!-- Call Button with Confirmation -->
+    <button class="call-button" onclick="confirmCall('+639369976787')">📞 Call Now</button>
+  </div>
+
+  <script>
+    function confirmCall(phoneNumber) {
+      if (confirm(`Do you want to call ${phoneNumber}?`)) {
+        window.location.href = `tel:${phoneNumber}`;
+      }
+    }
+  </script>
+
+</body>
+</html>

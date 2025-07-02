@@ -1433,3 +1433,276 @@ export const updateProviderProfileWithOTP = async (req, res) => {
     }
 };
 
+// Provider appointment management functions
+
+// Get provider appointments/bookings
+export const getProviderAppointments = async (req, res) => {
+    try {
+        const providerId = req.userId;
+        
+        if (!providerId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Provider ID not found in session' 
+            });
+        }
+
+        const appointments = await prisma.appointment.findMany({
+            where: { provider_id: parseInt(providerId) },
+            include: {
+                customer: {
+                    select: {
+                        user_id: true,
+                        first_name: true,
+                        last_name: true,
+                        email: true,
+                        phone_number: true,
+                        profile_photo: true
+                    }
+                }
+            },
+            orderBy: { scheduled_date: 'asc' }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Appointments retrieved successfully',
+            appointments
+        });
+    } catch (error) {
+        console.error('Error fetching provider appointments:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error' 
+        });
+    }
+};
+
+// Accept/reject appointment booking
+export const acceptAppointmentBooking = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { action } = req.body; // 'accept' or 'reject'
+        const providerId = req.userId;
+
+        if (!providerId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Provider ID not found in session' 
+            });
+        }
+
+        const appointment = await prisma.appointment.findUnique({
+            where: { appointment_id: parseInt(appointmentId) },
+            include: {
+                customer: {
+                    select: {
+                        user_id: true,
+                        first_name: true,
+                        last_name: true,
+                        email: true,
+                        phone_number: true
+                    }
+                }
+            }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Appointment not found' 
+            });
+        }
+
+        if (appointment.provider_id !== parseInt(providerId)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'You can only manage your own appointments' 
+            });
+        }
+
+        const newStatus = action === 'accept' ? 'accepted' : 'canceled';
+        
+        const updatedAppointment = await prisma.appointment.update({
+            where: { appointment_id: parseInt(appointmentId) },
+            data: { appointment_status: newStatus },
+            include: {
+                customer: {
+                    select: {
+                        user_id: true,
+                        first_name: true,
+                        last_name: true,
+                        email: true,
+                        phone_number: true
+                    }
+                }
+            }
+        });
+
+        // If rejecting, free up the availability slot
+        if (action === 'reject') {
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayOfWeek = dayNames[appointment.scheduled_date.getDay()];
+            const startTime = appointment.scheduled_date.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            await prisma.availability.updateMany({
+                where: {
+                    provider_id: appointment.provider_id,
+                    dayOfWeek: dayOfWeek,
+                    startTime: startTime
+                },
+                data: { availability_isBooked: false }
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Appointment ${action}ed successfully`,
+            appointment: updatedAppointment
+        });
+    } catch (error) {
+        console.error('Error updating appointment:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error' 
+        });
+    }
+};
+
+// Update appointment status (in progress, completed, etc.)
+export const updateAppointmentStatusProvider = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { status } = req.body;
+        const providerId = req.userId;
+
+        if (!providerId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Provider ID not found in session' 
+            });
+        }
+
+        const appointment = await prisma.appointment.findUnique({
+            where: { appointment_id: parseInt(appointmentId) }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Appointment not found' 
+            });
+        }
+
+        if (appointment.provider_id !== parseInt(providerId)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'You can only manage your own appointments' 
+            });
+        }
+
+        const updatedAppointment = await prisma.appointment.update({
+            where: { appointment_id: parseInt(appointmentId) },
+            data: { appointment_status: status },
+            include: {
+                customer: {
+                    select: {
+                        user_id: true,
+                        first_name: true,
+                        last_name: true,
+                        email: true,
+                        phone_number: true
+                    }
+                }
+            }
+        });
+
+        // If marking as completed or finished, free up the availability slot
+        if (status === 'completed' || status === 'finished') {
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayOfWeek = dayNames[appointment.scheduled_date.getDay()];
+            const startTime = appointment.scheduled_date.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            await prisma.availability.updateMany({
+                where: {
+                    provider_id: appointment.provider_id,
+                    dayOfWeek: dayOfWeek,
+                    startTime: startTime
+                },
+                data: { availability_isBooked: false }
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Appointment status updated successfully',
+            appointment: updatedAppointment
+        });
+    } catch (error) {
+        console.error('Error updating appointment status:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error' 
+        });
+    }
+};
+
+// Get provider availability with booking status
+export const getProviderAvailabilityWithBookings = async (req, res) => {
+    try {
+        const providerId = req.userId;
+        
+        if (!providerId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Provider ID not found in session' 
+            });
+        }
+
+        const availability = await prisma.availability.findMany({
+            where: {
+                provider_id: parseInt(providerId),
+                availability_isActive: true
+            },
+            orderBy: [
+                { dayOfWeek: 'asc' },
+                { startTime: 'asc' }
+            ]
+        });
+
+        // Group by day of week
+        const availabilityByDay = {};
+        availability.forEach(slot => {
+            if (!availabilityByDay[slot.dayOfWeek]) {
+                availabilityByDay[slot.dayOfWeek] = [];
+            }
+            availabilityByDay[slot.dayOfWeek].push({
+                availability_id: slot.availability_id,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                isBooked: slot.availability_isBooked
+            });
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Availability with booking status retrieved successfully',
+            availabilityByDay
+        });
+    } catch (error) {
+        console.error('Error fetching availability with bookings:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error' 
+        });
+    }
+};
+

@@ -1,0 +1,258 @@
+// Notification utility for better popup notifications
+class NotificationManager {
+    constructor() {
+        this.createNotificationContainer();
+    }
+
+    createNotificationContainer() {
+        // Create notification container if it doesn't exist
+        if (!document.getElementById('notification-container')) {
+            const container = document.createElement('div');
+            container.id = 'notification-container';
+            container.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                max-width: 400px;
+                pointer-events: none;
+            `;
+            document.body.appendChild(container);
+        }
+    }
+
+    show(message, type = 'info', duration = 5000) {
+        // Prevent duplicate notifications for the same message
+        const existingNotifications = document.querySelectorAll('[id^="notification-"]');
+        for (let existing of existingNotifications) {
+            if (existing.querySelector('div:last-child')?.textContent === message) {
+                // Shake existing notification to show it's the same
+                existing.classList.add('notification-shake');
+                setTimeout(() => existing.classList.remove('notification-shake'), 500);
+                return existing.id;
+            }
+        }
+
+        const notification = document.createElement('div');
+        const notificationId = 'notification-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        notification.id = notificationId;
+        
+        // Set notification styles based on type
+        const typeStyles = {
+            success: {
+                background: 'linear-gradient(135deg, #28a745, #20c997)',
+                borderLeft: '4px solid #155724',
+                icon: '✅'
+            },
+            error: {
+                background: 'linear-gradient(135deg, #dc3545, #e83e8c)',
+                borderLeft: '4px solid #721c24',
+                icon: '❌'
+            },
+            warning: {
+                background: 'linear-gradient(135deg, #ffc107, #fd7e14)',
+                borderLeft: '4px solid #856404',
+                icon: '⚠️'
+            },
+            info: {
+                background: 'linear-gradient(135deg, #17a2b8, #6f42c1)',
+                borderLeft: '4px solid #0c5460',
+                icon: 'ℹ️'
+            }
+        };
+
+        const style = typeStyles[type] || typeStyles.info;
+        
+        notification.style.cssText = `
+            ${style.background}
+            color: white;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            ${style.borderLeft}
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            max-width: 100%;
+            word-wrap: break-word;
+            transform: translateX(420px);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: auto;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            opacity: 1;
+            background-color: transparent;
+        `;
+
+        notification.innerHTML = `
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <span style="font-size: 18px; flex-shrink: 0;">${style.icon}</span>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; margin-bottom: 4px;">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                    <div>${message}</div>
+                </div>
+                <button onclick="window.notificationManager.hide('${notificationId}')" 
+                        style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 0; margin-left: 8px; opacity: 0.7; transition: opacity 0.2s;">
+                    ×
+                </button>
+            </div>
+            <div style="position: absolute; bottom: 0; left: 0; height: 3px; background: rgba(255,255,255,0.3); width: 100%; transform-origin: left; animation: progressBar ${duration}ms linear;"></div>
+        `;
+
+        // Add CSS animation for progress bar
+        if (!document.getElementById('notification-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'notification-styles';
+            styles.textContent = `
+                @keyframes progressBar {
+                    from { transform: scaleX(1); }
+                    to { transform: scaleX(0); }
+                }
+                
+                .notification-shake {
+                    animation: shake 0.5s ease-in-out;
+                }
+                
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(styles);
+        }
+
+        const container = document.getElementById('notification-container');
+        container.appendChild(notification);
+
+        // Slide in animation
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+
+        // Auto hide after duration
+        const hideTimeout = setTimeout(() => {
+            this.hide(notificationId);
+        }, duration);
+
+        // Click to dismiss
+        notification.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                clearTimeout(hideTimeout);
+                this.hide(notificationId);
+            }
+        });
+
+        // Store timeout for manual clearing
+        notification.dataset.timeout = hideTimeout;
+
+        return notificationId;
+    }
+
+    hide(notificationId) {
+        const notification = document.getElementById(notificationId);
+        if (notification) {
+            // Clear timeout if exists
+            if (notification.dataset.timeout) {
+                clearTimeout(notification.dataset.timeout);
+            }
+            
+            // Slide out animation
+            notification.style.transform = 'translateX(420px)';
+            notification.style.opacity = '0';
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }
+
+    success(message, duration = 5000) {
+        return this.show(message, 'success', duration);
+    }
+
+    error(message, duration = 7000) {
+        return this.show(message, 'error', duration);
+    }
+
+    warning(message, duration = 6000) {
+        return this.show(message, 'warning', duration);
+    }
+
+    info(message, duration = 5000) {
+        return this.show(message, 'info', duration);
+    }
+
+    // Show booking specific notifications
+    bookingSuccess(appointmentDetails) {
+        const message = `
+            <strong>Booking Confirmed!</strong><br>
+            Provider: ${appointmentDetails.provider_name}<br>
+            Date: ${appointmentDetails.date}<br>
+            Time: ${appointmentDetails.time}<br>
+            Status: Automatically Accepted ✅
+        `;
+        
+        // Check for duplicate booking success notifications
+        const messageText = `Booking Confirmed! Provider: ${appointmentDetails.provider_name}`;
+        const existingNotifications = document.querySelectorAll('[id^="notification-"]');
+        for (let existing of existingNotifications) {
+            const existingText = existing.textContent || existing.innerText;
+            if (existingText.includes('Booking Confirmed!') && existingText.includes(appointmentDetails.provider_name)) {
+                existing.classList.add('notification-shake');
+                setTimeout(() => existing.classList.remove('notification-shake'), 500);
+                return existing.id;
+            }
+        }
+        
+        return this.show(message, 'success', 8000);
+    }
+
+    bookingError(errorMessage) {
+        const message = `
+            <strong>Booking Failed</strong><br>
+            ${errorMessage}<br>
+            <small>Please try again or select a different time slot.</small>
+        `;
+        
+        // Check for duplicate booking error notifications
+        const existingNotifications = document.querySelectorAll('[id^="notification-"]');
+        for (let existing of existingNotifications) {
+            const existingText = existing.textContent || existing.innerText;
+            if (existingText.includes('Booking Failed') && existingText.includes(errorMessage)) {
+                existing.classList.add('notification-shake');
+                setTimeout(() => existing.classList.remove('notification-shake'), 500);
+                return existing.id;
+            }
+        }
+        
+        return this.show(message, 'error', 8000);
+    }
+
+    availabilityUpdate(message) {
+        return this.show(`<strong>Availability Updated:</strong><br>${message}`, 'info', 6000);
+    }
+
+    // Clear all notifications
+    clearAll() {
+        const container = document.getElementById('notification-container');
+        if (container) {
+            const notifications = container.querySelectorAll('[id^="notification-"]');
+            notifications.forEach(notification => {
+                this.hide(notification.id);
+            });
+        }
+    }
+}
+
+// Create global instance
+window.notificationManager = new NotificationManager();
+
+// Export for module usage
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = NotificationManager;
+}

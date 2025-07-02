@@ -23,7 +23,11 @@ import {
   requestProviderProfileUpdateOTP,
   updateProviderProfileWithOTP,
   verifyOriginalEmailAndRequestNewEmailOTP,
-  verifyNewEmailAndUpdateProfile
+  verifyNewEmailAndUpdateProfile,
+  getProviderAppointments,
+  acceptAppointmentBooking,
+  updateAppointmentStatusProvider,
+  getProviderAvailabilityWithBookings
 } from '../controller/authserviceProviderController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import { uploadServiceImage, validateLandscapeImage } from '../middleware/multer.js';
@@ -378,32 +382,10 @@ router.get('/certificates', async (req, res) => {
   }
 });
 
-// Debug route to check services in database
-router.get('/debug-services', async (req, res) => {
-  try {
-    const services = await prisma.serviceListing.findMany({
-      select: {
-        service_id: true,
-        service_title: true,
-        service_picture: true,
-        provider_id: true
-      }
-    });
-    
-    console.log('All services in database:');
-    services.forEach(service => {
-      console.log(`ID: ${service.service_id}, Title: ${service.service_title}, Picture: ${service.service_picture}`);
-    });
-    
-    res.json({
-      message: 'Services found',
-      count: services.length,
-      services: services
-    });
-  } catch (error) {
-    console.error('Error fetching services:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// Provider appointment management routes
+router.get('/appointments', authMiddleware, getProviderAppointments);
+router.put('/appointments/:appointmentId/accept', authMiddleware, acceptAppointmentBooking);
+router.put('/appointments/:appointmentId/status', authMiddleware, updateAppointmentStatusProvider);
+router.get('/availability-with-bookings', authMiddleware, getProviderAvailabilityWithBookings);
 
 export default router;

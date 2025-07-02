@@ -119,7 +119,22 @@ class DashboardUtils {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Handle specific HTTP errors
+                if (response.status === 401) {
+                    // Only logout if this was an authenticated request
+                    const token = localStorage.getItem('fixmo_user_token');
+                    if (token && defaultOptions.headers['Authorization']) {
+                        console.warn('User session expired or invalid token');
+                        this.logout();
+                        throw new Error('Session expired. Please log in again.');
+                    } else {
+                        throw new Error('Authentication required');
+                    }
+                } else if (response.status === 404) {
+                    throw new Error('Service not found. Please try again later.');
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
             }
 
             const data = await response.json();

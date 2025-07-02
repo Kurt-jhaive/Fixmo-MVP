@@ -9,49 +9,27 @@ import { checkOTPRateLimit, recordOTPAttempt } from '../services/rateLimitUtils.
 const prisma = new PrismaClient();
 
 export const login = async (req, res) => {
-    console.log('Login request received');
-    console.log('Request body:', req.body);
-    console.log('Request headers:', req.headers);
-    
     const { email, password } = req.body;
-    
-    console.log('Extracted data:', { 
-        email: email, 
-        password: password ? '[PROVIDED]' : '[MISSING]',
-        emailType: typeof email,
-        passwordType: typeof password,
-        emailLength: email ? email.length : 0,
-        passwordLength: password ? password.length : 0
-    });
     
     // Validate input
     if (!email || !password) {
-        console.log('Validation failed: Missing email or password');
         return res.status(400).json({ message: 'Email and password are required' });
     }
     
     try {
-        console.log('Looking up user with email:', email);
         const user = await prisma.user.findUnique({ where: { email } });
         
         if (!user) {
-            console.log('User not found for email:', email);
             return res.status(400).json({ message: 'Invalid email or password' });
         }
         
-        console.log('User found:', { id: user.user_id, email: user.email, userName: user.userName });
-        console.log('Comparing passwords...');
-        
         const isMatch = await bcrypt.compare(password, user.password);
-        console.log('Password match result:', isMatch);
         
         if (!isMatch) {
-            console.log('Password mismatch for user:', email);
             return res.status(400).json({ message: 'Invalid email or password' });
         }
         
         const token = jwt.sign({ userId: user.user_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        console.log('User logged in successfully:', user.userName);
         
         res.status(200).json({
             message: 'Login successful',
@@ -183,8 +161,6 @@ export const verifyOTPAndRegister = async (req, res) => {
 
     // Delete the used OTP
     await cleanupOTP(email);
-    
-    console.log('User registered successfully');
 
     res.status(201).json({
       message: 'User registered successfully',
@@ -290,50 +266,79 @@ export const addAppointment = async (req, res) => {
             return res.status(400).json({ message: 'Scheduled date and time must be in the future' });
         }
 
+        // Check provider availability for the exact slot
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayOfWeek = dayNames[scheduledDateTime.getDay()];
+        
+        console.log('🔍 Booking Debug - Looking for exact availability slot:');
+        console.log('  Provider ID:', provider_id);
+        console.log('  Day of Week:', dayOfWeek);
+        console.log('  Scheduled Time:', scheduled_time);
+        
+        // Find the exact availability slot that matches the requested time
+        const exactSlot = await prisma.availability.findFirst({
+            where: {
+                provider_id: parseInt(provider_id),
+                dayOfWeek: dayOfWeek,
+                startTime: scheduled_time, // Must match exact start time
+                availability_isActive: true // Only active slots can be booked
+            }
+        });
+
+        console.log('🎯 Exact slot found:', exactSlot);
+
+        if (!exactSlot) {
+            return res.status(400).json({ 
+                message: `This time slot is not available. Please select from the provider's available time slots.` 
+            });
+        }
+
+        // Additional check: ensure the slot is not already booked
+        if (exactSlot.availability_isBooked) {
+            return res.status(400).json({ 
+                message: 'This time slot is already booked' 
+            });
+        }
+
         // Check for conflicting appointments (prevent double booking)
+        // We need to check if there's an existing appointment that overlaps with this slot
+        const slotEndTime = exactSlot.endTime;
+        const requestedEndDateTime = new Date(`${scheduled_date}T${slotEndTime}:00`);
+        
+        console.log('🔍 Conflict Detection Debug:');
+        console.log('  Requested Start:', scheduledDateTime);
+        console.log('  Requested End:', requestedEndDateTime);
+        
         const conflictingAppointment = await prisma.appointment.findFirst({
             where: {
                 provider_id: parseInt(provider_id),
-                scheduled_date: scheduledDateTime,
+                scheduled_date: scheduledDateTime, // Exact same start time
                 appointment_status: {
-                    in: ['pending', 'confirmed', 'in-progress']
+                    in: ['accepted', 'on the way', 'finished'] // Active appointment statuses
                 }
             }
         });
 
+        console.log('🚫 Conflicting appointment found:', conflictingAppointment);
+
         if (conflictingAppointment) {
-            return res.status(409).json({ 
-                message: 'Service provider already has an appointment scheduled at this time' 
+            return res.status(400).json({ 
+                message: 'This time slot is already booked' 
             });
         }
 
-        // Check provider availability for the requested day and time
-        const dayOfWeek = scheduledDateTime.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-        const availability = await prisma.availability.findFirst({
-            where: {
-                provider_id: parseInt(provider_id),
-                dayOfWeek: dayOfWeek
-            }
-        });
-
-        if (availability) {
-            const requestedTime = scheduled_time;
-            const startTime = availability.startTime;
-            const endTime = availability.endTime;
-            
-            if (requestedTime < startTime || requestedTime >= endTime) {
-                return res.status(400).json({ 
-                    message: `Provider is not available at ${requestedTime}. Available time: ${startTime} - ${endTime}` 
-                });
-            }
-        }
-
         // Create the appointment
+        console.log('✅ Creating appointment with data:');
+        console.log('  Customer ID:', customer_id);
+        console.log('  Provider ID:', provider_id);
+        console.log('  Scheduled Date/Time:', scheduledDateTime);
+        console.log('  Final Price:', estimated_price);
+        
         const newAppointment = await prisma.appointment.create({
             data: {
                 customer_id: parseInt(customer_id),
                 provider_id: parseInt(provider_id),
-                appointment_status: 'pending',
+                appointment_status: 'accepted', // Auto-accept since slot is available
                 scheduled_date: scheduledDateTime,
                 final_price: estimated_price ? parseFloat(estimated_price) : (serviceListing ? serviceListing.service_startingprice : null),
                 repairDescription: service_description || (serviceListing ? serviceListing.service_description : null)
@@ -359,6 +364,15 @@ export const addAppointment = async (req, res) => {
                 }
             }
         });
+
+        // Mark the availability slot as booked
+        await prisma.availability.update({
+            where: { availability_id: exactSlot.availability_id },
+            data: { availability_isBooked: true }
+        });
+
+        console.log('✅ Appointment created successfully:', newAppointment.appointment_id);
+        console.log('✅ Availability slot marked as booked:', exactSlot.availability_id);
 
         return res.status(201).json({
             message: 'Appointment booked successfully',
@@ -602,18 +616,36 @@ export const cancelAppointment = async (req, res) => {
         }
 
         // Check if appointment can be cancelled
-        if (existingAppointment.appointment_status === 'completed') {
-            return res.status(400).json({ message: 'Cannot cancel a completed appointment' });
+        if (existingAppointment.appointment_status === 'finished') {
+            return res.status(400).json({ message: 'Cannot cancel a finished appointment' });
         }
 
-        if (existingAppointment.appointment_status === 'cancelled') {
+        if (existingAppointment.appointment_status === 'canceled') {
             return res.status(400).json({ message: 'Appointment is already cancelled' });
         }
 
-        // Update appointment status to cancelled
+        // Update appointment status to canceled
         const updatedAppointment = await prisma.appointment.update({
             where: { appointment_id: parseInt(appointment_id) },
-            data: { appointment_status: 'cancelled' }
+            data: { appointment_status: 'canceled' }
+        });
+
+        // Free up the availability slot
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayOfWeek = dayNames[existingAppointment.scheduled_date.getDay()];
+        const startTime = existingAppointment.scheduled_date.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        await prisma.availability.updateMany({
+            where: {
+                provider_id: existingAppointment.provider_id,
+                dayOfWeek: dayOfWeek,
+                startTime: startTime
+            },
+            data: { availability_isBooked: false }
         });
 
         return res.status(200).json({
@@ -1002,8 +1034,12 @@ export const getServiceListingsForCustomer = async (req, res) => {
             };
         }
 
-        // Only show active services (temporarily removed provider verification check for testing)
-        whereClause.servicelisting_isActive = true;
+        // Only show services from verified and activated providers
+        whereClause.serviceProvider = {
+            ...whereClause.serviceProvider,
+            provider_isVerified: true,
+            provider_isActivated: true
+        };
 
         // Build orderBy clause
         let orderBy = {};
@@ -1034,8 +1070,11 @@ export const getServiceListingsForCustomer = async (req, res) => {
                         provider_first_name: true,
                         provider_last_name: true,
                         provider_userName: true,
-                        provider_rating: true,
+                        provider_email: true,
+                        provider_phone_number: true,
                         provider_location: true,
+                        provider_rating: true,
+                        provider_isVerified: true,
                         provider_profile_photo: true
                     }
                 },
@@ -1053,16 +1092,6 @@ export const getServiceListingsForCustomer = async (req, res) => {
             skip,
             take: parseInt(limit)
         });
-
-        // Debug: Log what we're getting from database
-        console.log('=== DATABASE QUERY RESULTS ===');
-        serviceListings.forEach((listing, index) => {
-            console.log(`Service ${index + 1}: ${listing.service_title}`);
-            console.log(`  - service_picture from DB: ${listing.service_picture}`);
-            console.log(`  - service_picture type: ${typeof listing.service_picture}`);
-            console.log(`  - service_picture value: "${listing.service_picture}"`);
-        });
-        console.log('=== END DATABASE RESULTS ===');
 
         // Get total count for pagination
         const totalCount = await prisma.serviceListing.count({
@@ -1091,15 +1120,6 @@ export const getServiceListingsForCustomer = async (req, res) => {
                 description: service.specific_service_description
             }))
         }));
-
-        // Debug: Log formatted response
-        console.log('=== FORMATTED RESPONSE ===');
-        formattedListings.forEach((listing, index) => {
-            console.log(`Formatted Service ${index + 1}: ${listing.title}`);
-            console.log(`  - service_picture in response: ${listing.service_picture}`);
-            console.log(`  - service_picture type: ${typeof listing.service_picture}`);
-        });
-        console.log('=== END FORMATTED RESPONSE ===');
 
         res.status(200).json({
             message: 'Service listings retrieved successfully',
@@ -1194,4 +1214,362 @@ export const getCustomerStats = async (req, res) => {
         res.status(500).json({ message: 'Server error retrieving customer statistics' });
     }
 };
+
+// Get provider availability for booking
+export const getProviderBookingAvailability = async (req, res) => {
+    try {
+        const { providerId } = req.params;
+        const { date } = req.query;
+
+        // Get the day of week from the date
+        const requestedDate = new Date(date);
+        const dayOfWeek = requestedDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+        // Get provider's availability for the specific day
+        const availability = await prisma.availability.findMany({
+            where: {
+                provider_id: parseInt(providerId),
+                dayOfWeek: dayOfWeek,
+                availability_isActive: true
+                // Note: Removed availability_isBooked filter since we don't permanently mark slots as booked
+            },
+            orderBy: {
+                startTime: 'asc'
+            }
+        });
+
+        // Get existing appointments for this date to filter out booked slots
+        const existingAppointments = await prisma.appointment.findMany({
+            where: {
+                provider_id: parseInt(providerId),
+                scheduled_date: {
+                    gte: new Date(date + 'T00:00:00.000Z'),
+                    lt: new Date(date + 'T23:59:59.999Z')
+                },
+                appointment_status: {
+                    in: ['accepted', 'on the way', 'finished'] // Only active appointments block slots
+                }
+            }
+        });
+
+        // Create a set of booked times for quick lookup
+        const bookedTimes = new Set(
+            existingAppointments.map(appointment => 
+                appointment.scheduled_date.toLocaleTimeString('en-US', {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })
+            )
+        );
+
+        // Add status to each availability slot (use EXACT slots from database, no breakdown)
+        const today = new Date();
+        const isToday = requestedDate.toDateString() === today.toDateString();
+        
+        const availabilityWithStatus = availability.map(slot => {
+            // Check if this entire slot time range is booked
+            const isBooked = bookedTimes.has(slot.startTime);
+            
+            // Check if slot is in the past (for today only)
+            let isPast = false;
+            
+            if (isToday) {
+                const currentTime = today.getHours() * 60 + today.getMinutes();
+                const [hours, minutes] = slot.startTime.split(':');
+                const slotTime = parseInt(hours) * 60 + parseInt(minutes);
+                isPast = slotTime <= currentTime;
+            }
+            
+            return {
+                ...slot,
+                isBooked,
+                isPast,
+                isAvailable: !isBooked && !isPast,
+                status: isPast ? 'past' : isBooked ? 'booked' : 'available'
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Provider availability retrieved successfully',
+            data: {
+                date: date,
+                dayOfWeek: dayOfWeek,
+                providerId: parseInt(providerId),
+                availability: availabilityWithStatus, // Changed from availableSlots to show all slots with status
+                isToday: isToday,
+                currentTime: isToday ? `${today.getHours().toString().padStart(2, '0')}:${today.getMinutes().toString().padStart(2, '0')}` : null
+            }
+        });
+
+    } catch (error) {
+        console.error('Error getting provider availability:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error retrieving provider availability',
+            error: error.message
+        });
+    }
+};
+
+// Create a new appointment booking
+export const createAppointment = async (req, res) => {
+    try {
+        console.log('=== APPOINTMENT CREATION DEBUG ===');
+        console.log('Auth headers:', req.headers.authorization);
+        console.log('Customer ID from auth:', req.userId);
+        console.log('Request body:', req.body);
+        
+        const customerId = req.userId; // From auth middleware
+        const {
+            provider_id,
+            service_id,
+            scheduled_date,
+            scheduled_time,
+            repairDescription
+        } = req.body;
+
+        // Validate required fields
+        if (!provider_id || !service_id || !scheduled_date || !scheduled_time) {
+            console.log('Missing required fields!');
+            return res.status(400).json({
+                success: false,
+                message: 'All required fields must be provided'
+            });
+        }
+
+        // Combine date and time into a proper DateTime
+        const appointmentDateTime = new Date(`${scheduled_date}T${scheduled_time}:00.000Z`);
+        console.log('Appointment DateTime:', appointmentDateTime);
+
+        // Check if the time slot is still available
+        const dayOfWeek = appointmentDateTime.toLocaleDateString('en-US', { weekday: 'long' });
+        console.log('Day of week:', dayOfWeek);
+        
+        // Check if the requested time slot exists in provider's availability
+        const exactSlot = await prisma.availability.findFirst({
+            where: {
+                provider_id: parseInt(provider_id),
+                dayOfWeek: dayOfWeek,
+                startTime: scheduled_time,
+                availability_isActive: true
+            }
+        });
+
+        console.log('Looking for exact slot:', {
+            provider_id: parseInt(provider_id),
+            dayOfWeek: dayOfWeek,
+            startTime: scheduled_time,
+            availability_isActive: true
+        });
+        console.log('Found exact slot:', exactSlot);
+
+        if (!exactSlot) {
+            console.log('No exact slot found - checking availability slots in database');
+            const allSlots = await prisma.availability.findMany({
+                where: {
+                    provider_id: parseInt(provider_id),
+                    dayOfWeek: dayOfWeek
+                }
+            });
+            console.log('All slots for this day:', allSlots);
+            
+            return res.status(400).json({
+                success: false,
+                message: 'Selected time slot is not available'
+            });
+        }
+
+        // Check for conflicting appointments
+        const existingAppointment = await prisma.appointment.findFirst({
+            where: {
+                provider_id: parseInt(provider_id),
+                scheduled_date: appointmentDateTime,
+                appointment_status: {
+                    not: 'Cancelled'
+                }
+            }
+        });
+
+        if (existingAppointment) {
+            return res.status(400).json({
+                success: false,
+                message: 'This time slot is already booked'
+            });
+        }
+
+        // Create the appointment
+        const newAppointment = await prisma.appointment.create({
+            data: {
+                customer_id: parseInt(customerId),
+                provider_id: parseInt(provider_id),
+                appointment_status: 'Pending',
+                scheduled_date: appointmentDateTime,
+                repairDescription: repairDescription || null
+            },
+            include: {
+                customer: {
+                    select: {
+                        first_name: true,
+                        last_name: true,
+                        email: true,
+                        phone_number: true
+                    }
+                },
+                serviceProvider: {
+                    select: {
+                        provider_first_name: true,
+                        provider_last_name: true,
+                        provider_email: true,
+                        provider_phone_number: true
+                    }
+                }
+            }
+        });
+
+        // Note: We don't mark the availability slot as booked because availability 
+        // represents the provider's weekly schedule, not specific date bookings.
+        // Specific bookings are tracked in the appointment table.
+
+        res.status(201).json({
+            success: true,
+            message: 'Appointment booked successfully',
+            data: newAppointment
+        });
+
+    } catch (error) {
+        console.error('Error creating appointment:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creating appointment',
+            error: error.message
+        });
+    }
+};
+
+// Provider updates appointment status (for provider dashboard)
+export const updateAppointmentStatus = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { status, provider_id } = req.body;
+
+        // Validate status
+        const validStatuses = ['accepted', 'on the way', 'finished', 'canceled'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid status. Valid statuses are: ${validStatuses.join(', ')}`
+            });
+        }
+
+        // Verify the appointment exists and belongs to the provider
+        const appointment = await prisma.appointment.findFirst({
+            where: {
+                appointment_id: parseInt(appointmentId),
+                provider_id: parseInt(provider_id)
+            }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found or does not belong to this provider'
+            });
+        }
+
+        // Update appointment status
+        const updatedAppointment = await prisma.appointment.update({
+            where: { appointment_id: parseInt(appointmentId) },
+            data: { appointment_status: status }
+        });
+
+        // If appointment is finished or canceled, free up the availability slot
+        if (status === 'finished' || status === 'canceled') {
+            const dayOfWeek = appointment.scheduled_date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+            const startTime = appointment.scheduled_date.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            await prisma.availability.updateMany({
+                where: {
+                    provider_id: appointment.provider_id,
+                    dayOfWeek: dayOfWeek,
+                    startTime: startTime
+                },
+                data: { availability_isBooked: false }
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Appointment status updated successfully',
+            appointment: updatedAppointment
+        });
+
+    } catch (error) {
+        console.error('Error updating appointment status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating appointment status',
+            error: error.message
+        });
+    }
+};
+
+// Get appointment details
+export const getAppointmentDetails = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+
+        const appointment = await prisma.appointment.findUnique({
+            where: { appointment_id: parseInt(appointmentId) },
+            include: {
+                customer: {
+                    select: {
+                        user_id: true,
+                        first_name: true,
+                        last_name: true,
+                        email: true,
+                        phone_number: true
+                    }
+                },
+                serviceProvider: {
+                    select: {
+                        provider_id: true,
+                        provider_first_name: true,
+                        provider_last_name: true,
+                        provider_email: true,
+                        provider_phone_number: true
+                    }
+                }
+            }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Appointment details retrieved successfully',
+            appointment: appointment
+        });
+
+    } catch (error) {
+        console.error('Error getting appointment details:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error retrieving appointment details',
+            error: error.message
+        });
+    }
+};
+
+
 

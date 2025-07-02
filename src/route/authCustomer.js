@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import authMiddleware from '../middleware/authMiddleware.js';
 import {
   login,
   requestOTP,
@@ -21,7 +22,11 @@ import {
   updateVerificationDocuments,
   getServiceListingsForCustomer,
   getServiceCategories,
-  getCustomerStats
+  getCustomerStats,
+  getProviderBookingAvailability,
+  createAppointment,
+  updateAppointmentStatus,
+  getAppointmentDetails
 } from '../controller/authCustomerController.js';
 
 const router = express.Router();
@@ -118,10 +123,12 @@ router.get('/service-categories', getServiceCategories);
 router.get('/customer-stats/:userId', getCustomerStats);
 
 // Customer appointment routes
-// Book a new appointment
+// Get provider availability for booking
+router.get('/provider/:providerId/booking-availability', getProviderBookingAvailability);
+// Create a new appointment (requires authentication)
+router.post('/appointments', authMiddleware, createAppointment);
+// Book a new appointment (legacy)
 router.post('/book-appointment', addAppointment);
-// Get all service listings (marketplace)
-router.get('/service-listings', getServiceListings);
 // Get specific service listing details
 router.get('/service-listing/:service_id', getServiceListingDetails);
 // Get customer's appointments
@@ -130,6 +137,10 @@ router.get('/customer/:customer_id/appointments', getCustomerAppointments);
 router.put('/cancel-appointment/:appointment_id', cancelAppointment);
 // Submit rating for service provider
 router.post('/rate-provider', addRatetoProvider);
+// Update appointment status (for providers)
+router.put('/appointment/:appointmentId/status', updateAppointmentStatus);
+// Get appointment details
+router.get('/appointment/:appointmentId', getAppointmentDetails);
 
 export default router;
 
