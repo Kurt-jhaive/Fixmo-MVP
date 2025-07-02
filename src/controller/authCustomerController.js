@@ -198,6 +198,8 @@ export const verifyForgotPasswordOTPAndReset = async (req, res) => {
 };
 
 export const addAppointment = async (req, res) => {
+    console.log('🔧 BOOKING DEBUG - Request received:', req.body);
+    
     const {
         customer_id,
         service_listing_id,
@@ -205,10 +207,20 @@ export const addAppointment = async (req, res) => {
         scheduled_date,
         scheduled_time,
         service_description,
-        estimated_price
+        final_price,
     } = req.body;
 
     try {
+        console.log('📋 Extracted parameters:', {
+            customer_id,
+            service_listing_id, 
+            provider_id,
+            scheduled_date,
+            scheduled_time,
+            service_description,
+            final_price
+        });
+
         // Validate required fields
         if (!customer_id || !provider_id || !scheduled_date || !scheduled_time) {
             return res.status(400).json({ 
@@ -255,9 +267,16 @@ export const addAppointment = async (req, res) => {
         }
 
         // Create scheduled datetime
+        console.log('🕐 Creating scheduled datetime...');
+        console.log('  scheduled_date:', scheduled_date);
+        console.log('  scheduled_time:', scheduled_time);
         const scheduledDateTime = new Date(`${scheduled_date}T${scheduled_time}:00`);
+        console.log('  scheduledDateTime:', scheduledDateTime);
+        console.log('  scheduledDateTime.toString():', scheduledDateTime.toString());
+        console.log('  isValid:', !isNaN(scheduledDateTime.getTime()));
         
         if (isNaN(scheduledDateTime.getTime())) {
+            console.log('❌ Invalid date/time format:', scheduled_date, scheduled_time);
             return res.status(400).json({ message: 'Invalid scheduled date or time format' });
         }
 
@@ -266,7 +285,7 @@ export const addAppointment = async (req, res) => {
             return res.status(400).json({ message: 'Scheduled date and time must be in the future' });
         }
 
-        // Check provider availability for the exact slot
+        // Check provider availability for the exact slot using day-of-week scheduling
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayOfWeek = dayNames[scheduledDateTime.getDay()];
         
@@ -293,26 +312,28 @@ export const addAppointment = async (req, res) => {
             });
         }
 
-        // Additional check: ensure the slot is not already booked
+        // For day-of-week scheduling, check if this weekly slot is already booked
         if (exactSlot.availability_isBooked) {
             return res.status(400).json({ 
-                message: 'This time slot is already booked' 
+                message: 'This weekly time slot is already booked' 
             });
         }
 
-        // Check for conflicting appointments (prevent double booking)
-        // We need to check if there's an existing appointment that overlaps with this slot
-        const slotEndTime = exactSlot.endTime;
-        const requestedEndDateTime = new Date(`${scheduled_date}T${slotEndTime}:00`);
+        // Check for conflicting appointments on the same day-of-week and time
+        // This prevents booking the same weekly slot multiple times
+        const startOfDay = new Date(scheduledDateTime);
+        startOfDay.setHours(0, 0, 0, 0);
         
-        console.log('🔍 Conflict Detection Debug:');
-        console.log('  Requested Start:', scheduledDateTime);
-        console.log('  Requested End:', requestedEndDateTime);
+        const endOfDay = new Date(scheduledDateTime);
+        endOfDay.setHours(23, 59, 59, 999);
         
         const conflictingAppointment = await prisma.appointment.findFirst({
             where: {
                 provider_id: parseInt(provider_id),
-                scheduled_date: scheduledDateTime, // Exact same start time
+                scheduled_date: {
+                    gte: startOfDay,
+                    lt: endOfDay
+                },
                 appointment_status: {
                     in: ['accepted', 'on the way', 'finished'] // Active appointment statuses
                 }
@@ -323,7 +344,7 @@ export const addAppointment = async (req, res) => {
 
         if (conflictingAppointment) {
             return res.status(400).json({ 
-                message: 'This time slot is already booked' 
+                message: 'This weekly time slot is already booked' 
             });
         }
 
@@ -332,7 +353,7 @@ export const addAppointment = async (req, res) => {
         console.log('  Customer ID:', customer_id);
         console.log('  Provider ID:', provider_id);
         console.log('  Scheduled Date/Time:', scheduledDateTime);
-        console.log('  Final Price:', estimated_price);
+        console.log('  Final Price:', final_price);
         
         const newAppointment = await prisma.appointment.create({
             data: {
@@ -340,7 +361,7 @@ export const addAppointment = async (req, res) => {
                 provider_id: parseInt(provider_id),
                 appointment_status: 'accepted', // Auto-accept since slot is available
                 scheduled_date: scheduledDateTime,
-                final_price: estimated_price ? parseFloat(estimated_price) : (serviceListing ? serviceListing.service_startingprice : null),
+                final_price: final_price ? parseFloat(final_price) : (serviceListing ? serviceListing.service_startingprice : null),
                 repairDescription: service_description || (serviceListing ? serviceListing.service_description : null)
             },
             include: {
@@ -365,14 +386,14 @@ export const addAppointment = async (req, res) => {
             }
         });
 
-        // Mark the availability slot as booked
+        // Mark the weekly availability slot as booked (this prevents the same weekly slot from being booked again)
         await prisma.availability.update({
             where: { availability_id: exactSlot.availability_id },
             data: { availability_isBooked: true }
         });
 
         console.log('✅ Appointment created successfully:', newAppointment.appointment_id);
-        console.log('✅ Availability slot marked as booked:', exactSlot.availability_id);
+        console.log('✅ Weekly availability slot marked as booked:', exactSlot.availability_id);
 
         return res.status(201).json({
             message: 'Appointment booked successfully',
@@ -386,7 +407,9 @@ export const addAppointment = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Error creating customer appointment:', err);
+        console.error('❌ Error creating customer appointment:', err);
+        console.error('Error message:', err.message);
+        console.error('Error stack:', err.stack);
         return res.status(500).json({ message: 'Internal server error while creating appointment' });
     }
 };
@@ -630,7 +653,7 @@ export const cancelAppointment = async (req, res) => {
             data: { appointment_status: 'canceled' }
         });
 
-        // Free up the availability slot
+        // Free up the weekly availability slot
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayOfWeek = dayNames[existingAppointment.scheduled_date.getDay()];
         const startTime = existingAppointment.scheduled_date.toLocaleTimeString('en-US', {
@@ -639,6 +662,7 @@ export const cancelAppointment = async (req, res) => {
             minute: '2-digit'
         });
 
+        // Mark the weekly slot as available again
         await prisma.availability.updateMany({
             where: {
                 provider_id: existingAppointment.provider_id,
@@ -1069,7 +1093,6 @@ export const getServiceListingsForCustomer = async (req, res) => {
                         provider_id: true,
                         provider_first_name: true,
                         provider_last_name: true,
-                        provider_userName: true,
                         provider_email: true,
                         provider_phone_number: true,
                         provider_location: true,
@@ -1215,7 +1238,7 @@ export const getCustomerStats = async (req, res) => {
     }
 };
 
-// Get provider availability for booking
+// Get provider availability for booking (day-of-week based)
 export const getProviderBookingAvailability = async (req, res) => {
     try {
         const { providerId } = req.params;
@@ -1225,54 +1248,35 @@ export const getProviderBookingAvailability = async (req, res) => {
         const requestedDate = new Date(date);
         const dayOfWeek = requestedDate.toLocaleDateString('en-US', { weekday: 'long' });
 
-        // Get provider's availability for the specific day
+        console.log('📅 Getting availability for:', {
+            providerId,
+            date,
+            dayOfWeek
+        });
+
+        // Get provider's weekly availability for the specific day
         const availability = await prisma.availability.findMany({
             where: {
                 provider_id: parseInt(providerId),
                 dayOfWeek: dayOfWeek,
                 availability_isActive: true
-                // Note: Removed availability_isBooked filter since we don't permanently mark slots as booked
             },
             orderBy: {
                 startTime: 'asc'
             }
         });
 
-        // Get existing appointments for this date to filter out booked slots
-        const existingAppointments = await prisma.appointment.findMany({
-            where: {
-                provider_id: parseInt(providerId),
-                scheduled_date: {
-                    gte: new Date(date + 'T00:00:00.000Z'),
-                    lt: new Date(date + 'T23:59:59.999Z')
-                },
-                appointment_status: {
-                    in: ['accepted', 'on the way', 'finished'] // Only active appointments block slots
-                }
-            }
-        });
+        console.log('🔍 Found availability slots:', availability);
 
-        // Create a set of booked times for quick lookup
-        const bookedTimes = new Set(
-            existingAppointments.map(appointment => 
-                appointment.scheduled_date.toLocaleTimeString('en-US', {
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })
-            )
-        );
-
-        // Add status to each availability slot (use EXACT slots from database, no breakdown)
-        const today = new Date();
-        const isToday = requestedDate.toDateString() === today.toDateString();
-        
+        // Since we're using weekly scheduling, we only need to check if the weekly slot is booked
+        // The availability_isBooked field tracks if this weekly time slot is taken
         const availabilityWithStatus = availability.map(slot => {
-            // Check if this entire slot time range is booked
-            const isBooked = bookedTimes.has(slot.startTime);
+            const isBooked = slot.availability_isBooked;
             
             // Check if slot is in the past (for today only)
             let isPast = false;
+            const today = new Date();
+            const isToday = requestedDate.toDateString() === today.toDateString();
             
             if (isToday) {
                 const currentTime = today.getHours() * 60 + today.getMinutes();
@@ -1292,14 +1296,15 @@ export const getProviderBookingAvailability = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: 'Provider availability retrieved successfully',
+            message: 'Provider weekly availability retrieved successfully',
             data: {
                 date: date,
                 dayOfWeek: dayOfWeek,
                 providerId: parseInt(providerId),
-                availability: availabilityWithStatus, // Changed from availableSlots to show all slots with status
-                isToday: isToday,
-                currentTime: isToday ? `${today.getHours().toString().padStart(2, '0')}:${today.getMinutes().toString().padStart(2, '0')}` : null
+                availability: availabilityWithStatus,
+                isToday: requestedDate.toDateString() === new Date().toDateString(),
+                note: 'This shows weekly recurring availability. Booking a slot reserves it for this week.',
+                schedulingType: 'weekly-recurring'
             }
         });
 
@@ -1566,6 +1571,48 @@ export const getAppointmentDetails = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error retrieving appointment details',
+            error: error.message
+        });
+    }
+};
+
+// Get provider's weekly availability days (which days they work)
+export const getProviderWeeklyDays = async (req, res) => {
+    try {
+        const { providerId } = req.params;
+
+        console.log('📅 Getting weekly availability days for provider:', providerId);
+
+        // Get all active availability days for this provider
+        const availability = await prisma.availability.findMany({
+            where: {
+                provider_id: parseInt(providerId),
+                availability_isActive: true
+            },
+            select: {
+                dayOfWeek: true
+            },
+            distinct: ['dayOfWeek']
+        });
+
+        console.log('🔍 Provider available days:', availability);
+
+        const availableDays = availability.map(slot => slot.dayOfWeek);
+
+        res.json({
+            success: true,
+            data: {
+                providerId: parseInt(providerId),
+                availableDays,
+                availability
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error getting provider weekly days:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get provider availability days',
             error: error.message
         });
     }

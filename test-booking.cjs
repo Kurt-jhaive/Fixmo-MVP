@@ -42,7 +42,7 @@ async function testBooking() {
                 scheduled_date: '2025-07-07',
                 scheduled_time: '10:00',
                 service_description: 'Test exact slot booking - 10:00 slot',
-                estimated_price: 100
+                final_price: 100
             })
         });
 

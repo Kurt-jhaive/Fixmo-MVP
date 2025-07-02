@@ -1093,7 +1093,7 @@
                 scheduled_date: document.getElementById('bookingDate').value,
                 scheduled_time: selectedTimeSlot.time,
                 service_description: document.getElementById('serviceNotes').value || `Service: ${selectedService.title} (Service ID: ${selectedService.id})`,
-                estimated_price: selectedService.price
+                final_price: selectedService.price
             };
             
             try {

@@ -932,6 +932,9 @@ class CustomerDashboard {
 
             // Reset form
             this.resetBookingForm();
+            
+            // Restrict calendar to available days
+            await this.restrictCalendarToAvailableDays(providerId);
 
             // Auto-load time slots for today
             const today = new Date().toISOString().split('T')[0];
@@ -964,6 +967,7 @@ class CustomerDashboard {
         // Hidden form fields
         document.getElementById('bookingProviderId').value = service.provider.id;
         document.getElementById('bookingServiceId').value = service.id;
+        document.getElementById('bookingPrice').value = service.startingPrice;
 
         // Service image
         const imageContainer = document.getElementById('bookingServiceImage');
@@ -1005,15 +1009,26 @@ class CustomerDashboard {
         // Disable confirm button
         document.getElementById('confirmBooking').disabled = true;
 
-        // Set minimum date to today and max date to 30 days from now
+        // Set date range to current week only
         const today = new Date();
+        const currentDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        
+        // Calculate start of week (Monday)
+        const startOfWeek = new Date(today);
+        const daysFromMonday = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; // Sunday = 6 days from Monday
+        startOfWeek.setDate(today.getDate() - daysFromMonday);
+        
+        // Calculate end of week (Sunday)
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        
+        const startDateString = startOfWeek.toISOString().split('T')[0];
+        const endDateString = endOfWeek.toISOString().split('T')[0];
         const todayString = today.toISOString().split('T')[0];
-        const maxDate = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
-        const maxDateString = maxDate.toISOString().split('T')[0];
         
         const dateInput = document.getElementById('bookingDate');
-        dateInput.min = todayString;
-        dateInput.max = maxDateString;
+        dateInput.min = todayString; // Can't book in the past
+        dateInput.max = endDateString; // Can't book beyond current week
         dateInput.value = todayString; // Default to today
     }
 
@@ -1025,22 +1040,27 @@ class CustomerDashboard {
             timeSlotsContainer.innerHTML = `
                 <div class="time-slots-loading">
                     <i class="fas fa-spinner fa-spin"></i>
-                    <p>Loading available time slots...</p>
+                    <p>Loading weekly time slots...</p>
                 </div>
             `;
 
-            // Fetch availability using the new endpoint structure
+            // Get day of week for the selected date
+            const selectedDate = new Date(date);
+            const dayOfWeek = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
+
+            // Fetch weekly availability using the updated endpoint
             const response = await DashboardUtils.makeRequest(`/auth/provider/${providerId}/booking-availability?date=${date}`);
             
-            console.log('=== FRONTEND DEBUG ===');
+            console.log('=== WEEKLY SCHEDULE DEBUG ===');
             console.log('Provider ID:', providerId);
             console.log('Date:', date);
+            console.log('Day of Week:', dayOfWeek);
             console.log('API Response:', response);
-            console.log('Availability slots:', response.data?.availability);
+            console.log('Weekly availability:', response.data?.availability);
             
-            // The response structure is { success, message, data: { availability, ... } }
             if (response.success && response.data.availability && response.data.availability.length > 0) {
                 const allSlots = response.data.availability;
+                const { schedulingType, isToday } = response.data;
                 
                 const slotsHTML = allSlots.map(slot => {
                     let statusClass = '';
@@ -1051,25 +1071,25 @@ class CustomerDashboard {
                     switch(slot.status) {
                         case 'available':
                             statusClass = 'available';
-                            statusText = 'Available';
+                            statusText = 'Available this week';
                             statusIcon = '✅';
                             isClickable = true;
                             break;
                         case 'booked':
                             statusClass = 'booked';
-                            statusText = 'Booked';
-                            statusIcon = '🚫';
+                            statusText = 'Booked for this week';
+                            statusIcon = '�';
                             isClickable = false;
                             break;
                         case 'past':
                             statusClass = 'past';
-                            statusText = 'Past';
+                            statusText = 'Past (today only)';
                             statusIcon = '⏰';
                             isClickable = false;
                             break;
                         default:
                             statusClass = 'available';
-                            statusText = 'Available';
+                            statusText = 'Available this week';
                             statusIcon = '✅';
                             isClickable = true;
                     }
@@ -1094,8 +1114,20 @@ class CustomerDashboard {
                 }).join('');
 
                 timeSlotsContainer.innerHTML = `
+                    <div class="weekly-schedule-info">
+                        <h4><i class="fas fa-calendar-week"></i> ${dayOfWeek} Schedule</h4>
+                        <p class="schedule-type">Weekly Recurring Schedule - Books for current week</p>
+                        ${isToday ? '<p class="today-notice"><i class="fas fa-info-circle"></i> Past time slots are not available for booking today.</p>' : ''}
+                    </div>
                     <div class="time-slots-grid">
                         ${slotsHTML}
+                    </div>
+                    <div class="weekly-info">
+                        <small>
+                            <i class="fas fa-info-circle"></i> 
+                            This provider uses weekly recurring schedules. 
+                            Booking a slot reserves it for this week only.
+                        </small>
                     </div>
                 `;
 
@@ -1106,12 +1138,12 @@ class CustomerDashboard {
                         timeSlotsContainer.querySelectorAll('.time-slot').forEach(b => b.classList.remove('selected'));
                         
                         // Select this slot
-                        e.target.classList.add('selected');
+                        button.classList.add('selected');
                         
                         // Update hidden field and summary
-                        const selectedTime = e.target.dataset.time;
+                        const selectedTime = button.dataset.time;
                         document.getElementById('selectedTimeSlot').value = selectedTime;
-                        document.getElementById('summaryTime').textContent = e.target.textContent;
+                        document.getElementById('summaryTime').textContent = this.formatTime(selectedTime);
                         
                         // Enable confirm button if date and time are selected
                         this.validateBookingForm();
@@ -1119,25 +1151,28 @@ class CustomerDashboard {
                 });
 
             } else {
-                const selectedDate = new Date(date);
-                const dayOfWeek = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
-                
+                // No slots available for this day
                 timeSlotsContainer.innerHTML = `
-                    <div class="time-slots-empty">
+                    <div class="no-slots-message">
                         <i class="fas fa-calendar-times"></i>
-                        <p>No available time slots for ${dayOfWeek}</p>
-                        <small>This provider is not available on this day</small>
+                        <h4>No availability on ${dayOfWeek}</h4>
+                        <p>This provider doesn't have any time slots available on ${dayOfWeek}s.</p>
+                        <small>Please try selecting a different day of the week.</small>
                     </div>
                 `;
             }
 
         } catch (error) {
-            console.error('Error loading time slots:', error);
+            console.error('Error loading weekly time slots:', error);
             timeSlotsContainer.innerHTML = `
-                <div class="time-slots-empty">
+                <div class="error-message">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>Error loading time slots</p>
-                    <small>Please try again or contact support</small>
+                    <h4>Error Loading Schedule</h4>
+                    <p>Unable to load weekly availability</p>
+                    <small>${error.message}</small>
+                    <button class="retry-btn" onclick="window.dashboard.loadAvailableTimeSlots('${providerId}', '${date}')">
+                        <i class="fas fa-redo"></i> Retry
+                    </button>
                 </div>
             `;
         }
@@ -1188,7 +1223,7 @@ class CustomerDashboard {
                 scheduled_date: formData.get('scheduled_date'),
                 scheduled_time: formData.get('scheduled_time'),
                 service_description: formData.get('repairDescription'),
-                estimated_price: formData.get('estimated_price') || 0
+                final_price: formData.get('final_price') || 0
             };
 
             console.log('Booking data to send:', bookingData);
@@ -1320,6 +1355,113 @@ class CustomerDashboard {
                     this.closeBookingModal();
                 }
             });
+        }
+    }
+
+    async restrictCalendarToAvailableDays(providerId) {
+        try {
+            // Fetch provider's weekly availability to know which days they work
+            const response = await DashboardUtils.makeRequest(`/auth/provider/${providerId}/weekly-days`);
+            
+            if (response.success && response.data.availableDays) {
+                const availableDays = response.data.availableDays;
+                
+                console.log('Provider available days:', availableDays);
+                
+                // Map day names to day numbers (0 = Sunday, 1 = Monday, etc.)
+                const dayMapping = {
+                    'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+                    'Thursday': 4, 'Friday': 5, 'Saturday': 6
+                };
+                
+                const availableDayNumbers = availableDays.map(day => dayMapping[day]);
+                
+                // Get the date input and add a custom validation
+                const dateInput = document.getElementById('bookingDate');
+                
+                // Remove any existing event listeners for this validation
+                const newDateInput = dateInput.cloneNode(true);
+                dateInput.parentNode.replaceChild(newDateInput, dateInput);
+                
+                // Add input validation to only allow available days
+                newDateInput.addEventListener('input', (e) => {
+                    const selectedDate = new Date(e.target.value);
+                    const selectedDayOfWeek = selectedDate.getDay();
+                    
+                    if (!availableDayNumbers.includes(selectedDayOfWeek)) {
+                        e.target.setCustomValidity(`This provider is not available on ${selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}s. Available days: ${availableDays.join(', ')}`);
+                        e.target.reportValidity();
+                        
+                        // Reset to today if valid, otherwise don't change
+                        const today = new Date();
+                        const todayDayOfWeek = today.getDay();
+                        if (availableDayNumbers.includes(todayDayOfWeek)) {
+                            e.target.value = today.toISOString().split('T')[0];
+                        }
+                    } else {
+                        e.target.setCustomValidity('');
+                    }
+                });
+                
+                // Re-add the original change event listener
+                newDateInput.addEventListener('change', (e) => {
+                    const selectedDate = e.target.value;
+                    const providerId = document.getElementById('bookingProviderId').value;
+                    
+                    if (selectedDate && providerId) {
+                        // Update summary
+                        const date = new Date(selectedDate);
+                        document.getElementById('summaryDate').textContent = date.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        
+                        // Load time slots
+                        this.loadAvailableTimeSlots(providerId, selectedDate);
+                        
+                        // Reset time selection
+                        document.getElementById('selectedTimeSlot').value = '';
+                        document.getElementById('summaryTime').textContent = '-';
+                        this.validateBookingForm();
+                    }
+                });
+                
+                // Validate the current date input value
+                if (newDateInput.value) {
+                    const currentDate = new Date(newDateInput.value);
+                    const currentDayOfWeek = currentDate.getDay();
+                    if (!availableDayNumbers.includes(currentDayOfWeek)) {
+                        // Find the next available day in the current week
+                        const today = new Date();
+                        const currentWeekStart = new Date(today);
+                        const daysFromMonday = today.getDay() === 0 ? 6 : today.getDay() - 1;
+                        currentWeekStart.setDate(today.getDate() - daysFromMonday);
+                        
+                        // Try to find an available day in the current week
+                        let foundValidDay = false;
+                        for (let i = 0; i < 7; i++) {
+                            const testDate = new Date(currentWeekStart);
+                            testDate.setDate(currentWeekStart.getDate() + i);
+                            
+                            if (testDate >= today && availableDayNumbers.includes(testDate.getDay())) {
+                                newDateInput.value = testDate.toISOString().split('T')[0];
+                                foundValidDay = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!foundValidDay) {
+                            // Provider has no availability this week
+                            DashboardUtils.showToast(`This provider is not available this week. Available days: ${availableDays.join(', ')}`, 'warning');
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error restricting calendar:', error);
+            // Don't block the booking process if this fails
         }
     }
 }

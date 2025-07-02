@@ -11,7 +11,7 @@ async function testBooking() {
             scheduled_date: '2025-07-03', // Tomorrow
             scheduled_time: '09:00',
             service_description: 'Test booking',
-            estimated_price: 100
+            final_price: 100
         };
 
         console.log('📤 Sending booking data:', JSON.stringify(bookingData, null, 2));

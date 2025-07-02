@@ -77,13 +77,11 @@ class NotificationManager {
             max-width: 100%;
             word-wrap: break-word;
             transform: translateX(420px);
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             pointer-events: auto;
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            opacity: 1;
-            background-color: transparent;
         `;
 
         notification.innerHTML = `
@@ -159,9 +157,8 @@ class NotificationManager {
                 clearTimeout(notification.dataset.timeout);
             }
             
-            // Slide out animation
+            // Slide out animation only - no opacity change
             notification.style.transform = 'translateX(420px)';
-            notification.style.opacity = '0';
             
             setTimeout(() => {
                 if (notification.parentNode) {
