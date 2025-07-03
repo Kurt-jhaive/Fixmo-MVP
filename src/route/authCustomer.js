@@ -27,7 +27,9 @@ import {
   getProviderWeeklyDays,
   createAppointment,
   updateAppointmentStatus,
-  getAppointmentDetails
+  getAppointmentDetails,
+  getCustomerBookingsDetailed,
+  cancelAppointmentEnhanced
 } from '../controller/authCustomerController.js';
 
 const router = express.Router();
@@ -144,6 +146,10 @@ router.post('/rate-provider', addRatetoProvider);
 router.put('/appointment/:appointmentId/status', updateAppointmentStatus);
 // Get appointment details
 router.get('/appointment/:appointmentId', getAppointmentDetails);
+
+// Enhanced customer booking routes (requires authentication)
+router.get('/bookings', authMiddleware, getCustomerBookingsDetailed);
+router.put('/bookings/:appointment_id/cancel', authMiddleware, cancelAppointmentEnhanced);
 
 export default router;
 

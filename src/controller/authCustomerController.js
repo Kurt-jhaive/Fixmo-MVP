@@ -344,6 +344,7 @@ export const addAppointment = async (req, res) => {
             data: {
                 customer_id: parseInt(customer_id),
                 provider_id: parseInt(provider_id),
+                service_id: service_listing_id ? parseInt(service_listing_id) : 1, // ✅ ADD: Include service_id
                 availability_id: exactSlot.availability_id, // Link to the availability slot
                 appointment_status: 'accepted', // Auto-accept since slot is available
                 scheduled_date: scheduledDateTime,
@@ -367,6 +368,14 @@ export const addAppointment = async (req, res) => {
                         provider_last_name: true,
                         provider_email: true,
                         provider_phone_number: true
+                    }
+                },
+                service: {
+                    select: {
+                        service_id: true,
+                        service_title: true,
+                        service_description: true,
+                        service_startingprice: true
                     }
                 },
                 availability: {
@@ -1393,6 +1402,8 @@ export const createAppointment = async (req, res) => {
             data: {
                 customer_id: parseInt(customerId),
                 provider_id: parseInt(provider_id),
+                service_id: parseInt(service_id), // ✅ ADD: Include service_id
+                availability_id: exactSlot.availability_id, // ✅ ADD: Include availability_id
                 appointment_status: 'Pending',
                 scheduled_date: appointmentDateTime,
                 repairDescription: repairDescription || null
@@ -1412,6 +1423,22 @@ export const createAppointment = async (req, res) => {
                         provider_last_name: true,
                         provider_email: true,
                         provider_phone_number: true
+                    }
+                },
+                service: {
+                    select: {
+                        service_id: true,
+                        service_title: true,
+                        service_description: true,
+                        service_startingprice: true
+                    }
+                },
+                availability: {
+                    select: {
+                        availability_id: true,
+                        dayOfWeek: true,
+                        startTime: true,
+                        endTime: true
                     }
                 }
             }
@@ -1598,6 +1625,174 @@ export const getProviderWeeklyDays = async (req, res) => {
             success: false,
             message: 'Failed to get provider availability days',
             error: error.message
+        });
+    }
+};
+
+// Enhanced function to get customer bookings with detailed information
+export const getCustomerBookingsDetailed = async (req, res) => {
+    try {
+        const userId = req.userId; // Fixed: use req.userId instead of req.user.userId
+
+        const appointments = await prisma.appointment.findMany({
+            where: { customer_id: userId },
+            include: {
+                serviceProvider: {
+                    select: {
+                        provider_id: true,
+                        provider_first_name: true,
+                        provider_last_name: true,
+                        provider_phone_number: true,
+                        provider_email: true,
+                        provider_profile_photo: true,
+                        provider_rating: true,
+                        provider_location: true
+                    }
+                },
+                service: {
+                    select: {
+                        service_id: true,
+                        service_title: true,
+                        service_description: true,
+                        service_startingprice: true,
+                        service_picture: true
+                    }
+                },
+                availability: {
+                    select: {
+                        startTime: true,
+                        endTime: true,
+                        dayOfWeek: true
+                    }
+                }
+            },
+            orderBy: {
+                scheduled_date: 'desc'
+            }
+        });
+
+        // Format the appointments for frontend use
+        const formattedAppointments = appointments.map(appointment => {
+            const canCancel = appointment.appointment_status === 'approved' || 
+                             appointment.appointment_status === 'pending';
+            
+            const canCall = appointment.appointment_status === 'approved' || 
+                           appointment.appointment_status === 'on the way' ||
+                           appointment.appointment_status === 'in progress';
+
+            return {
+                appointment_id: appointment.appointment_id,
+                scheduled_date: appointment.scheduled_date,
+                appointment_status: appointment.appointment_status,
+                repairDescription: appointment.repairDescription,
+                final_price: appointment.final_price,
+                created_at: appointment.created_at,
+                service: {
+                    service_id: appointment.service.service_id,
+                    title: appointment.service.service_title,
+                    description: appointment.service.service_description,
+                    startingPrice: appointment.service.service_startingprice,
+                    picture: appointment.service.service_picture
+                },
+                provider: {
+                    provider_id: appointment.serviceProvider.provider_id,
+                    name: `${appointment.serviceProvider.provider_first_name} ${appointment.serviceProvider.provider_last_name}`,
+                    phone_number: appointment.serviceProvider.provider_phone_number,
+                    email: appointment.serviceProvider.provider_email,
+                    profile_photo: appointment.serviceProvider.provider_profile_photo,
+                    rating: appointment.serviceProvider.provider_rating,
+                    location: appointment.serviceProvider.provider_location
+                },
+                timeSlot: {
+                    startTime: appointment.availability.startTime,
+                    endTime: appointment.availability.endTime,
+                    dayOfWeek: appointment.availability.dayOfWeek
+                },
+                actions: {
+                    canCancel,
+                    canCall
+                }
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            appointments: formattedAppointments,
+            count: formattedAppointments.length
+        });
+
+    } catch (err) {
+        console.error('Error fetching customer bookings:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Internal server error while fetching bookings' 
+        });
+    }
+};
+
+// Enhanced cancel appointment function with better status checks
+export const cancelAppointmentEnhanced = async (req, res) => {
+    try {
+        const { appointment_id } = req.params;
+        const userId = req.userId; // Fixed: use req.userId instead of req.user.userId
+
+        // First, verify the appointment exists and belongs to the customer
+        const existingAppointment = await prisma.appointment.findFirst({
+            where: {
+                appointment_id: parseInt(appointment_id),
+                customer_id: userId
+            },
+            include: {
+                serviceProvider: {
+                    select: {
+                        provider_first_name: true,
+                        provider_last_name: true,
+                        provider_phone_number: true
+                    }
+                }
+            }
+        });
+
+        if (!existingAppointment) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Appointment not found or you do not have permission to cancel this appointment' 
+            });
+        }
+
+        // Check if appointment can be cancelled based on status
+        const cancellableStatuses = ['pending', 'approved'];
+        if (!cancellableStatuses.includes(existingAppointment.appointment_status)) {
+            return res.status(400).json({ 
+                success: false,
+                message: `Cannot cancel appointment. Current status: ${existingAppointment.appointment_status}. Only pending and approved appointments can be cancelled.` 
+            });
+        }
+
+        // Update appointment status to cancelled
+        const updatedAppointment = await prisma.appointment.update({
+            where: { appointment_id: parseInt(appointment_id) },
+            data: { 
+                appointment_status: 'cancelled'
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Appointment cancelled successfully',
+            appointment: {
+                appointment_id: updatedAppointment.appointment_id,
+                status: updatedAppointment.appointment_status,
+                provider_name: `${existingAppointment.serviceProvider.provider_first_name} ${existingAppointment.serviceProvider.provider_last_name}`,
+                scheduled_date: existingAppointment.scheduled_date
+            }
+        });
+
+    } catch (err) {
+        console.error('Error cancelling appointment:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Internal server error while cancelling appointment' 
         });
     }
 };

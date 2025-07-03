@@ -525,11 +525,9 @@ class CustomerDashboard {
             
         card.innerHTML = `
             <div class="service-image">
-                ${service.service_picture && service.service_picture !== 'undefined' && service.service_picture !== null ? 
-                    `<img src="/${service.service_picture}" alt="${service.title}" class="service-photo">` : 
-                    service.provider.profilePhoto ? 
-                        `<img src="${service.provider.profilePhoto}" alt="${service.title}" class="provider-photo">` : 
-                        `<div class="service-icon"><i class="fas fa-${this.getCategoryIcon(primaryCategory)}"></i></div>`
+                ${service.service_picture ? 
+                    `<img src="/${service.service_picture}" alt="${service.title}">` : 
+                    `<div class="service-icon"><i class="fas fa-${this.getCategoryIcon(primaryCategory)}"></i></div>`
                 }
             </div>
             <div class="service-content">
@@ -763,19 +761,354 @@ class CustomerDashboard {
         const container = document.getElementById('bookingsContainer');
         if (!container) return;
 
-        container.innerHTML = '<p>Loading active bookings...</p>';
+        container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><p>Loading your bookings...</p></div>';
         
-        // Mock booking data
-        setTimeout(() => {
+        try {
+            const response = await DashboardUtils.makeRequest('/auth/bookings');
+            const appointments = response.appointments || [];
+
+            if (!appointments || appointments.length === 0) {
+                container.innerHTML = this.renderEmptyBookings();
+                return;
+            }
+
+            // Show all appointments without grouping
             container.innerHTML = `
-                <div class="booking-card">
-                    <h3>Plumbing Service</h3>
-                    <p>Status: <span class="status-badge pending">Pending</span></p>
-                    <p>Date: ${DashboardUtils.formatDate(new Date())}</p>
-                    <p>Provider: John's Plumbing Services</p>
+                <div class="bookings-sections">
+                    <div class="bookings-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-calendar-check"></i>
+                            All Bookings (${appointments.length})
+                        </h3>
+                        <div class="bookings-grid">
+                            ${appointments.map(booking => this.renderBookingCard(booking)).join('')}
+                        </div>
+                    </div>
                 </div>
             `;
-        }, 1000);
+
+            // Add event listeners for action buttons
+            this.setupBookingActionListeners();
+
+        } catch (error) {
+            console.error('Error loading bookings:', error);
+            container.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Error Loading Bookings</h3>
+                    <p>Unable to load your bookings. Please try again.</p>
+                    <button class="btn-primary" onclick="window.dashboard.loadBookings()">
+                        <i class="fas fa-redo"></i> Retry
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    renderEmptyBookings() {
+        return `
+            <div class="empty-state">
+                <i class="fas fa-calendar-times"></i>
+                <h3>No Bookings Yet</h3>
+                <p>You haven't made any service bookings yet.</p>
+                <button class="btn-primary" onclick="window.dashboard.showPage('dashboard')">
+                    <i class="fas fa-plus"></i> Browse Services
+                </button>
+            </div>
+        `;
+    }
+
+    renderBookingsSection(title, bookings, type) {
+        if (!bookings || bookings.length === 0) {
+            return '';
+        }
+
+        return `
+            <div class="bookings-section">
+                <h3 class="section-title">
+                    <i class="fas ${this.getBookingSectionIcon(type)}"></i>
+                    ${title} (${bookings.length})
+                </h3>
+                <div class="bookings-grid">
+                    ${bookings.map(booking => this.renderBookingCard(booking, type)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    renderBookingCard(booking) {
+        // Only enable call and cancel buttons for "approved" status
+        const isApproved = booking.appointment_status === 'approved';
+        const canCancel = isApproved;
+        const canCall = isApproved;
+        
+        const statusClass = this.getStatusClass(booking.appointment_status);
+        const statusText = this.getStatusText(booking.appointment_status);
+
+        return `
+            <div class="booking-card" data-booking-id="${booking.appointment_id}">
+                <div class="booking-header">
+                    <div class="booking-status">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="booking-date">
+                        <i class="fas fa-calendar"></i>
+                        ${DashboardUtils.formatDate(booking.scheduled_date)}
+                    </div>
+                </div>
+                
+                <div class="booking-content">
+                    <!-- Service Information -->
+                    <div class="service-info">
+                        <div class="service-image">
+                            ${booking.service.picture ? 
+                                `<img src="${booking.service.picture}" alt="Service Picture">` :
+                                `<i class="fas fa-tools"></i>`
+                            }
+                        </div>
+                        <div class="service-details">
+                            <h4 class="service-title">${booking.service.title}</h4>
+                            <p class="service-description">${booking.service.description}</p>
+                            <div class="service-price">
+                                <i class="fas fa-peso-sign"></i>
+                                Starting from ₱${booking.service.startingPrice.toFixed(2)}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Provider Information -->
+                    <div class="provider-info">
+                        <div class="provider-avatar">
+                            ${booking.provider.profile_photo ? 
+                                `<img src="${booking.provider.profile_photo}" alt="Provider Photo">` :
+                                `<i class="fas fa-user"></i>`
+                            }
+                        </div>
+                        <div class="provider-details">
+                            <h4 class="provider-name">${booking.provider.name}</h4>
+                            <p class="provider-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                ${booking.provider.location || 'Location not specified'}
+                            </p>
+                            ${booking.provider.rating ? `
+                                <div class="provider-rating">
+                                    <i class="fas fa-star"></i>
+                                    ${booking.provider.rating.toFixed(1)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Appointment Details -->
+                    <div class="appointment-details">
+                        <div class="appointment-time">
+                            <i class="fas fa-clock"></i>
+                            <span>${this.formatTime(booking.timeSlot.startTime)} - ${this.formatTime(booking.timeSlot.endTime)}</span>
+                        </div>
+                        
+                        ${booking.repairDescription ? `
+                            <div class="appointment-description">
+                                <i class="fas fa-edit"></i>
+                                <span>${booking.repairDescription}</span>
+                            </div>
+                        ` : ''}
+
+                        ${booking.final_price ? `
+                            <div class="appointment-price">
+                                <i class="fas fa-peso-sign"></i>
+                                <span>Final Price: ₱${booking.final_price.toFixed(2)}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div class="booking-actions">
+                    ${canCall ? `
+                        <button class="btn-secondary call-provider" 
+                                data-phone="${booking.provider.phone_number}"
+                                data-provider-name="${booking.provider.name}">
+                            <i class="fas fa-phone"></i> Call Provider
+                        </button>
+                    ` : `
+                        <button class="btn-secondary call-provider disabled" disabled>
+                            <i class="fas fa-phone"></i> Call Provider
+                        </button>
+                    `}
+                    
+                    ${canCancel ? `
+                        <button class="btn-danger cancel-booking" 
+                                data-booking-id="${booking.appointment_id}"
+                                data-provider-name="${booking.provider.name}">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    ` : `
+                        <button class="btn-danger cancel-booking disabled" disabled>
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    `}
+                </div>
+            </div>
+        `;
+    }
+
+    canCancelBooking(status) {
+        const nonCancellableStatuses = ['finished', 'completed', 'canceled', 'on the way'];
+        return !nonCancellableStatuses.includes(status);
+    }
+
+    getStatusClass(status) {
+        const statusClasses = {
+            'pending': 'pending',
+            'accepted': 'accepted',
+            'confirmed': 'confirmed', 
+            'approved': 'approved',
+            'on the way': 'on-the-way',
+            'in_progress': 'in-progress',
+            'completed': 'completed',
+            'finished': 'completed',
+            'canceled': 'cancelled'
+        };
+        return statusClasses[status] || 'pending';
+    }
+
+    getStatusText(status) {
+        const statusTexts = {
+            'pending': 'Pending',
+            'accepted': 'Accepted',
+            'confirmed': 'Confirmed',
+            'approved': 'Approved', 
+            'on the way': 'Provider On The Way',
+            'in_progress': 'In Progress',
+            'completed': 'Completed',
+            'finished': 'Completed',
+            'canceled': 'Cancelled'
+        };
+        return statusTexts[status] || status;
+    }
+
+    getBookingSectionIcon(type) {
+        const icons = {
+            'active': 'fa-clock',
+            'completed': 'fa-check-circle',
+            'cancelled': 'fa-times-circle'
+        };
+        return icons[type] || 'fa-calendar';
+    }
+
+    setupBookingActionListeners() {
+        // Call provider buttons
+        document.querySelectorAll('.call-provider').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const phone = button.dataset.phone;
+                const providerName = button.dataset.providerName;
+                this.callProvider(phone, providerName);
+            });
+        });
+
+        // Cancel booking buttons
+        document.querySelectorAll('.cancel-booking').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const bookingId = button.dataset.bookingId;
+                const providerName = button.dataset.providerName;
+                this.showCancelConfirmation(bookingId, providerName);
+            });
+        });
+    }
+
+    callProvider(phone, providerName) {
+        // Create a modal or confirmation dialog
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-phone"></i> Call ${providerName}</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="call-info">
+                        <div class="provider-call-details">
+                            <i class="fas fa-user"></i>
+                            <span>${providerName}</span>
+                        </div>
+                        <div class="phone-number">
+                            <i class="fas fa-phone"></i>
+                            <span>${phone}</span>
+                        </div>
+                    </div>
+                    <p>You can call this number to contact your service provider directly.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="this.closest('.modal').remove()">
+                        Cancel
+                    </button>
+                    <a href="tel:${phone}" class="btn-primary">
+                        <i class="fas fa-phone"></i> Call Now
+                    </a>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    async showCancelConfirmation(bookingId, providerName) {
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Cancel Booking</h3>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to cancel your booking with <strong>${providerName}</strong>?</p>
+                    <p class="text-warning">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="this.closest('.modal').remove()">
+                        Keep Booking
+                    </button>
+                    <button class="btn-danger" onclick="window.dashboard.cancelBooking('${bookingId}'); this.closest('.modal').remove();">
+                        <i class="fas fa-times"></i> Cancel Booking
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    async cancelBooking(bookingId) {
+        try {
+            DashboardUtils.showLoading();
+            
+            const response = await DashboardUtils.makeRequest(`/auth/bookings/${bookingId}/cancel`, {
+                method: 'PUT'
+            });
+
+            DashboardUtils.hideLoading();
+            DashboardUtils.showToast('Booking cancelled successfully', 'success');
+            
+            // Reload bookings to reflect the change
+            await this.loadBookings();
+            
+        } catch (error) {
+            DashboardUtils.hideLoading();
+            console.error('Error cancelling booking:', error);
+            
+            if (error.message.includes('on the way')) {
+                DashboardUtils.showToast('Cannot cancel - service provider is on the way', 'error');
+            } else if (error.message.includes('completed')) {
+                DashboardUtils.showToast('Cannot cancel a completed booking', 'error');
+            } else {
+                DashboardUtils.showToast('Error cancelling booking. Please try again.', 'error');
+            }
+        }
     }
 
     async loadBookingHistory() {
