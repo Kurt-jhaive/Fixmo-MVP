@@ -1071,25 +1071,25 @@ class CustomerDashboard {
                     switch(slot.status) {
                         case 'available':
                             statusClass = 'available';
-                            statusText = 'Available this week';
+                            statusText = 'Available';
                             statusIcon = '✅';
                             isClickable = true;
                             break;
                         case 'booked':
                             statusClass = 'booked';
-                            statusText = 'Booked for this week';
-                            statusIcon = '�';
+                            statusText = 'Booked';
+                            statusIcon = '🔒';
                             isClickable = false;
                             break;
                         case 'past':
                             statusClass = 'past';
-                            statusText = 'Past (today only)';
+                            statusText = 'Past';
                             statusIcon = '⏰';
                             isClickable = false;
                             break;
                         default:
                             statusClass = 'available';
-                            statusText = 'Available this week';
+                            statusText = 'Available';
                             statusIcon = '✅';
                             isClickable = true;
                     }
