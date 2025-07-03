@@ -103,27 +103,34 @@ model CoveredService {
 }
 
 model Availability {
-  availability_id       Int                    @id @default(autoincrement())
+  availability_id       Int     @id @default(autoincrement())
   dayOfWeek             String
   startTime             String
   endTime               String
   provider_id           Int
-  availability_isActive Boolean                @default(true)
-  availability_isBooked Boolean                @default(false)
-  serviceProvider       ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+  availability_isActive Boolean @default(true)
+
+  serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+
+  // ✅ Opposite relation field
+  appointments Appointment[] //
 }
 
 model Appointment {
-  appointment_id     Int                    @id @default(autoincrement())
+  appointment_id     Int      @id @default(autoincrement())
   customer_id        Int
   provider_id        Int
+  availability_id    Int // ✅ NEW: Links to chosen time slot
   appointment_status String
   scheduled_date     DateTime
   repairDescription  String?
-  created_at         DateTime               @default(now())
+  created_at         DateTime @default(now())
   final_price        Float?
-  customer           User                   @relation(fields: [customer_id], references: [user_id])
-  serviceProvider    ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+
+  customer        User                   @relation(fields: [customer_id], references: [user_id])
+  serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+  availability    Availability           @relation(fields: [availability_id], references: [availability_id])
+
   appointment_rating Rating[]
 }
 

@@ -16,17 +16,7 @@ async function cleanupInvalidAppointments() {
 
         console.log(`Deleted ${deleted.count} appointments from the old booking system`);
 
-        // Reset all availability slots to not booked
-        const resetSlots = await prisma.availability.updateMany({
-            where: {},
-            data: {
-                availability_isBooked: false
-            }
-        });
-
-        console.log(`Reset ${resetSlots.count} availability slots to not booked`);
-
-        console.log('\n✅ Database cleaned up and ready for new exact slot booking system');
+        console.log('\n✅ Database cleaned up and ready for new appointment-availability linked booking system');
 
     } catch (error) {
         console.error('Error cleaning up appointments:', error);

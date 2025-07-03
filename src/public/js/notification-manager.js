@@ -10,12 +10,15 @@ class NotificationManager {
             const container = document.createElement('div');
             container.id = 'notification-container';
             container.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 10000;
-                max-width: 400px;
-                pointer-events: none;
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                z-index: 10000 !important;
+                max-width: 400px !important;
+                pointer-events: none !important;
+                opacity: 1 !important;
+                backdrop-filter: none !important;
+                filter: none !important;
             `;
             document.body.appendChild(container);
         }
@@ -40,22 +43,23 @@ class NotificationManager {
         // Set notification styles based on type
         const typeStyles = {
             success: {
-                background: 'linear-gradient(135deg, #28a745, #20c997)',
+                background: '#28a745',
                 borderLeft: '4px solid #155724',
                 icon: '✅'
             },
             error: {
-                background: 'linear-gradient(135deg, #dc3545, #e83e8c)',
+                background: '#dc3545',
                 borderLeft: '4px solid #721c24',
                 icon: '❌'
             },
             warning: {
-                background: 'linear-gradient(135deg, #ffc107, #fd7e14)',
+                background: '#ffc107',
                 borderLeft: '4px solid #856404',
-                icon: '⚠️'
+                icon: '⚠️',
+                textColor: '#212529'
             },
             info: {
-                background: 'linear-gradient(135deg, #17a2b8, #6f42c1)',
+                background: '#17a2b8',
                 borderLeft: '4px solid #0c5460',
                 icon: 'ℹ️'
             }
@@ -64,35 +68,39 @@ class NotificationManager {
         const style = typeStyles[type] || typeStyles.info;
         
         notification.style.cssText = `
-            ${style.background}
-            color: white;
-            padding: 16px 20px;
-            margin-bottom: 12px;
-            border-radius: 8px;
-            ${style.borderLeft}
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 14px;
-            line-height: 1.4;
-            max-width: 100%;
-            word-wrap: break-word;
-            transform: translateX(420px);
-            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            pointer-events: auto;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
+            background: ${style.background} !important;
+            color: ${style.textColor || 'white'} !important;
+            padding: 16px 20px !important;
+            margin-bottom: 12px !important;
+            border-radius: 8px !important;
+            ${style.borderLeft} !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            font-size: 14px !important;
+            line-height: 1.4 !important;
+            max-width: 100% !important;
+            word-wrap: break-word !important;
+            transform: translateX(420px) !important;
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative !important;
+            overflow: hidden !important;
+            opacity: 1 !important;
+            z-index: 10001 !important;
+            backdrop-filter: none !important;
+            filter: none !important;
         `;
 
         notification.innerHTML = `
             <div style="display: flex; align-items: flex-start; gap: 12px;">
                 <span style="font-size: 18px; flex-shrink: 0;">${style.icon}</span>
                 <div style="flex: 1;">
-                    <div style="font-weight: 600; margin-bottom: 4px;">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
-                    <div>${message}</div>
+                    <div style="font-weight: 600; margin-bottom: 4px; color: ${style.textColor || 'white'};">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                    <div style="color: ${style.textColor || 'white'};">${message}</div>
                 </div>
                 <button onclick="window.notificationManager.hide('${notificationId}')" 
-                        style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 0; margin-left: 8px; opacity: 0.7; transition: opacity 0.2s;">
+                        style="background: none; border: none; color: ${style.textColor || 'white'}; font-size: 18px; cursor: pointer; padding: 0; margin-left: 8px; opacity: 0.7; transition: opacity 0.2s;">
                     ×
                 </button>
             </div>
@@ -186,27 +194,21 @@ class NotificationManager {
 
     // Show booking specific notifications
     bookingSuccess(appointmentDetails) {
-        const message = `
-            <strong>Booking Confirmed!</strong><br>
-            Provider: ${appointmentDetails.provider_name}<br>
-            Date: ${appointmentDetails.date}<br>
-            Time: ${appointmentDetails.time}<br>
-            Status: Automatically Accepted ✅
-        `;
+        const message = `Booking successful!`;
         
         // Check for duplicate booking success notifications
-        const messageText = `Booking Confirmed! Provider: ${appointmentDetails.provider_name}`;
+        const messageText = `Booking successful!`;
         const existingNotifications = document.querySelectorAll('[id^="notification-"]');
         for (let existing of existingNotifications) {
             const existingText = existing.textContent || existing.innerText;
-            if (existingText.includes('Booking Confirmed!') && existingText.includes(appointmentDetails.provider_name)) {
+            if (existingText.includes('Booking successful!')) {
                 existing.classList.add('notification-shake');
                 setTimeout(() => existing.classList.remove('notification-shake'), 500);
                 return existing.id;
             }
         }
         
-        return this.show(message, 'success', 8000);
+        return this.show(message, 'success', 4000);
     }
 
     bookingError(errorMessage) {

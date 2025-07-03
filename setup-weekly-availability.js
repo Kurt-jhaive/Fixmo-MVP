@@ -83,8 +83,7 @@ async function setupWeeklyAvailability() {
                     dayOfWeek: slot.dayOfWeek,
                     startTime: slot.startTime,
                     endTime: slot.endTime,
-                    availability_isActive: true,
-                    availability_isBooked: false
+                    availability_isActive: true
                 }
             });
         }
@@ -144,8 +143,7 @@ async function setupWeeklyAvailability() {
                         dayOfWeek: slot.dayOfWeek,
                         startTime: slot.startTime,
                         endTime: slot.endTime,
-                        availability_isActive: true,
-                        availability_isBooked: false
+                        availability_isActive: true
                     }
                 });
             }
