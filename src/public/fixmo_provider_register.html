@@ -1,20 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Fixmo - Service Provi                    <div class="form-group">
-                        <label for="providerAddress">Service Area Details</label>
-                        <div class="input-wrapper">
-                            <input type="text" id="providerAddress" class="form-control" placeholder="Specific service area, Building, Unit details (optional)">
-                            <i class="fas fa-road input-icon"></i>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="locationPicker">Pin Your Service Area Location <span class="required">*</span></label>
-                        <div id="providerLocationPicker"></div>
-                        <small class="form-text">Your service area location will be automatically set based on your address selections above. Adjust the pin for precise location visibility to customers.</small>
-                        <input type="hidden" id="exactLocation" name="exactLocation" required>
-                    </div>istration</title>    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixmo - Service Provider Registration</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Fixmo Registration Styles -->
     <link href="css/fixmo-registration.css" rel="stylesheet">
     <!-- Location Picker Styles -->
@@ -192,6 +182,13 @@
                             <input type="text" id="providerAddress" class="form-control" placeholder="Specific area, street, or coverage details (optional)">
                             <i class="fas fa-road input-icon"></i>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationPicker">Pin Your Service Area Location <span class="required">*</span></label>
+                        <div id="providerLocationPicker"></div>
+                        <small class="form-text">Your service area location will be automatically set based on your address selections above. Adjust the pin for precise location visibility to customers.</small>
+                        <input type="hidden" id="exactLocation" name="exactLocation" required>
                     </div>
                 </div>
 
@@ -371,26 +368,47 @@
 
         // Initialize location picker
         function initializeLocationPicker() {
-            providerLocationPicker = new LocationPicker('providerLocationPicker', {
-                defaultZoom: 15,
-                defaultLat: 14.5995, // Manila default
-                defaultLng: 120.9842,
-                showSearchBox: true,
-                allowManualPin: true,
-                showCurrentLocation: true,
-                onLocationSelect: (location) => {
-                    const hiddenInput = document.getElementById('exactLocation');
-                    if (location) {
-                        hiddenInput.value = JSON.stringify({
-                            lat: location.lat,
-                            lng: location.lng,
-                            coordinates: location.latLng
-                        });
-                    } else {
-                        hiddenInput.value = '';
+            // Check if the container exists and is visible
+            const container = document.getElementById('providerLocationPicker');
+            if (!container) {
+                console.error('Location picker container not found');
+                return;
+            }
+            
+            // Make sure the container is visible
+            if (container.offsetParent === null) {
+                console.warn('Location picker container is not visible, retrying...');
+                setTimeout(initializeLocationPicker, 500);
+                return;
+            }
+            
+            try {
+                providerLocationPicker = new LocationPicker('providerLocationPicker', {
+                    defaultZoom: 15,
+                    defaultLat: 14.5995, // Manila default
+                    defaultLng: 120.9842,
+                    showSearchBox: true,
+                    allowManualPin: true,
+                    showCurrentLocation: true,
+                    onLocationSelect: (location) => {
+                        const hiddenInput = document.getElementById('exactLocation');
+                        if (hiddenInput && location) {
+                            hiddenInput.value = JSON.stringify({
+                                lat: location.lat,
+                                lng: location.lng,
+                                coordinates: location.latLng
+                            });
+                        } else if (hiddenInput) {
+                            hiddenInput.value = '';
+                        }
                     }
-                }
-            });
+                });
+                console.log('Location picker initialized successfully');
+            } catch (error) {
+                console.error('Error initializing location picker:', error);
+                // Retry after a delay
+                setTimeout(initializeLocationPicker, 1000);
+            }
         }
 
         // Initialize OTP verifier
@@ -715,7 +733,13 @@
             }
 
             // Validate exact location is selected
-            const exactLocationValue = document.getElementById('exactLocation').value;
+            const exactLocationElement = document.getElementById('exactLocation');
+            if (!exactLocationElement) {
+                showError('Location picker not initialized. Please refresh the page and try again.');
+                return;
+            }
+            
+            const exactLocationValue = exactLocationElement.value;
             if (!exactLocationValue || exactLocationValue.trim() === '') {
                 showError('Please pin your exact service area location on the map. Your location will be automatically set based on your address selections.');
                 return;
@@ -732,7 +756,7 @@
             formData.append('provider_password', password);
             formData.append('provider_phone_number', document.getElementById('phoneNumber').value);
             formData.append('provider_location', getFullProviderAddress());
-            formData.append('provider_exact_location', document.getElementById('exactLocation').value);
+            formData.append('provider_exact_location', exactLocationElement.value);
             formData.append('provider_uli', document.getElementById('providerUli').value);
             formData.append('otp', '123456'); // Dummy OTP since email is already verified
             

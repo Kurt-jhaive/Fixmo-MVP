@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Fixmo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/admin-dashboard.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <!-- Logo -->
+            <div class="nav-logo">
+                <span class="logo-text">FIXMO</span>
+                <span class="admin-badge">ADMIN</span>
+                <i class="fas fa-shield-alt logo-icon"></i>
+            </div>
+
+            <!-- Navigation Menu -->
+            <div class="nav-menu">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="users">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a>
+                <a href="#" class="nav-item" data-page="providers">
+                    <i class="fas fa-user-tie"></i>
+                    <span>Service Providers</span>
+                </a>
+                <a href="#" class="nav-item" data-page="certificates">
+                    <i class="fas fa-certificate"></i>
+                    <span>Certificates</span>
+                </a>
+                <a href="#" class="nav-item" data-page="bookings">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Bookings</span>
+                </a>
+                <a href="#" class="nav-item" data-page="reports">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reports</span>
+                </a>
+            </div>
+
+            <!-- Admin Profile -->
+            <div class="nav-profile">
+                <div class="profile-info">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="profile-details">
+                        <span class="profile-name" id="adminName">Admin</span>
+                        <span class="profile-role">Administrator</span>
+                    </div>
+                    <div class="profile-dropdown-toggle">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="profile-dropdown" id="adminDropdown">
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-user-edit"></i> Profile Settings
+                    </a>
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-cog"></i> System Settings
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item" id="adminSignOut">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page active">
+            <div class="page-header">
+                <h1>Admin Dashboard</h1>
+                <p>Manage users, service providers, and platform operations</p>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card users">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalUsers">0</h3>
+                        <p>Total Users</p>
+                        <span class="stat-trend" id="usersTrend">
+                            <span class="pending-count" id="pendingUsers">0</span> pending verification
+                        </span>
+                    </div>
+                </div>
+                <div class="stat-card providers">
+                    <div class="stat-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalProviders">0</h3>
+                        <p>Service Providers</p>
+                        <span class="stat-trend" id="providersTrend">
+                            <span class="pending-count" id="pendingProviders">0</span> pending verification
+                        </span>
+                    </div>
+                </div>
+                <div class="stat-card certificates">
+                    <div class="stat-icon">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalCertificates">0</h3>
+                        <p>Certificates</p>
+                        <span class="stat-trend" id="certificatesTrend">
+                            <span class="pending-count" id="pendingCertificates">0</span> pending approval
+                        </span>
+                    </div>
+                </div>
+                <div class="stat-card bookings">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalBookings">0</h3>
+                        <p>Total Bookings</p>
+                        <span class="stat-trend" id="bookingsTrend">
+                            <span class="active-count" id="activeBookings">0</span> active
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity-section">
+                <div class="section-header">
+                    <h2>Recent Activity</h2>
+                    <p>Latest platform activities requiring attention</p>
+                </div>
+                <div class="activity-container" id="recentActivity">
+                    <!-- Recent activity items will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions-section">
+                <div class="section-header">
+                    <h2>Quick Actions</h2>
+                    <p>Common administrative tasks</p>
+                </div>
+                <div class="actions-grid">
+                    <div class="action-card" onclick="adminDashboard.navigateToPage('users')">
+                        <div class="action-icon">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <h3>Verify Users</h3>
+                        <p>Review and approve user registrations</p>
+                    </div>
+                    <div class="action-card" onclick="adminDashboard.navigateToPage('providers')">
+                        <div class="action-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <h3>Verify Providers</h3>
+                        <p>Review and approve service provider applications</p>
+                    </div>
+                    <div class="action-card" onclick="adminDashboard.navigateToPage('certificates')">
+                        <div class="action-icon">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <h3>Review Certificates</h3>
+                        <p>Approve or reject provider certificates</p>
+                    </div>
+                    <div class="action-card" onclick="adminDashboard.navigateToPage('reports')">
+                        <div class="action-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Generate Reports</h3>
+                        <p>View platform statistics and reports</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Page -->
+        <div id="usersPage" class="page">
+            <div class="page-header">
+                <h1>User Management</h1>
+                <p>Manage customer accounts and verifications</p>
+            </div>
+
+            <!-- Users Controls -->
+            <div class="page-controls">
+                <div class="search-section">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="usersSearchInput" placeholder="Search users...">
+                    </div>
+                    <div class="sort-section">
+                        <label for="usersSortSelect">Sort by:</label>
+                        <select id="usersSortSelect">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="name">Name (A-Z)</option>
+                            <option value="name_desc">Name (Z-A)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <button class="filter-btn active" data-filter="all">All Users</button>
+                    <button class="filter-btn" data-filter="verified">Verified</button>
+                    <button class="filter-btn" data-filter="pending">Pending</button>
+                    <button class="filter-btn" data-filter="active">Active</button>
+                    <button class="filter-btn" data-filter="inactive">Inactive</button>
+                </div>
+            </div>
+
+            <!-- Users Stats -->
+            <div class="page-stats">
+                <div class="stat-item">
+                    <i class="fas fa-users"></i>
+                    <span class="count" id="usersTotal">0</span>
+                    <span>Total</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-user-check"></i>
+                    <span class="count" id="usersVerified">0</span>
+                    <span>Verified</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span class="count" id="usersPending">0</span>
+                    <span>Pending</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-user-times"></i>
+                    <span class="count" id="usersInactive">0</span>
+                    <span>Inactive</span>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="data-table-container">
+                <table class="data-table" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Users will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Service Providers Page -->
+        <div id="providersPage" class="page">
+            <div class="page-header">
+                <h1>Service Provider Management</h1>
+                <p>Manage service provider accounts and verifications</p>
+            </div>
+
+            <!-- Providers Controls -->
+            <div class="page-controls">
+                <div class="search-section">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="providersSearchInput" placeholder="Search providers...">
+                    </div>
+                    <div class="sort-section">
+                        <label for="providersSortSelect">Sort by:</label>
+                        <select id="providersSortSelect">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="name">Name (A-Z)</option>
+                            <option value="rating">Rating</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <button class="filter-btn active" data-filter="all">All Providers</button>
+                    <button class="filter-btn" data-filter="verified">Verified</button>
+                    <button class="filter-btn" data-filter="pending">Pending</button>
+                    <button class="filter-btn" data-filter="active">Active</button>
+                    <button class="filter-btn" data-filter="inactive">Inactive</button>
+                </div>
+            </div>
+
+            <!-- Providers Stats -->
+            <div class="page-stats">
+                <div class="stat-item">
+                    <i class="fas fa-user-tie"></i>
+                    <span class="count" id="providersTotal">0</span>
+                    <span>Total</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-user-check"></i>
+                    <span class="count" id="providersVerified">0</span>
+                    <span>Verified</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span class="count" id="providersPending">0</span>
+                    <span>Pending</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-star"></i>
+                    <span class="count" id="providersAvgRating">0.0</span>
+                    <span>Avg Rating</span>
+                </div>
+            </div>
+
+            <!-- Providers Table -->
+            <div class="data-table-container">
+                <table class="data-table" id="providersTable">
+                    <thead>
+                        <tr>
+                            <th>Provider</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Rating</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="providersTableBody">
+                        <!-- Providers will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Certificates Page -->
+        <div id="certificatesPage" class="page">
+            <div class="page-header">
+                <h1>Certificate Management</h1>
+                <p>Review and approve service provider certificates</p>
+            </div>
+
+            <!-- Certificates Controls -->
+            <div class="page-controls">
+                <div class="search-section">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="certificatesSearchInput" placeholder="Search certificates...">
+                    </div>
+                    <div class="sort-section">
+                        <label for="certificatesSortSelect">Sort by:</label>
+                        <select id="certificatesSortSelect">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="provider">Provider Name</option>
+                            <option value="certificate">Certificate Name</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <button class="filter-btn active" data-filter="all">All Certificates</button>
+                    <button class="filter-btn" data-filter="pending">Pending</button>
+                    <button class="filter-btn" data-filter="approved">Approved</button>
+                    <button class="filter-btn" data-filter="rejected">Rejected</button>
+                </div>
+            </div>
+
+            <!-- Certificates Stats -->
+            <div class="page-stats">
+                <div class="stat-item">
+                    <i class="fas fa-certificate"></i>
+                    <span class="count" id="certificatesTotal">0</span>
+                    <span>Total</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span class="count" id="certificatesPending">0</span>
+                    <span>Pending</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span class="count" id="certificatesApproved">0</span>
+                    <span>Approved</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-times-circle"></i>
+                    <span class="count" id="certificatesRejected">0</span>
+                    <span>Rejected</span>
+                </div>
+            </div>
+
+            <!-- Certificates Table -->
+            <div class="data-table-container">
+                <table class="data-table" id="certificatesTable">
+                    <thead>
+                        <tr>
+                            <th>Certificate</th>
+                            <th>Provider</th>
+                            <th>Certificate #</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="certificatesTableBody">
+                        <!-- Certificates will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bookings Page -->
+        <div id="bookingsPage" class="page">
+            <div class="page-header">
+                <h1>Booking Management</h1>
+                <p>Monitor and manage platform bookings</p>
+            </div>
+
+            <!-- Bookings Stats -->
+            <div class="page-stats">
+                <div class="stat-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span class="count" id="bookingsTotal">0</span>
+                    <span>Total</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span class="count" id="bookingsPending">0</span>
+                    <span>Pending</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span class="count" id="bookingsCompleted">0</span>
+                    <span>Completed</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-times-circle"></i>
+                    <span class="count" id="bookingsCancelled">0</span>
+                    <span>Cancelled</span>
+                </div>
+            </div>
+
+            <!-- Bookings content will be added here -->
+            <div class="bookings-container">
+                <p>Booking management features coming soon...</p>
+            </div>
+        </div>
+
+        <!-- Reports Page -->
+        <div id="reportsPage" class="page">
+            <div class="page-header">
+                <h1>Reports & Analytics</h1>
+                <p>Platform statistics and performance metrics</p>
+            </div>
+
+            <!-- Reports content will be added here -->
+            <div class="reports-container">
+                <p>Reporting features coming soon...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- User Details Modal -->
+    <div id="userDetailsModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>User Details</h3>
+                <button class="modal-close" id="userDetailsModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="userDetailsBody">
+                <!-- User details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Provider Details Modal -->
+    <div id="providerDetailsModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Provider Details</h3>
+                <button class="modal-close" id="providerDetailsModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="providerDetailsBody">
+                <!-- Provider details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Certificate Details Modal -->
+    <div id="certificateDetailsModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Certificate Details</h3>
+                <button class="modal-close" id="certificateDetailsModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="certificateDetailsBody">
+                <!-- Certificate details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div id="imageViewerModal" class="modal">
+        <div class="modal-content image-viewer">
+            <div class="modal-header">
+                <h3 id="imageViewerTitle">Image Viewer</h3>
+                <button class="modal-close" id="imageViewerModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="image-container">
+                    <img id="imageViewerImg" src="" alt="Document">
+                </div>
+                <div class="image-actions">
+                    <button class="btn-secondary" onclick="adminDashboard.downloadImage()">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                    <button class="btn-secondary" onclick="adminDashboard.openImageInNewTab()">
+                        <i class="fas fa-external-link-alt"></i> Open in New Tab
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmationTitle">Confirm Action</h3>
+                <button class="modal-close" id="confirmationModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="confirmation-content">
+                    <div class="confirmation-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="confirmation-text">
+                        <h4 id="confirmationMessage">Are you sure?</h4>
+                        <p id="confirmationDescription">This action cannot be undone.</p>
+                    </div>
+                </div>
+                <div class="form-group" id="reasonGroup" style="display: none;">
+                    <label for="actionReason">Reason (optional):</label>
+                    <textarea id="actionReason" rows="3" placeholder="Enter reason for this action..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="confirmationCancel">Cancel</button>
+                <button class="btn-primary" id="confirmationConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/admin-dashboard.js"></script>
+    <script src="js/admin-users.js"></script>
+    <script src="js/admin-providers.js"></script>
+    <script src="js/admin-certificates.js"></script>
+</body>
+</html>

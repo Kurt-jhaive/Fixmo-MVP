@@ -443,9 +443,18 @@ class ServiceManager {
         const statusClass = isActive ? 'active' : 'inactive';
         const statusText = isActive ? 'Active' : 'Inactive';
         
+        // Check if service has an image
+        const hasServiceImage = service.service_picture;
+        const imageSrc = hasServiceImage ? `/${service.service_picture}` : null;
+        
         return `
             <div class="service-card ${statusClass}">
-                ${this.renderServiceImage(service, serviceName)}
+                ${hasServiceImage ? `
+                <div class="service-image">
+                    <img src="${imageSrc}" alt="${this.escapeHtml(serviceName)}" 
+                         style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px;">
+                </div>
+                ` : ''}
                 
                 <div class="service-category">${this.escapeHtml(categoryName)}</div>
                 
@@ -500,37 +509,7 @@ class ServiceManager {
                 </div>
             </div>
         `;
-    }
-
-    // Helper function to safely render service images
-    renderServiceImage(service, serviceName = 'Service') {
-        const hasValidImage = service.service_picture && 
-                              service.service_picture !== 'undefined' && 
-                              service.service_picture !== null && 
-                              service.service_picture.trim() !== '';
-        
-        if (hasValidImage) {
-            const imageSrc = service.service_picture.startsWith('/') ? service.service_picture : `/${service.service_picture}`;
-            return `
-                <div class="service-image">
-                    <img src="${imageSrc}" alt="${this.escapeHtml(serviceName)}" 
-                         style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px;"
-                         onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\\'service-placeholder\\' style=\\'height: 200px; background: #f0f0f0; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666;\\'>\\n<i class=\\'fas fa-image\\' style=\\'font-size: 2rem; margin-bottom: 8px;\\'></i>\\n<span>No Image</span>\\n</div>'">
-                </div>
-            `;
-        } else {
-            return `
-                <div class="service-image">
-                    <div class="service-placeholder" style="height: 200px; background: #f0f0f0; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666;">
-                        <i class="fas fa-image" style="font-size: 2rem; margin-bottom: 8px;"></i>
-                        <span>No Image</span>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
-    showAddServiceModal() {
+    }showAddServiceModal() {
         console.log('=== showAddServiceModal called ===');
         console.log('Current modalOpen state:', this.modalOpen);
         
@@ -651,20 +630,10 @@ class ServiceManager {
             
             // Add image file if selected
             if (servicePicture) {
-                console.log('Service picture selected:', servicePicture);
-                console.log('Service picture name:', servicePicture.name);
-                console.log('Service picture size:', servicePicture.size);
-                console.log('Service picture type:', servicePicture.type);
                 formData.append('service_picture', servicePicture);
-            } else {
-                console.log('No service picture selected');
             }
 
             console.log('Sending service data via FormData');
-            console.log('FormData contents:');
-            for (let pair of formData.entries()) {
-                console.log(pair[0] + ': ' + pair[1]);
-            }
             const response = await fetch('/api/services/services', {
                 method: 'POST',
                 credentials: 'include',

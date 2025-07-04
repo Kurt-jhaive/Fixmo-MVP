@@ -52,32 +52,30 @@ export const getProviderServices = async (req, res) => {
                 service_id: 'desc'
             }
         });        // Transform the data to match the expected frontend format
-        const transformedServices = services.map(service => {
-            return {
-                listing_id: service.service_id,
-                service_id: service.service_id, // Add both for compatibility
-                service_name: service.service_title,
-                service_title: service.service_title, // Add both for compatibility
-                description: service.service_description,
-                service_description: service.service_description, // Add both for compatibility
-                service_picture: service.service_picture, // Add service picture
-                price: service.service_startingprice,
-                service_startingprice: service.service_startingprice, // Add both for compatibility
-                price_per_hour: service.service_startingprice,
-                provider_id: service.provider_id,
+        const transformedServices = services.map(service => ({
+            listing_id: service.service_id,
+            service_id: service.service_id, // Add both for compatibility
+            service_name: service.service_title,
+            service_title: service.service_title, // Add both for compatibility
+            description: service.service_description,
+            service_description: service.service_description, // Add both for compatibility
+            service_picture: service.service_picture, // Add service picture
+            price: service.service_startingprice,
+            service_startingprice: service.service_startingprice, // Add both for compatibility
+            price_per_hour: service.service_startingprice,
+            provider_id: service.provider_id,
 
-                is_available: service.servicelisting_isActive, // Use actual field from database
-                status: service.servicelisting_isActive ? 'active' : 'inactive', // Based on database field
-                specific_services: service.specific_services,
-                category_name: service.specific_services.length > 0 ? service.specific_services[0].category.category_name : 'Uncategorized',
-                category: service.specific_services[0]?.category || null,
-                category_id: service.specific_services[0]?.category_id || null,
-                certificates: service.specific_services.flatMap(ss => 
-                    ss.covered_by_certificates.map(cbc => cbc.certificate)
-                ),
-                booking_count: 0 // Default since not tracked in current schema
-            };
-        });
+            is_available: service.servicelisting_isActive, // Use actual field from database
+            status: service.servicelisting_isActive ? 'active' : 'inactive', // Based on database field
+            specific_services: service.specific_services,
+            category_name: service.specific_services.length > 0 ? service.specific_services[0].category.category_name : 'Uncategorized',
+            category: service.specific_services[0]?.category || null,
+            category_id: service.specific_services[0]?.category_id || null,
+            certificates: service.specific_services.flatMap(ss => 
+                ss.covered_by_certificates.map(cbc => cbc.certificate)
+            ),
+            booking_count: 0 // Default since not tracked in current schema
+        }));
 
         res.status(200).json({
             success: true,
@@ -148,12 +146,9 @@ export const createService = async (req, res) => {
         } = req.body;
 
         // Get the uploaded file path if image was uploaded
-        let servicePicture = null;
-        if (req.file) {
-            // Use the filename directly with the service-images path
-            servicePicture = `uploads/service-images/${req.file.filename}`;
-            console.log('Service picture path:', servicePicture);
-        }
+        const servicePicture = req.file ? 
+            '/uploads/' + req.file.path.replace(/\\/g, '/').split('/uploads/')[1] : 
+            null;
 
         console.log('Create service request:', {
             providerId,

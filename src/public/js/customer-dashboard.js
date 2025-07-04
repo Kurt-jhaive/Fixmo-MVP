@@ -17,17 +17,6 @@ class CustomerDashboard {
         this.isSubmittingBooking = false; // Prevent duplicate submissions
         this.eventListenersSetup = false; // Prevent duplicate event listeners
         
-        // Booking filter properties
-        this.allBookings = [];
-        this.filteredBookings = [];
-        this.currentBookingFilters = {
-            status: '',
-            dateRange: '',
-            serviceType: '',
-            search: '',
-            sort: 'date-desc'
-        };
-        
         this.init();
     }
 
@@ -782,9 +771,6 @@ class CustomerDashboard {
             const response = await DashboardUtils.makeRequest('/auth/bookings');
             const appointments = response.appointments || [];
 
-            // Store all bookings
-            this.allBookings = appointments;
-
             // Filter bookings to show all active appointment statuses
             const allowedStatuses = ['accepted',  'confirmed', 'on the way', 'in progress', 'completed'];
             const filteredAppointments = appointments.filter(booking => 
@@ -796,9 +782,23 @@ class CustomerDashboard {
                 return;
             }
 
-            // Apply filters and render
-            this.filteredBookings = filteredAppointments;
-            this.renderBookingsWithFilters();
+            // Show filtered appointments with horizontal design
+            container.innerHTML = `
+                <div class="bookings-sections">
+                    <div class="bookings-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-calendar-check"></i>
+                            Active Bookings (${filteredAppointments.length})
+                        </h3>
+                        <div class="bookings-container-horizontal">
+                            ${filteredAppointments.map(booking => this.renderBookingCard(booking)).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add event listeners for action buttons
+            this.setupBookingActionListeners();
 
         } catch (error) {
             console.error('Error loading bookings:', error);
@@ -2323,266 +2323,6 @@ class CustomerDashboard {
             // Don't block the booking process if this fails
         }
     }
-
-    renderBookingsWithFilters() {
-        const container = document.getElementById('bookingsContainer');
-        if (!container) return;
-
-        // Apply filters
-        this.applyBookingFilters();
-
-        // Render the filtered bookings with filter UI
-        container.innerHTML = `
-            <div class="bookings-sections">
-                ${this.renderBookingFilters()}
-                <div class="bookings-section">
-                    <h3 class="section-title">
-                        <i class="fas fa-calendar-check"></i>
-                        Active Bookings (${this.filteredBookings.length})
-                    </h3>
-                    <div class="bookings-container-horizontal">
-                        ${this.filteredBookings.map(booking => this.renderBookingCard(booking)).join('')}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Add event listeners for action buttons and filters
-        this.setupBookingActionListeners();
-        this.setupBookingFilterListeners();
-    }
-
-    renderBookingFilters() {
-        return `
-            <div class="booking-filters-section">
-                <div class="filters-header">
-                    <h3><i class="fas fa-filter"></i> Filter Bookings</h3>
-                    <button class="btn-secondary clear-filters" onclick="window.dashboard.clearBookingFilters()">
-                        <i class="fas fa-times"></i> Clear Filters
-                    </button>
-                </div>
-                
-                <div class="search-filter-group">
-                    <label for="bookingSearch">Search Bookings</label>
-                    <div class="search-input-wrapper">
-                        <input type="text" id="bookingSearch" class="search-input" placeholder="Search by service, provider, or description...">
-                        <i class="fas fa-search search-icon"></i>
-                    </div>
-                </div>
-                
-                <div class="filters-grid">
-                    <div class="filter-group">
-                        <label for="statusFilter">Status</label>
-                        <select id="statusFilter" class="filter-select">
-                            <option value="">All Status</option>
-                            <option value="accepted">Accepted</option>
-                            <option value="approved">Approved</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="on the way">On The Way</option>
-                            <option value="in progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label for="dateRangeFilter">Date Range</label>
-                        <select id="dateRangeFilter" class="filter-select">
-                            <option value="">All Dates</option>
-                            <option value="today">Today</option>
-                            <option value="this-week">This Week</option>
-                            <option value="this-month">This Month</option>
-                            <option value="last-month">Last Month</option>
-                            <option value="last-3-months">Last 3 Months</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label for="serviceTypeFilter">Service Type</label>
-                        <select id="serviceTypeFilter" class="filter-select">
-                            <option value="">All Services</option>
-                            <option value="plumbing">Plumbing</option>
-                            <option value="electrical">Electrical</option>
-                            <option value="cleaning">Cleaning</option>
-                            <option value="carpentry">Carpentry</option>
-                            <option value="painting">Painting</option>
-                            <option value="appliance repair">Appliance Repair</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label for="sortBookings">Sort By</label>
-                        <select id="sortBookings" class="filter-select">
-                            <option value="date-desc">Newest First</option>
-                            <option value="date-asc">Oldest First</option>
-                            <option value="status">Status</option>
-                            <option value="service-title">Service Title</option>
-                            <option value="provider-name">Provider Name</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    applyBookingFilters() {
-        let filtered = [...this.allBookings];
-
-        // Filter by search query
-        if (this.currentBookingFilters.search) {
-            const searchTerm = this.currentBookingFilters.search.toLowerCase();
-            filtered = filtered.filter(booking => 
-                booking.service.title.toLowerCase().includes(searchTerm) ||
-                booking.provider.name.toLowerCase().includes(searchTerm) ||
-                (booking.repairDescription && booking.repairDescription.toLowerCase().includes(searchTerm)) ||
-                booking.appointment_status.toLowerCase().includes(searchTerm)
-            );
-        }
-
-        // Filter by status
-        if (this.currentBookingFilters.status) {
-            filtered = filtered.filter(booking => 
-                booking.appointment_status === this.currentBookingFilters.status
-            );
-        }
-
-        // Filter by date range
-        if (this.currentBookingFilters.dateRange) {
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
-            filtered = filtered.filter(booking => {
-                const bookingDate = new Date(booking.scheduled_date);
-                
-                switch (this.currentBookingFilters.dateRange) {
-                    case 'today':
-                        return bookingDate.toDateString() === today.toDateString();
-                    case 'this-week':
-                        const weekStart = new Date(today);
-                        weekStart.setDate(today.getDate() - today.getDay());
-                        const weekEnd = new Date(weekStart);
-                        weekEnd.setDate(weekStart.getDate() + 6);
-                        return bookingDate >= weekStart && bookingDate <= weekEnd;
-                    case 'this-month':
-                        return bookingDate.getMonth() === now.getMonth() && 
-                               bookingDate.getFullYear() === now.getFullYear();
-                    case 'last-month':
-                        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-                        return bookingDate >= lastMonth && bookingDate <= lastMonthEnd;
-                    case 'last-3-months':
-                        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-                        return bookingDate >= threeMonthsAgo;
-                    default:
-                        return true;
-                }
-            });
-        }
-
-        // Filter by service type
-        if (this.currentBookingFilters.serviceType) {
-            filtered = filtered.filter(booking => {
-                const serviceTitle = booking.service.title.toLowerCase();
-                const serviceType = this.currentBookingFilters.serviceType.toLowerCase();
-                return serviceTitle.includes(serviceType);
-            });
-        }
-
-        // Sort bookings
-        this.sortBookings(filtered);
-
-        // Only show active bookings
-        const allowedStatuses = ['accepted', 'approved', 'confirmed', 'on the way', 'in progress', 'completed'];
-        this.filteredBookings = filtered.filter(booking => 
-            allowedStatuses.includes(booking.appointment_status)
-        );
-    }
-
-    sortBookings(bookings) {
-        switch (this.currentBookingFilters.sort) {
-            case 'date-desc':
-                bookings.sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date));
-                break;
-            case 'date-asc':
-                bookings.sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date));
-                break;
-            case 'status':
-                bookings.sort((a, b) => a.appointment_status.localeCompare(b.appointment_status));
-                break;
-            case 'service-title':
-                bookings.sort((a, b) => a.service.title.localeCompare(b.service.title));
-                break;
-            case 'provider-name':
-                bookings.sort((a, b) => a.provider.name.localeCompare(b.provider.name));
-                break;
-        }
-    }
-
-    setupBookingFilterListeners() {
-        const bookingSearch = document.getElementById('bookingSearch');
-        const statusFilter = document.getElementById('statusFilter');
-        const dateRangeFilter = document.getElementById('dateRangeFilter');
-        const serviceTypeFilter = document.getElementById('serviceTypeFilter');
-        const sortBookings = document.getElementById('sortBookings');
-
-        // Search input with debouncing
-        if (bookingSearch) {
-            bookingSearch.value = this.currentBookingFilters.search;
-            let searchTimeout;
-            bookingSearch.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.currentBookingFilters.search = e.target.value;
-                    this.renderBookingsWithFilters();
-                }, 300); // 300ms debounce
-            });
-        }
-
-        if (statusFilter) {
-            statusFilter.value = this.currentBookingFilters.status;
-            statusFilter.addEventListener('change', (e) => {
-                this.currentBookingFilters.status = e.target.value;
-                this.renderBookingsWithFilters();
-            });
-        }
-
-        if (dateRangeFilter) {
-            dateRangeFilter.value = this.currentBookingFilters.dateRange;
-            dateRangeFilter.addEventListener('change', (e) => {
-                this.currentBookingFilters.dateRange = e.target.value;
-                this.renderBookingsWithFilters();
-            });
-        }
-
-        if (serviceTypeFilter) {
-            serviceTypeFilter.value = this.currentBookingFilters.serviceType;
-            serviceTypeFilter.addEventListener('change', (e) => {
-                this.currentBookingFilters.serviceType = e.target.value;
-                this.renderBookingsWithFilters();
-            });
-        }
-
-        if (sortBookings) {
-            sortBookings.value = this.currentBookingFilters.sort;
-            sortBookings.addEventListener('change', (e) => {
-                this.currentBookingFilters.sort = e.target.value;
-                this.renderBookingsWithFilters();
-            });
-        }
-    }
-
-    clearBookingFilters() {
-        this.currentBookingFilters = {
-            status: '',
-            dateRange: '',
-            serviceType: '',
-            search: '',
-            sort: 'date-desc'
-        };
-        this.renderBookingsWithFilters();
-    }
-
-    // ...existing code...
 }
 
 // Initialize dashboard when DOM is loaded
@@ -2727,185 +2467,6 @@ const additionalStyles = `
         opacity: 0;
         transform: translateX(100%);
     }
-}
-
-/* Booking Filters Styles */
-.booking-filters-section {
-    background: white;
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-sm);
-    padding: 24px;
-    margin-bottom: 24px;
-    border: 1px solid var(--border-color);
-}
-
-.filters-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-.filters-header h3 {
-    margin: 0;
-    color: var(--text-primary);
-    font-size: 1.2rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.filters-header h3 i {
-    color: var(--primary-color);
-}
-
-.clear-filters {
-    padding: 8px 16px;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    transition: var(--transition);
-}
-
-.clear-filters:hover {
-    background: #f8f9fa;
-    border-color: #dee2e6;
-}
-
-.search-filter-group {
-    margin-bottom: 20px;
-}
-
-.search-filter-group label {
-    display: block;
-    font-weight: 600;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    margin-bottom: 8px;
-}
-
-.search-input-wrapper {
-    position: relative;
-}
-
-.search-input {
-    width: 100%;
-    padding: 12px 16px;
-    padding-right: 45px;
-    border: 2px solid var(--border-color);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    background: white;
-    color: var(--text-primary);
-    transition: var(--transition);
-}
-
-.search-input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(102, 178, 178, 0.1);
-}
-
-.search-icon {
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #9ca3af;
-    font-size: 1rem;
-}
-
-.filters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.filter-group label {
-    font-weight: 600;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    margin-bottom: 4px;
-}
-
-.filter-select {
-    padding: 10px 12px;
-    border: 2px solid var(--border-color);
-    border-radius: var(--border-radius);
-    font-size: 0.95rem;
-    background: white;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.filter-select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(102, 178, 178, 0.1);
-}
-
-.filter-select:hover {
-    border-color: #c0c0c0;
-}
-
-/* Responsive adjustments for filters */
-@media (max-width: 768px) {
-    .filters-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
-    }
-    
-    .filters-header {
-        flex-direction: column;
-        gap: 12px;
-        align-items: flex-start;
-    }
-    
-    .booking-filters-section {
-        padding: 16px;
-    }
-}
-
-/* Enhanced booking cards for filtered view */
-.bookings-container-horizontal {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.booking-card-horizontal {
-    background: white;
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-color);
-    padding: 20px;
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-}
-
-.booking-card-horizontal:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-}
-
-.booking-card-horizontal::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
 }
 </style>
 `;

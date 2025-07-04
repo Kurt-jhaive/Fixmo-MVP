@@ -537,6 +537,137 @@ export const updateAppointmentStatus = async (req, res) => {
     }
 };
 
+// Cancel appointment with reason
+export const cancelAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { cancellation_reason } = req.body;
+
+        if (!cancellation_reason) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cancellation reason is required'
+            });
+        }
+
+        // Check if appointment exists
+        const existingAppointment = await prisma.appointment.findUnique({
+            where: { appointment_id: parseInt(appointmentId) }
+        });
+
+        if (!existingAppointment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
+            });
+        }
+
+        // Update appointment status to cancelled with reason
+        const updatedAppointment = await prisma.appointment.update({
+            where: { appointment_id: parseInt(appointmentId) },
+            data: { 
+                appointment_status: 'cancelled',
+                cancellation_reason: cancellation_reason
+            },
+            include: {
+                customer: {
+                    select: {
+                        first_name: true,
+                        last_name: true,
+                        email: true
+                    }
+                },
+                serviceProvider: {
+                    select: {
+                        provider_first_name: true,
+                        provider_last_name: true
+                    }
+                }
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Appointment cancelled successfully',
+            data: updatedAppointment
+        });
+
+    } catch (error) {
+        console.error('Error cancelling appointment:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error cancelling appointment',
+            error: error.message
+        });
+    }
+};
+
+// Rate customer/appointment
+export const rateAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { rating, comment } = req.body;
+
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rating must be between 1 and 5'
+            });
+        }
+
+        // Check if appointment exists and is completed
+        const existingAppointment = await prisma.appointment.findUnique({
+            where: { appointment_id: parseInt(appointmentId) }
+        });
+
+        if (!existingAppointment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
+            });
+        }
+
+        if (existingAppointment.appointment_status !== 'completed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Can only rate completed appointments'
+            });
+        }
+
+        // Create or update rating
+        const ratingData = await prisma.rating.upsert({
+            where: {
+                appointment_id: parseInt(appointmentId)
+            },
+            update: {
+                rating_value: parseInt(rating),
+                rating_comment: comment || null
+            },
+            create: {
+                appointment_id: parseInt(appointmentId),
+                rating_value: parseInt(rating),
+                rating_comment: comment || null,
+                user_id: existingAppointment.customer_id,
+                provider_id: existingAppointment.provider_id
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Rating submitted successfully',
+            data: ratingData
+        });
+
+    } catch (error) {
+        console.error('Error submitting rating:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error submitting rating',
+            error: error.message
+        });
+    }
+};
+
 // Reschedule appointment
 export const rescheduleAppointment = async (req, res) => {
     try {

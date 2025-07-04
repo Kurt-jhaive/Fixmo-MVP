@@ -1457,7 +1457,22 @@ export const getProviderAppointments = async (req, res) => {
                         last_name: true,
                         email: true,
                         phone_number: true,
-                        profile_photo: true
+                        profile_photo: true,
+                        exact_location: true
+                    }
+                },
+                service: {
+                    select: {
+                        service_id: true,
+                        service_title: true,
+                        service_description: true,
+                        service_startingprice: true
+                    }
+                },
+                appointment_rating: {
+                    select: {
+                        rating_value: true,
+                        rating_comment: true
                     }
                 }
             },
@@ -1587,6 +1602,22 @@ export const updateAppointmentStatusProvider = async (req, res) => {
             });
         }
 
+        if (!status) {
+            return res.status(400).json({
+                success: false,
+                message: 'Status is required'
+            });
+        }
+
+        // Validate status values - use the correct valid statuses
+        const validStatuses = ['pending', 'approved', 'confirmed', 'in-progress', 'completed', 'cancelled', 'no-show'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid status. Valid statuses are: ${validStatuses.join(', ')}`
+            });
+        }
+
         const appointment = await prisma.appointment.findUnique({
             where: { appointment_id: parseInt(appointmentId) }
         });
@@ -1617,40 +1648,27 @@ export const updateAppointmentStatusProvider = async (req, res) => {
                         email: true,
                         phone_number: true
                     }
+                },
+                service: {
+                    select: {
+                        service_title: true,
+                        service_description: true
+                    }
                 }
             }
         });
 
-        // If marking as completed or finished, free up the availability slot
-        if (status === 'completed' || status === 'finished') {
-            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            const dayOfWeek = dayNames[appointment.scheduled_date.getDay()];
-            const startTime = appointment.scheduled_date.toLocaleTimeString('en-US', {
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-
-            await prisma.availability.updateMany({
-                where: {
-                    provider_id: appointment.provider_id,
-                    dayOfWeek: dayOfWeek,
-                    startTime: startTime
-                },
-                data: { availability_isBooked: false }
-            });
-        }
-
         res.status(200).json({
             success: true,
-            message: 'Appointment status updated successfully',
-            appointment: updatedAppointment
+            message: `Appointment status updated to ${status}`,
+            data: updatedAppointment
         });
     } catch (error) {
         console.error('Error updating appointment status:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Internal server error' 
+            message: 'Internal server error',
+            error: error.message
         });
     }
 };
@@ -1702,6 +1720,159 @@ export const getProviderAvailabilityWithBookings = async (req, res) => {
         res.status(500).json({ 
             success: false, 
             message: 'Internal server error' 
+        });
+    }
+};
+
+// Cancel appointment with reason (wrapper for appointment controller)
+export const cancelProviderAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { cancellation_reason } = req.body;
+
+        if (!cancellation_reason) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cancellation reason is required'
+            });
+        }
+
+        // Check if appointment exists and belongs to this provider
+        const existingAppointment = await prisma.appointment.findUnique({
+            where: { appointment_id: parseInt(appointmentId) },
+            include: {
+                serviceProvider: true
+            }
+        });
+
+        if (!existingAppointment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
+            });
+        }
+
+        // Verify the provider owns this appointment
+        if (existingAppointment.provider_id !== parseInt(req.userId)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Unauthorized to cancel this appointment'
+            });
+        }
+
+        // Update appointment status to cancelled with reason
+        const updatedAppointment = await prisma.appointment.update({
+            where: { appointment_id: parseInt(appointmentId) },
+            data: { 
+                appointment_status: 'cancelled',
+                cancellation_reason: cancellation_reason
+            },
+            include: {
+                customer: {
+                    select: {
+                        first_name: true,
+                        last_name: true,
+                        email: true
+                    }
+                },
+                serviceProvider: {
+                    select: {
+                        provider_first_name: true,
+                        provider_last_name: true
+                    }
+                }
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Appointment cancelled successfully',
+            data: updatedAppointment
+        });
+
+    } catch (error) {
+        console.error('Error cancelling appointment:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error cancelling appointment',
+            error: error.message
+        });
+    }
+};
+
+// Rate customer/appointment (wrapper for appointment controller)
+export const rateCustomerAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { rating, comment } = req.body;
+
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rating must be between 1 and 5'
+            });
+        }
+
+        // Check if appointment exists and belongs to this provider
+        const existingAppointment = await prisma.appointment.findUnique({
+            where: { appointment_id: parseInt(appointmentId) },
+            include: {
+                serviceProvider: true
+            }
+        });
+
+        if (!existingAppointment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
+            });
+        }
+
+        // Verify the provider owns this appointment
+        if (existingAppointment.provider_id !== parseInt(req.userId)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Unauthorized to rate this appointment'
+            });
+        }
+
+        if (existingAppointment.appointment_status !== 'completed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Can only rate completed appointments'
+            });
+        }
+
+        // Create or update rating
+        const ratingData = await prisma.rating.upsert({
+            where: {
+                appointment_id: parseInt(appointmentId)
+            },
+            update: {
+                rating_value: parseInt(rating),
+                rating_comment: comment || null
+            },
+            create: {
+                appointment_id: parseInt(appointmentId),
+                rating_value: parseInt(rating),
+                rating_comment: comment || null,
+                user_id: existingAppointment.customer_id,
+                provider_id: existingAppointment.provider_id
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Rating submitted successfully',
+            data: ratingData
+        });
+
+    } catch (error) {
+        console.error('Error submitting rating:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error submitting rating',
+            error: error.message
         });
     }
 };

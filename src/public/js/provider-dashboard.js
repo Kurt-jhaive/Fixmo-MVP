@@ -514,6 +514,30 @@ class ProviderDashboard {
     }
 
     async loadBookingsPage() {
+        console.log('Loading bookings page...');
+        
+        try {
+            // Initialize BookingManager if not already done
+            if (typeof BookingManager !== 'undefined') {
+                if (!window.bookingManager) {
+                    console.log('Creating new BookingManager instance...');
+                    window.bookingManager = new BookingManager();
+                } else {
+                    console.log('Refreshing existing BookingManager...');
+                    await window.bookingManager.refreshBookings();
+                }
+            } else {
+                console.error('BookingManager class not found');
+                // Fallback to original booking loading
+                await this.loadBookingsPageFallback();
+            }
+        } catch (error) {
+            console.error('Error loading bookings page:', error);
+            this.showToast('Error loading bookings page', 'error');
+        }
+    }
+
+    async loadBookingsPageFallback() {
         const container = document.getElementById('bookingsContainer');
         if (!container) {
             console.warn('Bookings container not found');

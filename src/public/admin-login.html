@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Fixmo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --admin-primary: #1e40af;
+            --admin-secondary: #3b82f6;
+            --admin-success: #10b981;
+            --admin-error: #ef4444;
+            --admin-dark: #1f2937;
+            --admin-light: #f8fafc;
+            --admin-border: #e2e8f0;
+            --admin-text: #334155;
+            --admin-text-light: #64748b;
+            --admin-bg: #ffffff;
+            --admin-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --admin-radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-secondary) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--admin-text);
+        }
+
+        .login-container {
+            background: var(--admin-bg);
+            padding: 3rem;
+            border-radius: var(--admin-radius);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .logo-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--admin-primary);
+        }
+
+        .admin-badge {
+            background: var(--admin-primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: bold;
+        }
+
+        .logo-icon {
+            color: var(--admin-primary);
+            font-size: 1.5rem;
+        }
+
+        .login-title {
+            font-size: 1.5rem;
+            color: var(--admin-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subtitle {
+            color: var(--admin-text-light);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--admin-text);
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--admin-text-light);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid var(--admin-border);
+            border-radius: var(--admin-radius);
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--admin-primary);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--admin-primary);
+            color: white;
+            border: none;
+            border-radius: var(--admin-radius);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background: var(--admin-text-light);
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 0.75rem;
+            border-radius: var(--admin-radius);
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert.error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .alert.success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--admin-text-light);
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">
+                <span class="logo-text">FIXMO</span>
+                <span class="admin-badge">ADMIN</span>
+                <i class="fas fa-shield-alt logo-icon"></i>
+            </div>
+            <h1 class="login-title">Admin Login</h1>
+            <p class="login-subtitle">Sign in to access the admin dashboard</p>
+        </div>
+
+        <div class="alert" id="alertMessage"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username or Email</label>
+                <div class="input-group">
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" id="username" name="username" class="form-control" 
+                           placeholder="Enter username or email" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-group">
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" id="password" name="password" class="form-control" 
+                           placeholder="Enter password" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="loginBtn">
+                <span class="loading-spinner" id="loadingSpinner"></span>
+                <i class="fas fa-sign-in-alt" id="loginIcon"></i>
+                <span id="loginText">Sign In</span>
+            </button>
+        </form>
+
+        <div class="footer">
+            <p>&copy; 2024 Fixmo. Admin Portal</p>
+        </div>
+    </div>
+
+    <script>
+        class AdminLogin {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.checkExistingAuth();
+            }
+
+            setupEventListeners() {
+                const loginForm = document.getElementById('loginForm');
+                loginForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin();
+                });
+
+                // Enter key on password field
+                document.getElementById('password').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.handleLogin();
+                    }
+                });
+            }
+
+            checkExistingAuth() {
+                const token = localStorage.getItem('adminToken');
+                if (token) {
+                    // Verify token is still valid
+                    fetch('/api/admin/dashboard-stats', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            window.location.href = '/admin-dashboard.html';
+                        } else {
+                            localStorage.removeItem('adminToken');
+                        }
+                    })
+                    .catch(() => {
+                        localStorage.removeItem('adminToken');
+                    });
+                }
+            }
+
+            async handleLogin() {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                if (!username || !password) {
+                    this.showAlert('error', 'Please enter both username and password');
+                    return;
+                }
+
+                this.setLoading(true);
+
+                try {
+                    const response = await fetch('/api/admin/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // Store token
+                        localStorage.setItem('adminToken', data.token);
+                        localStorage.setItem('adminUser', JSON.stringify(data.admin));
+                        
+                        this.showAlert('success', 'Login successful! Redirecting...');
+                        
+                        setTimeout(() => {
+                            window.location.href = '/admin-dashboard.html';
+                        }, 1000);
+                    } else {
+                        this.showAlert('error', data.message || 'Login failed');
+                    }
+                } catch (error) {
+                    console.error('Error during login:', error);
+                    this.showAlert('error', 'Network error. Please try again.');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            setLoading(loading) {
+                const loginBtn = document.getElementById('loginBtn');
+                const loadingSpinner = document.getElementById('loadingSpinner');
+                const loginIcon = document.getElementById('loginIcon');
+                const loginText = document.getElementById('loginText');
+
+                if (loading) {
+                    loginBtn.disabled = true;
+                    loadingSpinner.style.display = 'block';
+                    loginIcon.style.display = 'none';
+                    loginText.textContent = 'Signing In...';
+                } else {
+                    loginBtn.disabled = false;
+                    loadingSpinner.style.display = 'none';
+                    loginIcon.style.display = 'block';
+                    loginText.textContent = 'Sign In';
+                }
+            }
+
+            showAlert(type, message) {
+                const alert = document.getElementById('alertMessage');
+                alert.className = `alert ${type}`;
+                alert.textContent = message;
+                alert.style.display = 'block';
+
+                // Hide alert after 5 seconds
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Initialize admin login when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new AdminLogin();
+        });
+    </script>
+</body>
+</html>

@@ -27,6 +27,8 @@ import {
   getProviderAppointments,
   acceptAppointmentBooking,
   updateAppointmentStatusProvider,
+  cancelProviderAppointment,
+  rateCustomerAppointment,
   getProviderAvailabilityWithBookings
 } from '../controller/authserviceProviderController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
@@ -386,6 +388,8 @@ router.get('/certificates', async (req, res) => {
 router.get('/appointments', authMiddleware, getProviderAppointments);
 router.put('/appointments/:appointmentId/accept', authMiddleware, acceptAppointmentBooking);
 router.put('/appointments/:appointmentId/status', authMiddleware, updateAppointmentStatusProvider);
+router.put('/appointments/:appointmentId/cancel', authMiddleware, cancelProviderAppointment);
+router.post('/appointments/:appointmentId/rate', authMiddleware, rateCustomerAppointment);
 router.get('/availability-with-bookings', authMiddleware, getProviderAvailabilityWithBookings);
 
 export default router;
