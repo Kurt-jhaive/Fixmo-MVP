@@ -1536,7 +1536,7 @@ export const acceptAppointmentBooking = async (req, res) => {
             });
         }
 
-        const newStatus = action === 'accept' ? 'accepted' : 'canceled';
+        const newStatus = action === 'accept' ? 'approved' : 'cancelled';
         
         const updatedAppointment = await prisma.appointment.update({
             where: { appointment_id: parseInt(appointmentId) },

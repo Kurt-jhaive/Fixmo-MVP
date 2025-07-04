@@ -481,7 +481,7 @@ export const updateAppointmentStatus = async (req, res) => {
         }
 
         // Validate status values
-        const validStatuses = ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled', 'no-show'];
+        const validStatuses = ['pending', 'approved', 'confirmed', 'in-progress', 'completed', 'cancelled', 'no-show'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,

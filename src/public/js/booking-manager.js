@@ -653,9 +653,31 @@ class BookingManager {
     getFullAddress(booking) {
         const location = booking.customer.exact_location;
         if (location) {
-            return `${location.street_address || ''}, ${location.city || ''}, ${location.province || ''}`.replace(/^,\s*|,\s*$/g, '');
+            let locationObj = location;
+            
+            // Parse JSON string if necessary
+            if (typeof location === 'string') {
+                try {
+                    locationObj = JSON.parse(location);
+                } catch (e) {
+                    // If parsing fails, use user_location as fallback
+                    return booking.customer.user_location || 'Address not available';
+                }
+            }
+            
+            // Extract address components
+            const addressParts = [];
+            if (locationObj.street_address) addressParts.push(locationObj.street_address);
+            if (locationObj.city) addressParts.push(locationObj.city);
+            if (locationObj.province) addressParts.push(locationObj.province);
+            
+            if (addressParts.length > 0) {
+                return addressParts.join(', ');
+            }
         }
-        return 'Address not available';
+        
+        // Fallback to user_location
+        return booking.customer.user_location || 'Address not available';
     }
 
     closeBookingDetailsModal() {
@@ -766,8 +788,35 @@ class BookingManager {
             return;
         }
 
-        const lat = parseFloat(location.latitude);
-        const lng = parseFloat(location.longitude);
+        // Handle different location formats
+        let lat, lng;
+        
+        if (typeof location === 'string') {
+            // Try to parse as JSON first (most common format)
+            try {
+                const locationObj = JSON.parse(location);
+                if (locationObj.lat && locationObj.lng) {
+                    lat = parseFloat(locationObj.lat);
+                    lng = parseFloat(locationObj.lng);
+                }
+            } catch (jsonError) {
+                // If JSON parsing fails, try to parse as "lat,lng" string
+                const coords = location.split(',');
+                if (coords.length === 2) {
+                    lat = parseFloat(coords[0].trim());
+                    lng = parseFloat(coords[1].trim());
+                }
+            }
+        } else if (typeof location === 'object') {
+            // Handle different property names
+            if (location.lat && location.lng) {
+                lat = parseFloat(location.lat);
+                lng = parseFloat(location.lng);
+            } else if (location.latitude && location.longitude) {
+                lat = parseFloat(location.latitude);
+                lng = parseFloat(location.longitude);
+            }
+        }
 
         if (isNaN(lat) || isNaN(lng)) {
             mapContainer.innerHTML = '<div class="map-placeholder">Location coordinates not available</div>';
@@ -861,11 +910,37 @@ class BookingManager {
         bookings.forEach(booking => {
             if (booking.customer.exact_location) {
                 try {
-                    const coords = booking.customer.exact_location.split(',');
-                    if (coords.length === 2) {
-                        const lat = parseFloat(coords[0]);
-                        const lng = parseFloat(coords[1]);
+                    console.log('Processing location for booking:', booking.appointment_id, 'Location:', booking.customer.exact_location);
+                    
+                    // Handle different location formats
+                    let lat, lng;
+                    
+                    if (typeof booking.customer.exact_location === 'string') {
+                        // Try to parse as JSON first (most common format)
+                        try {
+                            const locationObj = JSON.parse(booking.customer.exact_location);
+                            if (locationObj.lat && locationObj.lng) {
+                                lat = parseFloat(locationObj.lat);
+                                lng = parseFloat(locationObj.lng);
+                            }
+                        } catch (jsonError) {
+                            // If JSON parsing fails, try to parse as "lat,lng" string
+                            const coords = booking.customer.exact_location.split(',');
+                            if (coords.length === 2) {
+                                lat = parseFloat(coords[0].trim());
+                                lng = parseFloat(coords[1].trim());
+                            }
+                        }
+                    } else if (typeof booking.customer.exact_location === 'object' && booking.customer.exact_location.lat && booking.customer.exact_location.lng) {
+                        // If it's already an object with lat/lng properties
+                        lat = parseFloat(booking.customer.exact_location.lat);
+                        lng = parseFloat(booking.customer.exact_location.lng);
+                    }
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
                         this.createMiniMap(booking.appointment_id, lat, lng);
+                    } else {
+                        console.warn('Invalid coordinates for booking:', booking.appointment_id, 'lat:', lat, 'lng:', lng);
                     }
                 } catch (error) {
                     console.error('Error parsing location:', error);
@@ -922,52 +997,83 @@ class BookingManager {
         }
 
         try {
-            const coords = booking.customer.exact_location.split(',');
-            if (coords.length === 2) {
-                const lat = parseFloat(coords[0]);
-                const lng = parseFloat(coords[1]);
-                
-                // Create modal
-                const modal = document.createElement('div');
-                modal.className = 'modal';
-                modal.innerHTML = `
-                    <div class="modal-content large">
-                        <div class="modal-header">
-                            <h3><i class="fas fa-map-marker-alt"></i> Customer Location - ${booking.customer.first_name} ${booking.customer.last_name}</h3>
-                            <button class="modal-close" onclick="this.closest('.modal').remove()">
-                                <i class="fas fa-times"></i>
+            console.log('Showing location modal for booking:', appointmentId, 'Location:', booking.customer.exact_location);
+            
+            // Handle different location formats
+            let lat, lng;
+            
+            if (typeof booking.customer.exact_location === 'string') {
+                // Try to parse as JSON first (most common format)
+                try {
+                    const locationObj = JSON.parse(booking.customer.exact_location);
+                    if (locationObj.lat && locationObj.lng) {
+                        lat = parseFloat(locationObj.lat);
+                        lng = parseFloat(locationObj.lng);
+                    }
+                } catch (jsonError) {
+                    // If JSON parsing fails, try to parse as "lat,lng" string
+                    const coords = booking.customer.exact_location.split(',');
+                    if (coords.length === 2) {
+                        lat = parseFloat(coords[0].trim());
+                        lng = parseFloat(coords[1].trim());
+                    }
+                }
+            } else if (typeof booking.customer.exact_location === 'object' && booking.customer.exact_location.lat && booking.customer.exact_location.lng) {
+                // If it's an object with lat/lng properties
+                lat = parseFloat(booking.customer.exact_location.lat);
+                lng = parseFloat(booking.customer.exact_location.lng);
+            }
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                console.error('Invalid coordinates - lat:', lat, 'lng:', lng);
+                console.error('Location object:', booking.customer.exact_location);
+                this.showToast('Invalid location coordinates', 'error');
+                return;
+            }
+
+            console.log('Valid coordinates found - lat:', lat, 'lng:', lng);
+
+            // Create modal
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-map-marker-alt"></i> Customer Location - ${booking.customer.first_name} ${booking.customer.last_name}</h3>
+                        <button class="modal-close" onclick="this.closest('.modal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="fullMap" style="height: 400px; width: 100%; border-radius: 8px;"></div>
+                        <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}
+                            </div>
+                            <button class="btn-primary btn-sm" onclick="window.open('https://www.google.com/maps?q=${lat},${lng}', '_blank')">
+                                <i class="fas fa-external-link-alt"></i> Open in Google Maps
                             </button>
                         </div>
-                        <div class="modal-body">
-                            <div id="fullMap" style="height: 400px; width: 100%; border-radius: 8px;"></div>
-                            <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}
-                                </div>
-                                <button class="btn-primary btn-sm" onclick="window.open('https://www.google.com/maps?q=${lat},${lng}', '_blank')">
-                                    <i class="fas fa-external-link-alt"></i> Open in Google Maps
-                                </button>
-                            </div>
-                        </div>
                     </div>
-                `;
-                
-                document.body.appendChild(modal);
-                modal.style.display = 'flex';
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            modal.style.display = 'flex';
 
-                // Initialize full map
-                setTimeout(() => {
-                    const fullMap = L.map('fullMap').setView([lat, lng], 16);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap contributors'
-                    }).addTo(fullMap);
+            // Initialize full map
+            setTimeout(() => {
+                const fullMap = L.map('fullMap').setView([lat, lng], 16);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(fullMap);
 
-                    L.marker([lat, lng])
-                        .addTo(fullMap)
-                        .bindPopup(`${booking.customer.first_name} ${booking.customer.last_name}<br>Customer Location`)
-                        .openPopup();
-                }, 100);
-            }
+                L.marker([lat, lng])
+                    .addTo(fullMap)
+                    .bindPopup(`${booking.customer.first_name} ${booking.customer.last_name}<br>Customer Location`)
+                    .openPopup();
+            }, 100);
+            
         } catch (error) {
             console.error('Error showing location modal:', error);
             this.showToast('Error loading location', 'error');
