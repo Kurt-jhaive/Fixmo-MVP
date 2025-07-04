@@ -30,6 +30,7 @@ import {
   updateAppointmentStatus,
   getAppointmentDetails,
   getCustomerBookingsDetailed,
+  debugAuth,
   cancelAppointmentEnhanced
 } from '../controller/authCustomerController.js';
 
@@ -152,6 +153,7 @@ router.get('/appointment/:appointmentId', getAppointmentDetails);
 
 // Enhanced customer booking routes (requires authentication)
 router.get('/bookings', authMiddleware, getCustomerBookingsDetailed);
+router.get('/debug-auth', authMiddleware, debugAuth);
 router.put('/bookings/:appointment_id/cancel', authMiddleware, cancelAppointmentEnhanced);
 
 export default router;

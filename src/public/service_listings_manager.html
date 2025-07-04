@@ -477,7 +477,7 @@
             }
 
             try {
-                const response = await fetch('http://192.168.100.165:3000/auth/addListing', {
+                const response = await fetch('/auth/addListing', {
                     method: 'POST',
                     body: formData // Don't set Content-Type header, browser will set it automatically for FormData
                 });

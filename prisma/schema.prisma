@@ -113,7 +113,7 @@ model Availability {
 
   serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
 
-  // ✅ Opposite relation field
+ 
   appointments Appointment[] //
 }
 
@@ -121,13 +121,14 @@ model Appointment {
   appointment_id     Int      @id @default(autoincrement())
   customer_id        Int
   provider_id        Int
-  service_id         Int      // ✅ NEW: Links to the specific service booked
-  availability_id    Int      // ✅ Links to chosen time slot
+  service_id         Int      
+  availability_id    Int      
   appointment_status String
   scheduled_date     DateTime
   repairDescription  String?
   created_at         DateTime @default(now())
   final_price        Float?
+  cancellation_reason String?
 
   customer        User                   @relation(fields: [customer_id], references: [user_id])
   serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])

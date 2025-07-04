@@ -2,7 +2,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
-import { sendOTPEmail, sendRegistrationSuccessEmail } from '../services/mailer.js';
+import { sendOTPEmail, sendRegistrationSuccessEmail, sendBookingCancellationEmail } from '../services/mailer.js';
 import { forgotrequestOTP, verifyOTPAndResetPassword, verifyOTP, cleanupOTP } from '../services/otpUtils.js';
 import { checkOTPRateLimit, recordOTPAttempt } from '../services/rateLimitUtils.js';
 
@@ -348,7 +348,6 @@ export const addAppointment = async (req, res) => {
                 availability_id: exactSlot.availability_id, // Link to the availability slot
                 appointment_status: 'accepted', // Auto-accept since slot is available
                 scheduled_date: scheduledDateTime,
-                final_price: final_price ? parseFloat(final_price) : (serviceListing ? serviceListing.service_startingprice : null),
                 repairDescription: service_description || (serviceListing ? serviceListing.service_description : null)
             },
             include: {
@@ -1839,12 +1838,9 @@ export const getCustomerBookingsDetailed = async (req, res) => {
 
         // Format the appointments for frontend use
         const formattedAppointments = appointments.map(appointment => {
-            const canCancel = appointment.appointment_status === 'approved' || 
-                             appointment.appointment_status === 'pending';
+            const canCancel = ['pending', 'accepted', 'approved', 'confirmed'].includes(appointment.appointment_status);
             
-            const canCall = appointment.appointment_status === 'approved' || 
-                           appointment.appointment_status === 'on the way' ||
-                           appointment.appointment_status === 'in progress';
+            const canCall = ['accepted', 'approved', 'confirmed', 'on the way', 'in progress'].includes(appointment.appointment_status);
 
             return {
                 appointment_id: appointment.appointment_id,
@@ -1909,11 +1905,23 @@ export const cancelAppointmentEnhanced = async (req, res) => {
                 customer_id: userId
             },
             include: {
+                customer: {
+                    select: {
+                        first_name: true,
+                        last_name: true
+                    }
+                },
                 serviceProvider: {
                     select: {
                         provider_first_name: true,
                         provider_last_name: true,
-                        provider_phone_number: true
+                        provider_phone_number: true,
+                        provider_email: true
+                    }
+                },
+                service: {
+                    select: {
+                        service_title: true
                     }
                 }
             }
@@ -1927,21 +1935,40 @@ export const cancelAppointmentEnhanced = async (req, res) => {
         }
 
         // Check if appointment can be cancelled based on status
-        const cancellableStatuses = ['pending', 'approved'];
+        const cancellableStatuses = ['pending', 'approved', 'accepted', 'confirmed'];
         if (!cancellableStatuses.includes(existingAppointment.appointment_status)) {
             return res.status(400).json({ 
                 success: false,
-                message: `Cannot cancel appointment. Current status: ${existingAppointment.appointment_status}. Only pending and approved appointments can be cancelled.` 
+                message: `Cannot cancel appointment. Current status: ${existingAppointment.appointment_status}. Only pending, approved, accepted, and confirmed appointments can be cancelled.` 
             });
         }
+
+        // Get cancellation reason from request body
+        const { cancellation_reason } = req.body;
 
         // Update appointment status to cancelled
         const updatedAppointment = await prisma.appointment.update({
             where: { appointment_id: parseInt(appointment_id) },
             data: { 
-                appointment_status: 'cancelled'
+                appointment_status: 'cancelled',
+                cancellation_reason: cancellation_reason || 'No reason provided'
             }
         });
+
+        // Send email notification to service provider
+        try {
+            await sendBookingCancellationEmail(existingAppointment.serviceProvider.provider_email, {
+                customerName: `${existingAppointment.customer.first_name} ${existingAppointment.customer.last_name}`,
+                serviceTitle: existingAppointment.service.service_title,
+                scheduledDate: existingAppointment.scheduled_date,
+                appointmentId: existingAppointment.appointment_id,
+                cancellationReason: cancellation_reason || 'No reason provided'
+            });
+            console.log(`✅ Cancellation email sent to provider: ${existingAppointment.serviceProvider.provider_email}`);
+        } catch (emailError) {
+            console.error('❌ Failed to send cancellation email:', emailError);
+            // Continue with the response even if email fails
+        }
 
         res.status(200).json({
             success: true,
@@ -1959,6 +1986,29 @@ export const cancelAppointmentEnhanced = async (req, res) => {
         res.status(500).json({ 
             success: false,
             message: 'Internal server error while cancelling appointment' 
+        });
+    }
+};
+
+// Debug endpoint to test authentication
+export const debugAuth = async (req, res) => {
+    try {
+        console.log('🔍 Debug auth endpoint called');
+        console.log('🔑 req.userId:', req.userId);
+        console.log('🔑 req.headers:', req.headers);
+        
+        res.json({
+            success: true,
+            message: 'Authentication working',
+            userId: req.userId,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Debug auth error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Debug auth failed',
+            error: error.message
         });
     }
 };

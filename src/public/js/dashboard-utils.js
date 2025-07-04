@@ -105,6 +105,7 @@ class DashboardUtils {
 
             // Add auth token if available - check both token names for compatibility
             const token = localStorage.getItem('fixmo_user_token') || localStorage.getItem('token');
+            
             if (token) {
                 defaultOptions.headers['Authorization'] = `Bearer ${token}`;
             }

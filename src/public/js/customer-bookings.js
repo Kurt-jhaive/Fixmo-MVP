@@ -134,19 +134,7 @@ class CustomerBookingsManager {
         card.className = 'booking-card-horizontal';
         card.dataset.bookingId = booking.appointment_id;
 
-        const serviceImage = booking.service.picture 
-            ? `<img src="/${booking.service.picture}" alt="${booking.service.title}" onerror="this.style.display='none'; this.parentNode.innerHTML='<i class=\\"fas fa-tools\\"></i>';">` 
-            : '<i class="fas fa-tools"></i>';
-
-        const providerImage = booking.provider.profile_photo 
-            ? `<img src="/${booking.provider.profile_photo}" alt="${booking.provider.name}" onerror="this.style.display='none'; this.parentNode.innerHTML='<i class=\\"fas fa-user\\"></i>';">` 
-            : '<i class="fas fa-user"></i>';
-
         card.innerHTML = `
-            <div class="booking-service-image">
-                ${serviceImage}
-            </div>
-            
             <div class="booking-main-content">
                 <div class="booking-header-horizontal">
                     <div class="booking-status-section">
@@ -165,17 +153,19 @@ class CustomerBookingsManager {
                     <p class="service-description-horizontal">${this.truncateText(booking.service.description, 120)}</p>
                     <div class="service-price-horizontal">
                         <i class="fas fa-peso-sign"></i>
+                        <!-- Starting price from serviceListing table -->
                         <span>Starting from ₱${booking.service.startingPrice.toFixed(2)}</span>
-                        ${booking.final_price ? `<span class="final-price"> • Final: ₱${booking.final_price.toFixed(2)}</span>` : ''}
+                        <!-- Final price from appointment table, updated by service provider when completed -->
+                        ${booking.final_price ? `<span class="final-price"> • Final: ₱${booking.final_price.toFixed(2)}</span>` : `<span class="final-price"> • Final price to be determined</span>`}
                     </div>
                 </div>
 
                 <div class="booking-provider-section">
-                    <div class="provider-avatar-horizontal">
-                        ${providerImage}
-                    </div>
                     <div class="provider-info-horizontal">
-                        <h4 class="provider-name-horizontal">${booking.provider.name}</h4>
+                        <h4 class="provider-name-horizontal">
+                            <i class="fas fa-user-circle"></i>
+                            ${booking.provider.name}
+                        </h4>
                         <div class="provider-location-horizontal">
                             <i class="fas fa-map-marker-alt"></i>
                             <span>${booking.provider.location || 'Location not specified'}</span>
@@ -216,8 +206,9 @@ class CustomerBookingsManager {
     }
 
     renderBookingActions(booking) {
-        const canCall = booking.actions.canCall;
-        const canCancel = booking.actions.canCancel;
+        // Determine actions based on appointment status
+        const canCall = ['accepted', 'approved', 'confirmed', 'on the way', 'in progress'].includes(booking.appointment_status);
+        const canCancel = ['pending', 'accepted', 'approved', 'confirmed'].includes(booking.appointment_status);
         const status = booking.appointment_status;
 
         let actionsHTML = '';
@@ -306,7 +297,7 @@ class CustomerBookingsManager {
 
     applyFilters() {
         // Only show bookings with allowed statuses
-        const allowedStatuses = ['approved', 'on the way', 'in progress', 'completed'];
+        const allowedStatuses = ['pending', 'accepted', 'approved', 'confirmed', 'on the way', 'in progress', 'completed'];
         
         this.filteredBookings = this.bookings.filter(booking => {
             // First filter by allowed statuses
@@ -366,13 +357,13 @@ class CustomerBookingsManager {
     }
 
     updateStats() {
-        // Filter bookings to only show approved, on the way, in progress, and completed
-        const allowedStatuses = ['approved', 'on the way', 'in progress', 'completed'];
+        // Filter bookings to show all active appointment statuses
+        const allowedStatuses = ['pending', 'accepted', 'approved', 'confirmed', 'on the way', 'in progress', 'completed'];
         const validBookings = this.bookings.filter(b => allowedStatuses.includes(b.appointment_status));
         
         const totalBookings = validBookings.length;
         const activeBookings = validBookings.filter(b => 
-            ['approved', 'on the way', 'in progress'].includes(b.appointment_status)
+            ['pending', 'accepted', 'approved', 'confirmed', 'on the way', 'in progress'].includes(b.appointment_status)
         ).length;
         const completedBookings = validBookings.filter(b => 
             b.appointment_status === 'completed'
@@ -397,8 +388,27 @@ class CustomerBookingsManager {
 
     async cancelBooking(bookingId) {
         try {
+            // Get the cancellation reason from the modal
+            const reasonSelect = document.querySelector('#cancellationReason');
+            const customReason = document.querySelector('#customReason');
+            
+            let cancellationReason = '';
+            if (reasonSelect) {
+                if (reasonSelect.value === 'Other' && customReason) {
+                    cancellationReason = customReason.value.trim() || 'Other - no details provided';
+                } else {
+                    cancellationReason = reasonSelect.value || 'No reason provided';
+                }
+            }
+
             const data = await DashboardUtils.makeRequest(`/auth/bookings/${bookingId}/cancel`, {
-                method: 'PUT'
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    cancellation_reason: cancellationReason
+                })
             });
             
             if (data.success) {
@@ -457,29 +467,357 @@ class CustomerBookingsManager {
         const modal = document.createElement('div');
         modal.className = 'modal active';
         modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3><i class="fas fa-exclamation-triangle"></i> Cancel Booking</h3>
+            <div class="modal-content modern-cancel-modal">
+                <div class="modal-header modern-header">
+                    <div class="header-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>Cancel Booking</h3>
                     <button class="modal-close" onclick="this.closest('.modal').remove()">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div class="modal-body">
-                    <p style="margin-bottom: 10px;">Are you sure you want to cancel your booking with <strong>${providerName}</strong>?</p>
-                    <p style="color: var(--warning-color); margin-bottom: 20px;">This action cannot be undone.</p>
+                <div class="modal-body modern-body">
+                    <div class="cancel-info">
+                        <p class="primary-text">Are you sure you want to cancel your booking with <strong>${providerName}</strong>?</p>
+                        <p class="warning-text">
+                            <i class="fas fa-info-circle"></i>
+                            This action cannot be undone and may affect your future bookings.
+                        </p>
+                    </div>
+                    
+                    <div class="form-group modern-select-group">
+                        <label for="cancellationReason" class="modern-label">
+                            <i class="fas fa-comment-dots"></i>
+                            Why are you canceling this booking?
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="cancellationReason" class="modern-select">
+                                <option value="">Choose a reason...</option>
+                                <option value="Schedule conflict">📅 Schedule conflict</option>
+                                <option value="Emergency situation">🚨 Emergency situation</option>
+                                <option value="Found alternative service">🔄 Found alternative service</option>
+                                <option value="Provider not responding">📞 Provider not responding</option>
+                                <option value="Budget constraints">💰 Budget constraints</option>
+                                <option value="Location changed">📍 Location changed</option>
+                                <option value="Service no longer needed">❌ Service no longer needed</option>
+                                <option value="Other">✏️ Other (please specify)</option>
+                            </select>
+                            <i class="fas fa-chevron-down select-arrow"></i>
+                        </div>
+                    </div>
+                    
+                    <div id="customReasonDiv" class="custom-reason-container">
+                        <label for="customReason" class="modern-label">
+                            <i class="fas fa-edit"></i>
+                            Please provide more details
+                        </label>
+                        <textarea id="customReason" class="modern-textarea" placeholder="Tell us more about why you're canceling..." rows="3"></textarea>
+                        <div class="char-counter">
+                            <span id="charCount">0</span>/200 characters
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn-secondary" onclick="this.closest('.modal').remove()">
+                <div class="modal-footer modern-footer">
+                    <button class="btn modern-btn secondary" onclick="this.closest('.modal').remove()">
+                        <i class="fas fa-arrow-left"></i>
                         Keep Booking
                     </button>
-                    <button class="btn-danger" onclick="window.bookingsManager.cancelBooking('${bookingId}'); this.closest('.modal').remove();">
-                        <i class="fas fa-times"></i> Cancel Booking
+                    <button class="btn modern-btn danger" id="confirmCancelBtn" disabled onclick="window.bookingsManager.cancelBooking('${bookingId}'); this.closest('.modal').remove();">
+                        <i class="fas fa-ban"></i>
+                        Cancel Booking
                     </button>
                 </div>
             </div>
         `;
         
+        // Add modern styles (same as dashboard)
+        if (!document.querySelector('#modern-cancel-styles')) {
+            const style = document.createElement('style');
+            style.id = 'modern-cancel-styles';
+            style.textContent = `
+                .modern-cancel-modal {
+                    max-width: 520px !important;
+                    border-radius: 20px !important;
+                    overflow: hidden !important;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+                    backdrop-filter: blur(10px);
+                }
+                
+                .modern-header {
+                    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%) !important;
+                    color: white !important;
+                    padding: 24px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    gap: 12px !important;
+                    border-bottom: none !important;
+                }
+                
+                .header-icon {
+                    width: 48px;
+                    height: 48px;
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 20px;
+                }
+                
+                .modern-header h3 {
+                    flex: 1 !important;
+                    margin: 0 !important;
+                    font-size: 22px !important;
+                    font-weight: 600 !important;
+                }
+                
+                .modal-close {
+                    background: rgba(255, 255, 255, 0.2) !important;
+                    border: none !important;
+                    width: 36px !important;
+                    height: 36px !important;
+                    border-radius: 50% !important;
+                    color: white !important;
+                    cursor: pointer !important;
+                    transition: all 0.3s ease !important;
+                }
+                
+                .modal-close:hover {
+                    background: rgba(255, 255, 255, 0.3) !important;
+                    transform: scale(1.1) !important;
+                }
+                
+                .modern-body {
+                    padding: 32px !important;
+                    background: white !important;
+                }
+                
+                .cancel-info {
+                    margin-bottom: 24px;
+                    text-align: center;
+                }
+                
+                .primary-text {
+                    font-size: 18px !important;
+                    color: #2d3748 !important;
+                    margin-bottom: 12px !important;
+                    line-height: 1.5 !important;
+                }
+                
+                .warning-text {
+                    background: #fef7e7 !important;
+                    color: #b45309 !important;
+                    padding: 12px 16px !important;
+                    border-radius: 12px !important;
+                    font-size: 14px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    gap: 8px !important;
+                    border-left: 4px solid #f59e0b !important;
+                    margin: 0 !important;
+                }
+                
+                .modern-select-group {
+                    margin-bottom: 20px !important;
+                }
+                
+                .modern-label {
+                    display: flex !important;
+                    align-items: center !important;
+                    gap: 8px !important;
+                    font-size: 14px !important;
+                    font-weight: 600 !important;
+                    color: #374151 !important;
+                    margin-bottom: 8px !important;
+                }
+                
+                .select-wrapper {
+                    position: relative !important;
+                }
+                
+                .modern-select {
+                    width: 100% !important;
+                    padding: 14px 16px !important;
+                    border: 2px solid #e5e7eb !important;
+                    border-radius: 12px !important;
+                    font-size: 15px !important;
+                    background: white !important;
+                    color: #374151 !important;
+                    appearance: none !important;
+                    cursor: pointer !important;
+                    transition: all 0.3s ease !important;
+                    padding-right: 45px !important;
+                }
+                
+                .modern-select:focus {
+                    outline: none !important;
+                    border-color: #3b82f6 !important;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+                }
+                
+                .select-arrow {
+                    position: absolute !important;
+                    right: 16px !important;
+                    top: 50% !important;
+                    transform: translateY(-50%) !important;
+                    color: #9ca3af !important;
+                    pointer-events: none !important;
+                    transition: transform 0.3s ease !important;
+                }
+                
+                .modern-select:focus + .select-arrow {
+                    transform: translateY(-50%) rotate(180deg) !important;
+                }
+                
+                .custom-reason-container {
+                    display: none !important;
+                    animation: slideDown 0.3s ease !important;
+                }
+                
+                .custom-reason-container.show {
+                    display: block !important;
+                }
+                
+                .modern-textarea {
+                    width: 100% !important;
+                    padding: 14px 16px !important;
+                    border: 2px solid #e5e7eb !important;
+                    border-radius: 12px !important;
+                    font-size: 15px !important;
+                    font-family: inherit !important;
+                    resize: vertical !important;
+                    min-height: 90px !important;
+                    transition: all 0.3s ease !important;
+                }
+                
+                .modern-textarea:focus {
+                    outline: none !important;
+                    border-color: #3b82f6 !important;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+                }
+                
+                .char-counter {
+                    text-align: right !important;
+                    font-size: 12px !important;
+                    color: #9ca3af !important;
+                    margin-top: 4px !important;
+                }
+                
+                .modern-footer {
+                    padding: 24px 32px !important;
+                    background: #f9fafb !important;
+                    display: flex !important;
+                    gap: 12px !important;
+                    border-top: 1px solid #e5e7eb !important;
+                }
+                
+                .modern-btn {
+                    flex: 1 !important;
+                    padding: 14px 24px !important;
+                    border-radius: 12px !important;
+                    font-size: 15px !important;
+                    font-weight: 600 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    gap: 8px !important;
+                    transition: all 0.3s ease !important;
+                    border: none !important;
+                    cursor: pointer !important;
+                }
+                
+                .modern-btn.secondary {
+                    background: white !important;
+                    color: #374151 !important;
+                    border: 2px solid #e5e7eb !important;
+                }
+                
+                .modern-btn.secondary:hover {
+                    background: #f9fafb !important;
+                    border-color: #d1d5db !important;
+                }
+                
+                .modern-btn.danger {
+                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+                    color: white !important;
+                }
+                
+                .modern-btn.danger:hover:not(:disabled) {
+                    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+                    transform: translateY(-1px) !important;
+                    box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.4) !important;
+                }
+                
+                .modern-btn:disabled {
+                    opacity: 0.5 !important;
+                    cursor: not-allowed !important;
+                    transform: none !important;
+                    box-shadow: none !important;
+                }
+                
+                @keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
         document.body.appendChild(modal);
+        
+        // Add enhanced functionality
+        const reasonSelect = modal.querySelector('#cancellationReason');
+        const customReasonDiv = modal.querySelector('#customReasonDiv');
+        const customReason = modal.querySelector('#customReason');
+        const confirmBtn = modal.querySelector('#confirmCancelBtn');
+        const charCount = modal.querySelector('#charCount');
+        
+        reasonSelect.addEventListener('change', function() {
+            if (this.value === 'Other') {
+                customReasonDiv.classList.add('show');
+                customReasonDiv.style.display = 'block';
+            } else {
+                customReasonDiv.classList.remove('show');
+                customReasonDiv.style.display = 'none';
+            }
+            
+            updateConfirmButton();
+        });
+        
+        // Character counter for textarea
+        if (customReason && charCount) {
+            customReason.addEventListener('input', function() {
+                const length = this.value.length;
+                charCount.textContent = length;
+                
+                if (length > 200) {
+                    charCount.style.color = '#ef4444';
+                    this.style.borderColor = '#ef4444';
+                } else {
+                    charCount.style.color = '#9ca3af';
+                    this.style.borderColor = '#e5e7eb';
+                }
+                
+                updateConfirmButton();
+            });
+        }
+        
+        function updateConfirmButton() {
+            const hasReason = reasonSelect.value;
+            const hasCustomReason = reasonSelect.value !== 'Other' || (customReason.value.trim().length > 0 && customReason.value.length <= 200);
+            
+            confirmBtn.disabled = !hasReason || !hasCustomReason;
+        }
+        
+        // Initially disable the confirm button
+        confirmBtn.disabled = true;
     }
 
     showRatingModal(bookingId, providerName) {
@@ -516,7 +854,9 @@ class CustomerBookingsManager {
     getStatusClass(status) {
         const statusClasses = {
             'pending': 'pending',
-            'approved': 'approved',
+            'accepted': 'accepted',
+            'approved': 'accepted',
+            'confirmed': 'accepted',
             'on the way': 'on-the-way',
             'in progress': 'in-progress',
             'completed': 'completed',
@@ -528,7 +868,9 @@ class CustomerBookingsManager {
     getStatusText(status) {
         const statusTexts = {
             'pending': 'Pending',
+            'accepted': 'Accepted',
             'approved': 'Approved',
+            'confirmed': 'Confirmed',
             'on the way': 'On The Way',
             'in progress': 'In Progress',
             'completed': 'Completed',
