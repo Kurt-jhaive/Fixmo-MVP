@@ -140,6 +140,8 @@ model Rating {
   appointment_id  Int
   user_id         Int
   provider_id     Int
+  rated_by        String                 // 'customer' or 'provider'
+  created_at      DateTime               @default(now())
   appointment     Appointment            @relation(fields: [appointment_id], references: [appointment_id])
   serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
   user            User                   @relation(fields: [user_id], references: [user_id])

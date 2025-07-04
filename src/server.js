@@ -12,6 +12,7 @@ import certificateRoutes from './route/certificateRoutes.js'; // New certificate
 import availabilityRoutes from './route/availabilityRoutes.js'; // New availability management routes
 import appointmentRoutes from './route/appointmentRoutes.js'; // New appointment management routes
 import adminRoutes from './route/adminRoutes.js'; // Comprehensive admin routes
+
 import cors from 'cors';
 
 const port = process.env.PORT || 3000;

@@ -46,29 +46,15 @@ class BookingManager {
         try {
             console.log('Loading bookings...');
             
-            const response = await fetch('/api/serviceProvider/appointments?limit=100', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(this.token && { 'Authorization': `Bearer ${this.token}` })
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                this.bookings = data.data || data.appointments || [];
-                console.log('Bookings loaded successfully:', this.bookings.length);
-            } else if (response.status === 401) {
-                throw new Error('Authentication required');
-            } else {
-                console.error('Failed to load bookings, status:', response.status);
-                const errorData = await response.json().catch(() => ({}));
-                console.error('Error details:', errorData);
-                this.bookings = [];
-            }
+            const data = await this.makeAuthenticatedRequest('/api/serviceProvider/appointments?limit=100');
+            this.bookings = data.data || data.appointments || [];
+            console.log('Bookings loaded successfully:', this.bookings.length);
         } catch (error) {
             console.error('Error loading bookings:', error);
+            if (error.message.includes('401')) {
+                console.log('Authentication required - redirecting to login');
+                // Handle authentication error if needed
+            }
             this.bookings = [];
         }
     }
@@ -81,9 +67,10 @@ class BookingManager {
         this.statsData = {
             totalBookings: this.bookings.length,
             pendingBookings: this.bookings.filter(b => b.appointment_status === 'pending').length,
-            approvedBookings: this.bookings.filter(b => b.appointment_status === 'approved').length,
+            accepted: this.bookings.filter(b => b.appointment_status === 'accepted').length,
             confirmedBookings: this.bookings.filter(b => b.appointment_status === 'confirmed').length,
             inProgressBookings: this.bookings.filter(b => b.appointment_status === 'in-progress').length,
+            finishedBookings: this.bookings.filter(b => b.appointment_status === 'finished').length,
             completedBookings: this.bookings.filter(b => b.appointment_status === 'completed').length,
             cancelledBookings: this.bookings.filter(b => b.appointment_status === 'cancelled').length,
             todayBookings: this.bookings.filter(b => 
@@ -386,7 +373,7 @@ class BookingManager {
                 `);
                 break;
                 
-            case 'approved':
+            case 'accepted':
                 actions.push(`
                     <button class="btn-success btn-sm" onclick="bookingManager.updateBookingStatus(${booking.appointment_id}, 'confirmed')">
                         <i class="fas fa-check-circle"></i> Confirm
@@ -434,7 +421,7 @@ class BookingManager {
     getStatusIcon(status) {
         const icons = {
             'pending': 'fas fa-clock',
-            'approved': 'fas fa-thumbs-up',
+            'accepted': 'fas fa-thumbs-up',
             'confirmed': 'fas fa-check-circle',
             'in-progress': 'fas fa-play-circle',
             'completed': 'fas fa-check-double',
@@ -447,7 +434,7 @@ class BookingManager {
     formatStatus(status) {
         const statusMap = {
             'pending': 'Pending',
-            'approved': 'Approved',
+            'accepted': 'Accepted',
             'confirmed': 'Confirmed',
             'in-progress': 'In Progress',
             'completed': 'Completed',
@@ -522,7 +509,7 @@ class BookingManager {
         const statsElements = {
             'stats-total': this.statsData.totalBookings,
             'stats-pending': this.statsData.pendingBookings,
-            'stats-approved': this.statsData.approvedBookings,
+            'stats-accepted': this.statsData.acceptedBookings,
             'stats-confirmed': this.statsData.confirmedBookings,
             'stats-completed': this.statsData.completedBookings,
             'stats-today': this.statsData.todayBookings,
@@ -535,6 +522,42 @@ class BookingManager {
                 element.textContent = value;
             }
         });
+    }
+
+    // Helper method for API requests with authentication
+    async makeAuthenticatedRequest(url, options = {}) {
+        const defaultOptions = {
+            method: 'GET',
+            credentials: 'include', // Include session cookies
+            headers: {
+                'Content-Type': 'application/json',
+                ...(this.token && { 'Authorization': `Bearer ${this.token}` })
+            }
+        };
+
+        const mergedOptions = {
+            ...defaultOptions,
+            ...options,
+            headers: {
+                ...defaultOptions.headers,
+                ...options.headers
+            }
+        };
+
+        const response = await fetch(url, mergedOptions);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`API Error (${response.status}):`, errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            return await response.json();
+        } else {
+            return await response.text();
+        }
     }
 
     // Action methods
@@ -1226,21 +1249,39 @@ class BookingManager {
             return;
         }
         
-        this.selectedBookingForRating = booking;
-        this.selectedRating = 0;
-        
-        // Populate modal
-        document.getElementById('ratingCustomerName').textContent = 
-            `${booking.customer.first_name} ${booking.customer.last_name}`;
-        document.getElementById('ratingServiceName').textContent = 
-            booking.service?.service_title || 'Service';
-        document.getElementById('ratingComment').value = '';
-        
-        // Reset stars
-        this.setRating(0);
-        
-        const modal = document.getElementById('ratingModal');
-        modal.style.display = 'block';
+        // Check if provider can rate this appointment
+        this.checkRatingEligibility(bookingId).then(canRate => {
+            if (!canRate.can_rate) {
+                this.showToast(canRate.reason || 'Cannot rate this appointment', 'error');
+                return;
+            }
+
+            this.selectedBookingForRating = booking;
+            this.selectedRating = 0;
+            
+            // Populate modal
+            document.getElementById('ratingCustomerName').textContent = 
+                `${booking.customer.first_name} ${booking.customer.last_name}`;
+            document.getElementById('ratingServiceName').textContent = 
+                booking.service?.service_title || 'Service';
+            document.getElementById('ratingComment').value = '';
+            
+            // Reset stars
+            this.setRating(0);
+            
+            const modal = document.getElementById('ratingModal');
+            modal.style.display = 'block';
+        });
+    }
+
+    async checkRatingEligibility(appointmentId) {
+        try {
+            const data = await this.makeAuthenticatedRequest(`/api/appointments/${appointmentId}/can-rate?rater_type=provider`);
+            return data;
+        } catch (error) {
+            console.error('Error checking rating eligibility:', error);
+            return { can_rate: false, reason: 'Error checking rating eligibility' };
+        }
     }
 
     closeRatingModal() {
@@ -1284,7 +1325,7 @@ class BookingManager {
         const comment = document.getElementById('ratingComment').value.trim();
         
         try {
-            const response = await fetch(`/api/serviceProvider/appointments/${this.selectedBookingForRating.appointment_id}/rate`, {
+            const response = await fetch(`/api/appointments/${this.selectedBookingForRating.appointment_id}/ratings`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -1292,12 +1333,15 @@ class BookingManager {
                     ...(this.token && { 'Authorization': `Bearer ${this.token}` })
                 },
                 body: JSON.stringify({ 
-                    rating: this.selectedRating,
-                    comment: comment || null
+                    rating_value: this.selectedRating,
+                    rating_comment: comment || null,
+                    rater_type: 'provider'
                 })
             });
 
-            if (response.ok) {
+            const data = await response.json();
+
+            if (data.success) {
                 this.closeRatingModal();
                 this.showToast('Rating submitted successfully', 'success');
                 
@@ -1307,11 +1351,11 @@ class BookingManager {
                 this.renderBookings();
                 this.renderBookingStats();
             } else {
-                throw new Error('Failed to submit rating');
+                throw new Error(data.message || 'Failed to submit rating');
             }
         } catch (error) {
             console.error('Error submitting rating:', error);
-            this.showToast('Error submitting rating', 'error');
+            this.showToast(error.message || 'Error submitting rating', 'error');
         }
     }
 

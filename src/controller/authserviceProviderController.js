@@ -95,6 +95,12 @@ export const verifyProviderOTPAndRegister = async (req, res) => {
             return res.status(400).json({ message: 'Provider already exists' });
         }
 
+        // Check if email is already registered as a customer
+        const existingCustomer = await prisma.user.findUnique({ where: { email: provider_email } });
+        if (existingCustomer) {
+            return res.status(400).json({ message: 'Email is already registered with a customer account' });
+        }
+
         // Check for duplicate phone number
         const existingPhoneProvider = await prisma.serviceProviderDetails.findFirst({ 
             where: { provider_phone_number: provider_phone_number } 
@@ -109,7 +115,12 @@ export const verifyProviderOTPAndRegister = async (req, res) => {
         });
         if (existingPhoneCustomer) {
             return res.status(400).json({ message: 'Phone number is already registered with a customer account' });
-        }        // Parse certificate data if it's JSON
+        }       
+        
+
+
+        // Parse certificate data if it's JSON
+
         let parsedCertificateNames, parsedCertificateNumbers, parsedExpiryDates;
         try {
             parsedCertificateNames = typeof certificateNames === 'string' ? JSON.parse(certificateNames) : certificateNames;

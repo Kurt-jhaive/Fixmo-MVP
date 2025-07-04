@@ -11,7 +11,10 @@ import {
     rescheduleAppointment,
     getProviderAppointments,
     getCustomerAppointments,
-    getAppointmentStats
+    getAppointmentStats,
+    submitRating,
+    getAppointmentRatings,
+    canRateAppointment
 } from '../controller/appointmentController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 
@@ -39,5 +42,10 @@ router.get('/provider/:providerId', getProviderAppointments);   // GET /api/appo
 
 // Customer-specific routes
 router.get('/customer/:customerId', getCustomerAppointments);   // GET /api/appointments/customer/:customerId - Get customer's appointments
+
+// Rating routes
+router.post('/:appointmentId/ratings', authMiddleware, submitRating);          // POST /api/appointments/:id/ratings - Submit rating for appointment
+router.get('/:appointmentId/ratings', authMiddleware, getAppointmentRatings);  // GET /api/appointments/:id/ratings - Get ratings for appointment  
+router.get('/:appointmentId/can-rate', authMiddleware, canRateAppointment);    // GET /api/appointments/:id/can-rate - Check if user can rate appointment
 
 export default router;

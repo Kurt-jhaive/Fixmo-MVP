@@ -1068,3 +1068,207 @@ export const getAppointmentStats = async (req, res) => {
         });
     }
 };
+
+// Rating functions for completed appointments
+export const submitRating = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { rating_value, rating_comment, rater_type } = req.body;
+
+        // Validate input
+        if (!rating_value || rating_value < 1 || rating_value > 5) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rating value must be between 1 and 5'
+            });
+        }
+
+        // Get appointment details
+        const appointment = await prisma.appointment.findUnique({
+            where: { appointment_id: parseInt(appointmentId) },
+            include: {
+                customer: true,
+                serviceProvider: true
+            }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
+            });
+        }
+
+        // Check if appointment is completed
+        if (appointment.appointment_status !== 'completed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Can only rate completed appointments'
+            });
+        }
+
+        // Determine who is rating whom
+        let user_id, provider_id;
+        if (rater_type === 'customer') {
+            user_id = appointment.customer_id;
+            provider_id = appointment.provider_id;
+        } else if (rater_type === 'provider') {
+            user_id = appointment.customer_id;
+            provider_id = appointment.provider_id;
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid rater type'
+            });
+        }
+
+        // Check if rating already exists
+        const existingRating = await prisma.rating.findFirst({
+            where: {
+                appointment_id: parseInt(appointmentId),
+                rated_by: rater_type // Use 'rated_by' instead of 'rater_type'
+            }
+        });
+
+        if (existingRating) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rating already submitted for this appointment'
+            });
+        }
+
+        // Create rating
+        const rating = await prisma.rating.create({
+            data: {
+                rating_value: parseInt(rating_value),
+                rating_comment: rating_comment || '',
+                appointment_id: parseInt(appointmentId),
+                user_id: user_id,
+                provider_id: provider_id,
+                rated_by: rater_type // Use 'rated_by' instead of 'rater_type'
+            }
+        });
+
+        // Update provider's average rating if customer rated provider
+        if (rater_type === 'customer') {
+            const avgRating = await prisma.rating.aggregate({
+                where: {
+                    provider_id: provider_id,
+                    rated_by: 'customer' // Use 'rated_by' instead of 'rater_type'
+                },
+                _avg: {
+                    rating_value: true
+                }
+            });
+
+            await prisma.serviceProviderDetails.update({
+                where: { provider_id: provider_id },
+                data: { provider_rating: avgRating._avg.rating_value || 0 }
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Rating submitted successfully',
+            rating: rating
+        });
+
+    } catch (error) {
+        console.error('Error submitting rating:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error submitting rating',
+            error: error.message
+        });
+    }
+};
+
+// Get ratings for an appointment
+export const getAppointmentRatings = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+
+        const ratings = await prisma.rating.findMany({
+            where: { appointment_id: parseInt(appointmentId) },
+            include: {
+                user: {
+                    select: {
+                        first_name: true,
+                        last_name: true,
+                        profile_photo: true
+                    }
+                },
+                serviceProvider: {
+                    select: {
+                        provider_first_name: true,
+                        provider_last_name: true,
+                        provider_profile_photo: true
+                    }
+                }
+            }
+        });
+
+        res.json({
+            success: true,
+            ratings: ratings
+        });
+
+    } catch (error) {
+        console.error('Error fetching ratings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching ratings',
+            error: error.message
+        });
+    }
+};
+
+// Check if user can rate an appointment
+export const canRateAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { rater_type } = req.query;
+
+        const appointment = await prisma.appointment.findUnique({
+            where: { appointment_id: parseInt(appointmentId) }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment not found'
+            });
+        }
+
+        // Check if appointment is completed
+        if (appointment.appointment_status !== 'completed') {
+            return res.json({
+                success: true,
+                can_rate: false,
+                reason: 'Appointment not completed'
+            });
+        }
+
+        // Check if rating already exists
+        const existingRating = await prisma.rating.findFirst({
+            where: {
+                appointment_id: parseInt(appointmentId),
+                rated_by: rater_type // Use 'rated_by' instead of 'rater_type'
+            }
+        });
+
+        res.json({
+            success: true,
+            can_rate: !existingRating,
+            reason: existingRating ? 'Rating already submitted' : null
+        });
+
+    } catch (error) {
+        console.error('Error checking rating eligibility:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error checking rating eligibility',
+            error: error.message
+        });
+    }
+};

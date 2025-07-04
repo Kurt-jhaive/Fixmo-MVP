@@ -57,6 +57,38 @@ class CustomerBookingsManager {
                 this.loadBookings();
             });
         }
+
+        // Use event delegation for booking action buttons
+        document.addEventListener('click', (e) => {
+            // Call provider buttons
+            if (e.target.closest('.call-provider')) {
+                e.preventDefault();
+                const button = e.target.closest('.call-provider');
+                const phone = button.dataset.phone;
+                const providerName = button.dataset.providerName;
+                this.showCallProviderModal(phone, providerName);
+            }
+
+            // Cancel booking buttons
+            if (e.target.closest('.cancel-booking')) {
+                e.preventDefault();
+                const button = e.target.closest('.cancel-booking');
+                const bookingId = button.dataset.bookingId;
+                const providerName = button.dataset.providerName;
+                this.showCancelConfirmation(bookingId, providerName);
+            }
+
+            // Rate service buttons
+            if (e.target.closest('.rate-service')) {
+                e.preventDefault();
+                console.log('Rate service button clicked via event delegation');
+                const button = e.target.closest('.rate-service');
+                const bookingId = button.dataset.bookingId;
+                const providerName = button.dataset.providerName;
+                console.log('Button data:', { bookingId, providerName });
+                this.showRatingModal(bookingId, providerName);
+            }
+        });
     }
 
     async loadBookings() {
@@ -125,11 +157,13 @@ class CustomerBookingsManager {
             container.appendChild(bookingElement);
         });
 
-        // Setup action listeners
-        this.setupBookingActionListeners();
+        // No need to setup action listeners since we're using event delegation
+        console.log('Bookings displayed successfully');
     }
 
     createBookingCard(booking) {
+        console.log('Creating booking card for:', booking);
+        
         const card = document.createElement('div');
         card.className = 'booking-card-horizontal';
         card.dataset.bookingId = booking.appointment_id;
@@ -206,10 +240,14 @@ class CustomerBookingsManager {
     }
 
     renderBookingActions(booking) {
+        console.log('Rendering booking actions for:', booking);
+        
         // Determine actions based on appointment status
         const canCall = ['accepted', 'approved', 'confirmed', 'on the way', 'in progress'].includes(booking.appointment_status);
         const canCancel = ['pending', 'accepted', 'approved', 'confirmed'].includes(booking.appointment_status);
         const status = booking.appointment_status;
+
+        console.log('Booking status:', status, 'Can call:', canCall, 'Can cancel:', canCancel);
 
         let actionsHTML = '';
 
@@ -253,6 +291,7 @@ class CustomerBookingsManager {
 
         // Additional actions based on status
         if (status === 'completed') {
+            console.log('Creating rate service button for completed booking');
             actionsHTML += `
                 <button class="booking-action-btn secondary rate-service" 
                         data-booking-id="${booking.appointment_id}"
@@ -263,36 +302,8 @@ class CustomerBookingsManager {
             `;
         }
 
+        console.log('Generated actions HTML:', actionsHTML);
         return actionsHTML;
-    }
-
-    setupBookingActionListeners() {
-        // Call provider buttons
-        document.querySelectorAll('.call-provider').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const phone = button.dataset.phone;
-                const providerName = button.dataset.providerName;
-                this.showCallProviderModal(phone, providerName);
-            });
-        });
-
-        // Cancel booking buttons
-        document.querySelectorAll('.cancel-booking').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const bookingId = button.dataset.bookingId;
-                const providerName = button.dataset.providerName;
-                this.showCancelConfirmation(bookingId, providerName);
-            });
-        });
-
-        // Rate service buttons
-        document.querySelectorAll('.rate-service').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const bookingId = button.dataset.bookingId;
-                const providerName = button.dataset.providerName;
-                this.showRatingModal(bookingId, providerName);
-            });
-        });
     }
 
     applyFilters() {
@@ -821,8 +832,183 @@ class CustomerBookingsManager {
     }
 
     showRatingModal(bookingId, providerName) {
-        // This would open a rating modal - implementation depends on your rating system
-        this.showToast('Rating feature coming soon!', 'info');
+        console.log('showRatingModal called with:', { bookingId, providerName });
+        
+        // Check if user can rate this appointment
+        this.checkRatingEligibility(bookingId).then(canRate => {
+            console.log('Rating eligibility check result:', canRate);
+            
+            if (!canRate.can_rate) {
+                console.log('Cannot rate - reason:', canRate.reason);
+                this.showToast(canRate.reason || 'Cannot rate this appointment', 'error');
+                return;
+            }
+
+            console.log('Creating rating modal...');
+            // Create rating modal HTML
+            const modalHTML = `
+                <div class="modal-overlay" id="ratingModalOverlay">
+                    <div class="modal-content rating-modal">
+                        <div class="modal-header">
+                            <h3>Rate Your Service</h3>
+                            <button class="modal-close" onclick="this.parentElement.parentElement.parentElement.parentElement.remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="rating-provider">
+                                <h4>Rating for: ${providerName}</h4>
+                                <p>How was your service experience?</p>
+                            </div>
+                            <div class="rating-stars">
+                                <div class="star-rating">
+                                    <span class="star" data-rating="1"><i class="fas fa-star"></i></span>
+                                    <span class="star" data-rating="2"><i class="fas fa-star"></i></span>
+                                    <span class="star" data-rating="3"><i class="fas fa-star"></i></span>
+                                    <span class="star" data-rating="4"><i class="fas fa-star"></i></span>
+                                    <span class="star" data-rating="5"><i class="fas fa-star"></i></span>
+                                </div>
+                                <div class="rating-text">
+                                    <span id="ratingText">Click to rate</span>
+                                </div>
+                            </div>
+                            <div class="rating-comment">
+                                <label for="ratingComment">Your Review (Optional)</label>
+                                <textarea id="ratingComment" placeholder="Share your experience with this service provider..." maxlength="500"></textarea>
+                                <div class="char-count">
+                                    <span id="charCount">0</span>/500 characters
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn-secondary" onclick="this.parentElement.parentElement.parentElement.parentElement.remove()">
+                                Cancel
+                            </button>
+                            <button class="btn-primary" id="submitRatingBtn" disabled>
+                                Submit Rating
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add modal to page
+            console.log('Adding modal to page...');
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+            // Setup rating modal functionality
+            console.log('Setting up rating modal listeners...');
+            this.setupRatingModalListeners(bookingId);
+        }).catch(error => {
+            console.error('Error in showRatingModal:', error);
+            this.showToast('Error loading rating modal', 'error');
+        });
+    }
+
+    async checkRatingEligibility(appointmentId) {
+        try {
+            const response = await DashboardUtils.makeRequest(`/api/appointments/${appointmentId}/can-rate?rater_type=customer`);
+            return response;
+        } catch (error) {
+            console.error('Error checking rating eligibility:', error);
+            return { can_rate: false, reason: 'Error checking rating eligibility' };
+        }
+    }
+
+    setupRatingModalListeners(bookingId) {
+        let selectedRating = 0;
+
+        // Star rating functionality
+        const stars = document.querySelectorAll('.star');
+        const ratingText = document.getElementById('ratingText');
+        const submitBtn = document.getElementById('submitRatingBtn');
+
+        stars.forEach((star, index) => {
+            star.addEventListener('click', () => {
+                selectedRating = index + 1;
+                this.updateStarRating(selectedRating);
+                submitBtn.disabled = false;
+            });
+
+            star.addEventListener('mouseenter', () => {
+                this.updateStarRating(index + 1, true);
+            });
+
+            star.addEventListener('mouseleave', () => {
+                this.updateStarRating(selectedRating);
+            });
+        });
+
+        // Character count for comment
+        const commentTextarea = document.getElementById('ratingComment');
+        const charCount = document.getElementById('charCount');
+
+        commentTextarea.addEventListener('input', () => {
+            charCount.textContent = commentTextarea.value.length;
+        });
+
+        // Submit rating
+        submitBtn.addEventListener('click', async () => {
+            if (selectedRating === 0) {
+                this.showToast('Please select a rating', 'error');
+                return;
+            }
+
+            const comment = commentTextarea.value.trim();
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+                const response = await DashboardUtils.makeRequest(`/api/appointments/${bookingId}/ratings`, {
+                    method: 'POST',
+                    body: {
+                        rating_value: selectedRating,
+                        rating_comment: comment,
+                        rater_type: 'customer'
+                    }
+                });
+
+                if (response.success) {
+                    this.showToast('Rating submitted successfully!', 'success');
+                    document.getElementById('ratingModalOverlay').remove();
+                    // Refresh bookings to update the UI
+                    await this.loadBookings();
+                } else {
+                    throw new Error(response.message || 'Failed to submit rating');
+                }
+
+            } catch (error) {
+                console.error('Error submitting rating:', error);
+                this.showToast(error.message || 'Failed to submit rating', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Submit Rating';
+            }
+        });
+    }
+
+    updateStarRating(rating, isHover = false) {
+        const stars = document.querySelectorAll('.star');
+        const ratingText = document.getElementById('ratingText');
+        
+        const ratingTexts = {
+            1: 'Poor',
+            2: 'Fair', 
+            3: 'Good',
+            4: 'Very Good',
+            5: 'Excellent'
+        };
+
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('active');
+                if (isHover) star.classList.add('hover');
+            } else {
+                star.classList.remove('active', 'hover');
+            }
+        });
+
+        ratingText.textContent = rating > 0 ? ratingTexts[rating] : 'Click to rate';
     }
 
     // Utility functions

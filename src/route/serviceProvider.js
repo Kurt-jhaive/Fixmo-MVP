@@ -32,7 +32,7 @@ import {
   getProviderAvailabilityWithBookings
 } from '../controller/authserviceProviderController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
-import { uploadServiceImage, validateLandscapeImage } from '../middleware/multer.js';
+import { uploadServiceImage } from '../middleware/multer.js';
 import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
@@ -347,7 +347,7 @@ router.post('/profile-update-verify-otp', authMiddleware, (req, res, next) => {
 // Upload service provider certificate (with multer)
 router.post('/upload-certificate', certificateUpload.single('certificate_file'), uploadCertificate);
 
-router.post('/addListing', uploadServiceImage.single('service_picture'), validateLandscapeImage, addServiceListing);
+router.post('/addListing', uploadServiceImage.single('service_picture'),  addServiceListing);
 
 //Add Availability to the provider
 router.post('/addAvailability', addAvailability);

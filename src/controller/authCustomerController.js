@@ -116,6 +116,7 @@ export const verifyOTPAndRegister = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+
     // Check for duplicate phone number
     const existingPhoneUser = await prisma.user.findFirst({ 
       where: { phone_number: phone_number } 
@@ -130,6 +131,15 @@ export const verifyOTPAndRegister = async (req, res) => {
     });
     if (existingPhoneProvider) {
       return res.status(400).json({ message: 'Phone number is already registered with a service provider account' });
+    }
+
+    // Also check if email exists in service provider table
+    const existingEmailProvider = await prisma.serviceProviderDetails.findFirst({
+        where: { provider_email: email }
+    });
+
+    if (existingEmailProvider) {
+        return res.status(400).json({ message: 'Email is already registered with a service provider account' });
     }
 
     // Verify OTP using the reusable utility
