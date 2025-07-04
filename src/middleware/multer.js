@@ -1,21 +1,14 @@
 import multer from 'multer';
 import sharp from 'sharp';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Storage configuration for service images
-const serviceImageStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, '../../uploads/service-images/'));
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'service_' + req.body.provider_id + '_' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// Storage configuration for service images with temp storage
+const serviceImageStorage = multer.memoryStorage(); // Use memory storage for processing
 
 // File filter for service images (only images allowed)
 const serviceImageFilter = (req, file, cb) => {
@@ -35,52 +28,120 @@ const uploadServiceImage = multer({
     }
 });
 
-// Middleware to validate landscape orientation
-const validateLandscapeImage = async (req, res, next) => {
+// Alternative simpler configuration for service images (without Sharp processing initially)
+const serviceImageStorageSimple = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadPath = path.join(__dirname, '../../uploads/service-images/');
+        console.log('Simple multer destination path:', uploadPath);
+        cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname).toLowerCase();
+        const filename = 'service_' + uniqueSuffix + (ext || '.jpg');
+        console.log('Simple multer filename generated:', filename);
+        cb(null, filename);
+    }
+});
+
+// Simple upload without image processing
+const uploadServiceImageSimple = multer({
+    storage: serviceImageStorageSimple,
+    fileFilter: serviceImageFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+});
+
+// Middleware to process and save service images as JPG
+const processServiceImage = async (req, res, next) => {
     if (!req.file) {
         return next();
     }
 
     try {
-        const metadata = await sharp(req.file.path).metadata();
-        
-        if (metadata.width <= metadata.height) {
-            // Delete the uploaded file since it doesn't meet requirements
-            const fs = require('fs');
-            fs.unlinkSync(req.file.path);
-            
-            return res.status(400).json({
-                success: false,
-                message: 'Only landscape orientation images are allowed (width must be greater than height)'
-            });
+        // Generate unique filename
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const filename = 'service_' + uniqueSuffix + '.jpg';
+        const uploadPath = path.join(__dirname, '../../uploads/service-images/');
+        const filePath = path.join(uploadPath, filename);
+
+        console.log('Processing service image:', {
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+            filename: filename,
+            filePath: filePath
+        });
+
+        // Ensure directory exists
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
         }
-        
-        // Optimize the image
-        const optimizedPath = req.file.path.replace(path.extname(req.file.path), '_optimized' + path.extname(req.file.path));
-        
-        await sharp(req.file.path)
+
+        // Process image with Sharp - convert to JPG and resize
+        await sharp(req.file.buffer)
             .resize(800, 600, { 
                 fit: 'cover', 
-                position: 'center' 
+                position: 'center',
+                withoutEnlargement: true // Don't enlarge smaller images
             })
-            .jpeg({ quality: 85 })
-            .toFile(optimizedPath);
-        
-        // Replace original with optimized
-        const fs = require('fs');
-        fs.unlinkSync(req.file.path);
-        fs.renameSync(optimizedPath, req.file.path);
-        
+            .jpeg({ 
+                quality: 85,
+                progressive: true
+            })
+            .toFile(filePath);
+
+        // Add file information to req.file for the controller
+        req.file.filename = filename;
+        req.file.path = filePath;
+        req.file.destination = uploadPath;
+
+        console.log('Image processed successfully:', {
+            filename: filename,
+            path: filePath,
+            size: req.file.size
+        });
+
         next();
     } catch (error) {
-        console.error('Image validation error:', error);
+        console.error('Error processing service image:', error);
         return res.status(500).json({
             success: false,
-            message: 'Error processing image'
+            message: 'Error processing image: ' + error.message
         });
     }
 };
 
+// Test function to verify upload directory is accessible
+const testUploadDirectory = () => {
+    try {
+        const uploadPath = path.join(__dirname, '../../uploads/service-images/');
+        
+        // Check if directory exists
+        if (!fs.existsSync(uploadPath)) {
+            console.error('Upload directory does not exist:', uploadPath);
+            // Try to create it
+            fs.mkdirSync(uploadPath, { recursive: true });
+            console.log('Created upload directory:', uploadPath);
+        }
+        
+        // Test write permissions
+        const testFile = path.join(uploadPath, 'test.txt');
+        fs.writeFileSync(testFile, 'test');
+        fs.unlinkSync(testFile);
+        console.log('Upload directory is writable:', uploadPath);
+        
+        return true;
+    } catch (error) {
+        console.error('Upload directory test failed:', error);
+        return false;
+    }
+};
+
+// Run test on module load
+testUploadDirectory();
+
 const upload = multer({ dest: 'uploads/' }); // existing upload configuration
 
-export { upload, uploadServiceImage, validateLandscapeImage };
+export { upload, uploadServiceImage, uploadServiceImageSimple, processServiceImage };
