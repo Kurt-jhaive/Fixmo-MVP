@@ -2,7 +2,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
-import { sendOTPEmail, sendRegistrationSuccessEmail, sendBookingCancellationEmail } from '../services/mailer.js';
+import { sendOTPEmail, sendRegistrationSuccessEmail, sendBookingCancellationEmail, sendBookingConfirmationToCustomer, sendBookingConfirmationToProvider, sendBookingCancellationToCustomer, sendBookingCompletionToCustomer, sendBookingCompletionToProvider } from '../services/mailer.js';
 import { forgotrequestOTP, verifyOTPAndResetPassword, verifyOTP, cleanupOTP } from '../services/otpUtils.js';
 import { checkOTPRateLimit, recordOTPAttempt } from '../services/rateLimitUtils.js';
 
@@ -390,6 +390,38 @@ export const addAppointment = async (req, res) => {
 
         console.log('✅ Appointment created successfully:', newAppointment.appointment_id);
         console.log('✅ Linked to availability slot:', exactSlot.availability_id);
+
+        // Send confirmation emails to both customer and provider
+        try {
+            const customerName = `${newAppointment.customer.first_name} ${newAppointment.customer.last_name}`;
+            const providerName = `${newAppointment.serviceProvider.provider_first_name} ${newAppointment.serviceProvider.provider_last_name}`;
+            
+            const bookingDetails = {
+                customerName,
+                customerPhone: newAppointment.customer.phone_number,
+                customerEmail: newAppointment.customer.email,
+                serviceTitle: newAppointment.service.service_title,
+                providerName,
+                providerPhone: newAppointment.serviceProvider.provider_phone_number,
+                providerEmail: newAppointment.serviceProvider.provider_email,
+                scheduledDate: newAppointment.scheduled_date,
+                appointmentId: newAppointment.appointment_id,
+                startingPrice: newAppointment.service.service_startingprice,
+                repairDescription: newAppointment.repairDescription
+            };
+
+            // Send confirmation email to customer
+            await sendBookingConfirmationToCustomer(newAppointment.customer.email, bookingDetails);
+            console.log('✅ Booking confirmation email sent to customer');
+
+            // Send confirmation email to provider
+            await sendBookingConfirmationToProvider(newAppointment.serviceProvider.provider_email, bookingDetails);
+            console.log('✅ Booking confirmation email sent to provider');
+
+        } catch (emailError) {
+            console.error('❌ Failed to send booking confirmation emails:', emailError);
+            // Continue with response even if emails fail
+        }
 
         return res.status(201).json({
             message: 'Appointment booked successfully',
@@ -1613,6 +1645,38 @@ export const createAppointment = async (req, res) => {
         // represents the provider's weekly schedule, not specific date bookings.
         // Specific bookings are tracked in the appointment table.
 
+        // Send confirmation emails to both customer and provider
+        try {
+            const customerName = `${newAppointment.customer.first_name} ${newAppointment.customer.last_name}`;
+            const providerName = `${newAppointment.serviceProvider.provider_first_name} ${newAppointment.serviceProvider.provider_last_name}`;
+            
+            const bookingDetails = {
+                customerName,
+                customerPhone: newAppointment.customer.phone_number,
+                customerEmail: newAppointment.customer.email,
+                serviceTitle: newAppointment.service.service_title,
+                providerName,
+                providerPhone: newAppointment.serviceProvider.provider_phone_number,
+                providerEmail: newAppointment.serviceProvider.provider_email,
+                scheduledDate: newAppointment.scheduled_date,
+                appointmentId: newAppointment.appointment_id,
+                startingPrice: newAppointment.service.service_startingprice,
+                repairDescription: newAppointment.repairDescription
+            };
+
+            // Send confirmation email to customer
+            await sendBookingConfirmationToCustomer(newAppointment.customer.email, bookingDetails);
+            console.log('✅ Booking confirmation email sent to customer');
+
+            // Send confirmation email to provider
+            await sendBookingConfirmationToProvider(newAppointment.serviceProvider.provider_email, bookingDetails);
+            console.log('✅ Booking confirmation email sent to provider');
+
+        } catch (emailError) {
+            console.error('❌ Failed to send booking confirmation emails:', emailError);
+            // Continue with response even if emails fail
+        }
+
         res.status(201).json({
             success: true,
             message: 'Appointment booked successfully',
@@ -1662,8 +1726,60 @@ export const updateAppointmentStatus = async (req, res) => {
         // Update appointment status
         const updatedAppointment = await prisma.appointment.update({
             where: { appointment_id: parseInt(appointmentId) },
-            data: { appointment_status: status }
+            data: { appointment_status: status },
+            include: {
+                customer: {
+                    select: {
+                        first_name: true,
+                        last_name: true,
+                        email: true
+                    }
+                },
+                serviceProvider: {
+                    select: {
+                        provider_first_name: true,
+                        provider_last_name: true,
+                        provider_email: true
+                    }
+                },
+                service: {
+                    select: {
+                        service_title: true,
+                        service_startingprice: true
+                    }
+                }
+            }
         });
+
+        // Send completion emails when status is changed to 'completed'
+        if (status === 'completed') {
+            try {
+                const customerName = `${updatedAppointment.customer.first_name} ${updatedAppointment.customer.last_name}`;
+                const providerName = `${updatedAppointment.serviceProvider.provider_first_name} ${updatedAppointment.serviceProvider.provider_last_name}`;
+                
+                const completionDetails = {
+                    customerName,
+                    serviceTitle: updatedAppointment.service.service_title,
+                    providerName,
+                    scheduledDate: updatedAppointment.scheduled_date,
+                    appointmentId: updatedAppointment.appointment_id,
+                    startingPrice: updatedAppointment.service.service_startingprice,
+                    finalPrice: updatedAppointment.final_price
+                };
+
+                // Send completion email to customer
+                await sendBookingCompletionToCustomer(updatedAppointment.customer.email, completionDetails);
+                console.log(`✅ Completion email sent to customer: ${updatedAppointment.customer.email}`);
+
+                // Send completion email to provider
+                await sendBookingCompletionToProvider(updatedAppointment.serviceProvider.provider_email, completionDetails);
+                console.log(`✅ Completion email sent to provider: ${updatedAppointment.serviceProvider.provider_email}`);
+
+            } catch (emailError) {
+                console.error('❌ Failed to send completion emails:', emailError);
+                // Continue with response even if emails fail
+            }
+        }
 
         // If appointment is finished or canceled, free up the availability slot
         if (status === 'finished' || status === 'canceled') {
@@ -1908,7 +2024,8 @@ export const cancelAppointmentEnhanced = async (req, res) => {
                 customer: {
                     select: {
                         first_name: true,
-                        last_name: true
+                        last_name: true,
+                        email: true
                     }
                 },
                 serviceProvider: {
@@ -1955,19 +2072,31 @@ export const cancelAppointmentEnhanced = async (req, res) => {
             }
         });
 
-        // Send email notification to service provider
+        // Send email notifications to both customer and service provider
         try {
-            await sendBookingCancellationEmail(existingAppointment.serviceProvider.provider_email, {
-                customerName: `${existingAppointment.customer.first_name} ${existingAppointment.customer.last_name}`,
+            const customerName = `${existingAppointment.customer.first_name} ${existingAppointment.customer.last_name}`;
+            const providerName = `${existingAppointment.serviceProvider.provider_first_name} ${existingAppointment.serviceProvider.provider_last_name}`;
+            
+            const cancellationDetails = {
+                customerName,
                 serviceTitle: existingAppointment.service.service_title,
+                providerName,
                 scheduledDate: existingAppointment.scheduled_date,
                 appointmentId: existingAppointment.appointment_id,
                 cancellationReason: cancellation_reason || 'No reason provided'
-            });
+            };
+
+            // Send cancellation email to provider
+            await sendBookingCancellationEmail(existingAppointment.serviceProvider.provider_email, cancellationDetails);
             console.log(`✅ Cancellation email sent to provider: ${existingAppointment.serviceProvider.provider_email}`);
+
+            // Send cancellation email to customer
+            await sendBookingCancellationToCustomer(existingAppointment.customer.email, cancellationDetails);
+            console.log(`✅ Cancellation email sent to customer: ${existingAppointment.customer.email}`);
+
         } catch (emailError) {
-            console.error('❌ Failed to send cancellation email:', emailError);
-            // Continue with the response even if email fails
+            console.error('❌ Failed to send cancellation emails:', emailError);
+            // Continue with the response even if emails fail
         }
 
         res.status(200).json({
