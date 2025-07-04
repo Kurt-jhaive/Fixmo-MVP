@@ -24,6 +24,7 @@ import {
   getServiceCategories,
   getCustomerStats,
   getProviderBookingAvailability,
+  getWeeklyAvailabilityDebug,
   getProviderWeeklyDays,
   createAppointment,
   updateAppointmentStatus,
@@ -128,6 +129,8 @@ router.get('/customer-stats/:userId', getCustomerStats);
 // Customer appointment routes
 // Get provider availability for booking
 router.get('/provider/:providerId/booking-availability', getProviderBookingAvailability);
+// Debug endpoint for weekly recurring availability
+router.get('/provider/:providerId/weekly-debug', getWeeklyAvailabilityDebug);
 // Get provider's weekly available days
 router.get('/provider/:providerId/weekly-days', getProviderWeeklyDays);
 // Create a new appointment (requires authentication)

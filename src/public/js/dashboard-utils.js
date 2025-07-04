@@ -103,8 +103,8 @@ class DashboardUtils {
                 },
             };
 
-            // Add auth token if available
-            const token = localStorage.getItem('fixmo_user_token');
+            // Add auth token if available - check both token names for compatibility
+            const token = localStorage.getItem('fixmo_user_token') || localStorage.getItem('token');
             if (token) {
                 defaultOptions.headers['Authorization'] = `Bearer ${token}`;
             }
@@ -121,11 +121,11 @@ class DashboardUtils {
             if (!response.ok) {
                 // Handle specific HTTP errors
                 if (response.status === 401) {
-                    // Only logout if this was an authenticated request
-                    const token = localStorage.getItem('fixmo_user_token');
+                    // Only logout if this was an authenticated request and we have a token
+                    const token = localStorage.getItem('fixmo_user_token') || localStorage.getItem('token');
                     if (token && defaultOptions.headers['Authorization']) {
                         console.warn('User session expired or invalid token');
-                        this.logout();
+                        // Don't auto-logout, just throw the error and let the calling code handle it
                         throw new Error('Session expired. Please log in again.');
                     } else {
                         throw new Error('Authentication required');
@@ -223,20 +223,20 @@ class DashboardUtils {
 
     // Check if user is authenticated
     static isAuthenticated() {
-        const token = localStorage.getItem('fixmo_user_token');
-        const userId = localStorage.getItem('fixmo_user_id');
-        const userType = localStorage.getItem('fixmo_user_type');
+        const token = localStorage.getItem('fixmo_user_token') || localStorage.getItem('token');
+        const userId = localStorage.getItem('fixmo_user_id') || localStorage.getItem('userData');
+        const userType = localStorage.getItem('fixmo_user_type') || 'customer';
         
-        return token && userId && userType === 'customer';
+        return token && (userId || localStorage.getItem('userData'));
     }
 
     // Get user data from localStorage
     static getUserData() {
         return {
-            token: localStorage.getItem('fixmo_user_token'),
+            token: localStorage.getItem('fixmo_user_token') || localStorage.getItem('token'),
             userId: localStorage.getItem('fixmo_user_id'),
             userName: localStorage.getItem('fixmo_user_name'),
-            userType: localStorage.getItem('fixmo_user_type')
+            userType: localStorage.getItem('fixmo_user_type') || 'customer'
         };
     }
 
@@ -246,6 +246,11 @@ class DashboardUtils {
         localStorage.removeItem('fixmo_user_id');
         localStorage.removeItem('fixmo_user_name');
         localStorage.removeItem('fixmo_user_type');
+        // Also remove alternative token names
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
+        
+        // Always redirect to fixmo-login for the main login page
         window.location.href = '/fixmo-login';
     }    // Check user verification status
     static async checkVerificationStatus() {

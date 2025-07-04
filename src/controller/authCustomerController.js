@@ -1225,14 +1225,25 @@ export const getProviderBookingAvailability = async (req, res) => {
         const { providerId } = req.params;
         const { date } = req.query;
 
-        // Get the day of week from the date
-        const requestedDate = new Date(date);
+        // Properly parse the date to avoid timezone issues
+        const requestedDate = new Date(date + 'T00:00:00.000Z');
         const dayOfWeek = requestedDate.toLocaleDateString('en-US', { weekday: 'long' });
 
         console.log('📅 Getting availability for:', {
             providerId,
             date,
+            requestedDate: requestedDate.toISOString(),
             dayOfWeek
+        });
+
+        // Create start and end of day for the requested date (UTC)
+        const startOfDay = new Date(requestedDate);
+        const endOfDay = new Date(requestedDate);
+        endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
+
+        console.log('📅 Date range for appointment lookup:', {
+            startOfDay: startOfDay.toISOString(),
+            endOfDay: endOfDay.toISOString()
         });
 
         // Get provider's weekly availability for the specific day
@@ -1246,11 +1257,11 @@ export const getProviderBookingAvailability = async (req, res) => {
                 appointments: {
                     where: {
                         scheduled_date: {
-                            gte: new Date(requestedDate.getFullYear(), requestedDate.getMonth(), requestedDate.getDate()),
-                            lt: new Date(requestedDate.getFullYear(), requestedDate.getMonth(), requestedDate.getDate() + 1)
+                            gte: startOfDay,
+                            lt: endOfDay
                         },
                         appointment_status: {
-                            in: ['accepted', 'pending'] // Only count active appointments
+                            in: ['accepted', 'pending', 'approved', 'confirmed'] // Include all active statuses
                         }
                     }
                 }
@@ -1260,11 +1271,24 @@ export const getProviderBookingAvailability = async (req, res) => {
             }
         });
 
-        console.log('🔍 Found availability slots:', availability);
+        console.log('🔍 Found availability slots:', availability.map(slot => ({
+            id: slot.availability_id,
+            dayOfWeek: slot.dayOfWeek,
+            time: `${slot.startTime}-${slot.endTime}`,
+            appointmentsOnThisDate: slot.appointments.length,
+            appointments: slot.appointments.map(apt => ({
+                id: apt.appointment_id,
+                date: apt.scheduled_date.toISOString(),
+                status: apt.appointment_status
+            }))
+        })));
 
         // Check if each slot is booked by looking at appointments for the specific date
         const availabilityWithStatus = availability.map(slot => {
-            const isBooked = slot.appointments && slot.appointments.length > 0;
+            // IMPORTANT: hasActiveAppointments only checks appointments for the SPECIFIC DATE requested
+            // This implements rolling weekly recurrence - slots are only "booked" for the specific date,
+            // not for the entire week or future weeks
+            const hasActiveAppointments = slot.appointments && slot.appointments.length > 0;
             
             // Check if slot is in the past (for today only)
             let isPast = false;
@@ -1278,12 +1302,51 @@ export const getProviderBookingAvailability = async (req, res) => {
                 isPast = slotTime <= currentTime;
             }
             
+            // Rolling Weekly Recurring Logic:
+            // - Past dates: not available
+            // - Past times (today only): not available  
+            // - Has active appointments on THIS SPECIFIC DATE: booked
+            // - Otherwise: available (even if booked on previous weeks)
+            //
+            // Example: If Monday 9 AM was booked on Week 1, it's automatically 
+            // available for Week 2 Monday 9 AM because we only check appointments
+            // for the specific date being requested
+            const isPastDate = requestedDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            
+            let status = 'available';
+            let isAvailable = true;
+            
+            if (isPastDate) {
+                status = 'past';
+                isAvailable = false;
+            } else if (isPast && isToday) {
+                status = 'past';
+                isAvailable = false;
+            } else if (hasActiveAppointments) {
+                status = 'booked';
+                isAvailable = false;
+            }
+            
             return {
-                ...slot,
-                isBooked,
-                isPast,
-                isAvailable: !isBooked && !isPast,
-                status: isPast ? 'past' : isBooked ? 'booked' : 'available'
+                availability_id: slot.availability_id,
+                dayOfWeek: slot.dayOfWeek,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                provider_id: slot.provider_id,
+                availability_isActive: slot.availability_isActive,
+                isBooked: hasActiveAppointments,
+                isPast: isPastDate || (isPast && isToday),
+                isAvailable,
+                status,
+                appointmentsOnThisDate: slot.appointments.length,
+                debugInfo: {
+                    requestedDate: requestedDate.toISOString(),
+                    dayOfWeek,
+                    searchDateRange: {
+                        start: startOfDay.toISOString(),
+                        end: endOfDay.toISOString()
+                    }
+                }
             };
         });
 
@@ -1296,8 +1359,16 @@ export const getProviderBookingAvailability = async (req, res) => {
                 providerId: parseInt(providerId),
                 availability: availabilityWithStatus,
                 isToday: requestedDate.toDateString() === new Date().toDateString(),
-                note: 'This shows weekly recurring availability. Booking a slot reserves it for this week.',
-                schedulingType: 'weekly-recurring'
+                note: 'Weekly recurring availability: Slots automatically become available again each week',
+                schedulingType: 'weekly-recurring',
+                debug: {
+                    requestedDateParsed: requestedDate.toISOString(),
+                    dayOfWeek: dayOfWeek,
+                    searchDateRange: {
+                        start: startOfDay.toISOString(),
+                        end: endOfDay.toISOString()
+                    }
+                }
             }
         });
 
@@ -1311,7 +1382,102 @@ export const getProviderBookingAvailability = async (req, res) => {
     }
 };
 
-// Create a new appointment booking
+// Add a debug endpoint to check weekly recurring availability
+export const getWeeklyAvailabilityDebug = async (req, res) => {
+    try {
+        const { providerId } = req.params;
+        
+        // Get the current week dates
+        const today = new Date();
+        const currentWeekStart = new Date(today);
+        currentWeekStart.setDate(today.getDate() - today.getDay()); // Start of current week (Sunday)
+        
+        const nextWeekStart = new Date(currentWeekStart);
+        nextWeekStart.setDate(currentWeekStart.getDate() + 7); // Start of next week
+        
+        console.log('🔍 Weekly Availability Debug for Provider:', providerId);
+        console.log('Current week start:', currentWeekStart.toISOString());
+        console.log('Next week start:', nextWeekStart.toISOString());
+        
+        // Get all availability slots for this provider
+        const allAvailability = await prisma.availability.findMany({
+            where: {
+                provider_id: parseInt(providerId),
+                availability_isActive: true
+            },
+            include: {
+                appointments: {
+                    where: {
+                        scheduled_date: {
+                            gte: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 14), // Last 2 weeks
+                            lt: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14)   // Next 2 weeks
+                        }
+                    },
+                    orderBy: {
+                        scheduled_date: 'asc'
+                    }
+                }
+            },
+            orderBy: [
+                { dayOfWeek: 'asc' },
+                { startTime: 'asc' }
+            ]
+        });
+
+        // Group appointments by week
+        const debugData = allAvailability.map(slot => {
+            const appointmentsByWeek = {};
+            
+            slot.appointments.forEach(apt => {
+                const aptDate = new Date(apt.scheduled_date);
+                const weekStart = new Date(aptDate);
+                weekStart.setDate(aptDate.getDate() - aptDate.getDay());
+                const weekKey = weekStart.toISOString().split('T')[0];
+                
+                if (!appointmentsByWeek[weekKey]) {
+                    appointmentsByWeek[weekKey] = [];
+                }
+                
+                appointmentsByWeek[weekKey].push({
+                    appointment_id: apt.appointment_id,
+                    scheduled_date: apt.scheduled_date.toISOString(),
+                    appointment_status: apt.appointment_status,
+                    customer_id: apt.customer_id
+                });
+            });
+            
+            return {
+                availability_id: slot.availability_id,
+                dayOfWeek: slot.dayOfWeek,
+                timeSlot: `${slot.startTime}-${slot.endTime}`,
+                isActive: slot.availability_isActive,
+                totalAppointments: slot.appointments.length,
+                appointmentsByWeek
+            };
+        });
+
+        res.json({
+            success: true,
+            message: 'Weekly availability debug data',
+            data: {
+                providerId: parseInt(providerId),
+                currentWeek: currentWeekStart.toISOString().split('T')[0],
+                nextWeek: nextWeekStart.toISOString().split('T')[0],
+                availability: debugData,
+                summary: `This shows how appointments are distributed across weeks for recurring weekly slots`
+            }
+        });
+
+    } catch (error) {
+        console.error('Error in weekly availability debug:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error getting debug data',
+            error: error.message
+        });
+    }
+};
+
 export const createAppointment = async (req, res) => {
     try {
         console.log('=== APPOINTMENT CREATION DEBUG ===');

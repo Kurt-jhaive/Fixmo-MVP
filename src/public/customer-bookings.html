@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - Fixmo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/customer-dashboard.css">
+    <link rel="stylesheet" href="css/customer-bookings.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <!-- Logo -->
+            <div class="nav-logo">
+                <span class="logo-text">FIXMO</span>
+                <i class="fas fa-tools logo-icon"></i>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="nav-links">
+                <a href="/customer-dashboard" class="nav-link">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="/customer-bookings" class="nav-link active">
+                    <i class="fas fa-calendar-check"></i> My Bookings
+                </a>
+            </div>
+
+            <!-- User Profile -->
+            <div class="nav-profile">
+                <div class="profile-info">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="profile-details">
+                        <span class="profile-name" id="profileName">Loading...</span>
+                        <span class="profile-status" id="profileStatus">
+                            <i class="fas fa-shield-alt verification-icon"></i>
+                            <span id="verificationText">Unverified</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="/customer-dashboard" class="dropdown-item">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                    <a href="/customer-bookings" class="dropdown-item">
+                        <i class="fas fa-calendar-check"></i> My Bookings
+                    </a>
+                    <a href="#" class="dropdown-item" data-page="profile">
+                        <i class="fas fa-user-edit"></i> Edit Profile
+                    </a>
+                    <a href="#" class="dropdown-item" data-page="settings">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item" id="signOutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="bookings-page">
+            <!-- Header -->
+            <div class="bookings-header">
+                <div>
+                    <h1 class="bookings-title">My Bookings</h1>
+                    <p class="bookings-subtitle">Manage and track your service appointments</p>
+                </div>
+                <div class="bookings-stats">
+                    <div class="bookings-stat">
+                        <i class="fas fa-calendar-check stat-icon"></i>
+                        <div>
+                            <div class="stat-value" id="totalBookings">0</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                    </div>
+                    <div class="bookings-stat">
+                        <i class="fas fa-clock stat-icon"></i>
+                        <div>
+                            <div class="stat-value" id="activeBookings">0</div>
+                            <div class="stat-label">Active</div>
+                        </div>
+                    </div>
+                    <div class="bookings-stat">
+                        <i class="fas fa-check-circle stat-icon"></i>
+                        <div>
+                            <div class="stat-value" id="completedBookings">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                    <div class="bookings-stat">
+                        <i class="fas fa-tasks stat-icon"></i>
+                        <div>
+                            <div class="stat-value" id="inProgressBookings">0</div>
+                            <div class="stat-label">In Progress</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="bookings-filters">
+                <div class="filter-group">
+                    <label for="statusFilter">Status:</label>
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="approved">Approved</option>
+                        <option value="on the way">On The Way</option>
+                        <option value="in progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="dateRangeFilter">Date Range:</label>
+                    <select id="dateRangeFilter" class="filter-select">
+                        <option value="">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="tomorrow">Tomorrow</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="past">Past Bookings</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="bookingSearchInput">Search:</label>
+                    <input type="text" id="bookingSearchInput" class="filter-select" placeholder="Search bookings...">
+                </div>
+                
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button id="refreshBookings" class="filter-select" style="cursor: pointer; background: var(--primary-color); color: white; border: none;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bookings Container -->
+            <div class="bookings-container" id="bookingsContainer">
+                <!-- Bookings will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/notification-manager.js"></script>
+    <script src="js/dashboard-utils.js"></script>
+    <script src="js/customer-bookings.js"></script>
+    
+    <script>
+        // Initialize user profile info
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('=== BOOKINGS PAGE DEBUG ===');
+            
+            try {
+                // Check for authentication token first
+                const token = localStorage.getItem('token');
+                const userData = localStorage.getItem('userData');
+                
+                console.log('Token exists:', !!token);
+                console.log('Token value:', token ? token.substring(0, 20) + '...' : 'null');
+                console.log('User data exists:', !!userData);
+                console.log('User data:', userData);
+                
+                // If no token, wait a bit and try from main dashboard
+                if (!token || !userData) {
+                    console.log('Missing authentication data');
+                    
+                    // Instead of redirecting immediately, show a message
+                    document.body.innerHTML = `
+                        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+                            <h2>Authentication Required</h2>
+                            <p>Please go back to the <a href="/customer-dashboard">dashboard</a> and try again.</p>
+                            <p>If the issue persists, please <a href="/customer-login">log in again</a>.</p>
+                            <button onclick="history.back()" style="margin-top: 20px; padding: 10px 20px;">Go Back</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const userDataParsed = JSON.parse(userData);
+                console.log('Parsed user data:', userDataParsed);
+
+                // Update profile display
+                const profileName = document.getElementById('profileName');
+                const profileAvatar = document.getElementById('profileAvatar');
+                
+                if (profileName) {
+                    profileName.textContent = userDataParsed.userName || 'Customer';
+                }
+
+                // Test API call to verify token works
+                console.log('Testing API call with token...');
+                const testResponse = await fetch(`/auth/user-profile/${userDataParsed.userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('API test response status:', testResponse.status);
+
+                if (testResponse.status === 401) {
+                    console.log('Token is invalid or expired');
+                    document.body.innerHTML = `
+                        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+                            <h2>Session Expired</h2>
+                            <p>Your session has expired. Please log in again.</p>
+                            <a href="/customer-login" style="margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">Log In</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (testResponse.ok) {
+                    const profileData = await testResponse.json();
+                    const userProfile = profileData.user;
+                    console.log('API call successful, user profile:', userProfile);
+                    
+                    // Update profile photo
+                    if (profileAvatar && userProfile.profile_photo) {
+                        profileAvatar.innerHTML = `<img src="${userProfile.profile_photo}" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="this.style.display='none'; this.parentNode.innerHTML='<i class=\\"fas fa-user\\"></i>';">`;
+                    }
+                    
+                    // Update verification status
+                    const verificationIcon = document.querySelector('.verification-icon');
+                    const verificationText = document.getElementById('verificationText');
+                    
+                    if (userProfile.is_verified) {
+                        if (verificationIcon) {
+                            verificationIcon.classList.remove('unverified');
+                            verificationIcon.classList.add('verified');
+                        }
+                        if (verificationText) {
+                            verificationText.textContent = 'Verified';
+                        }
+                    }
+                } else {
+                    console.log('API call failed but not unauthorized, continuing...');
+                }
+
+                // Setup profile dropdown
+                setupProfileDropdown();
+                
+                console.log('Authentication successful, page should load normally');
+
+            } catch (error) {
+                console.error('Error in authentication:', error);
+                document.body.innerHTML = `
+                    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+                        <h2>Error Loading Page</h2>
+                        <p>There was an error loading this page: ${error.message}</p>
+                        <a href="/customer-dashboard" style="margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px;">Go to Dashboard</a>
+                    </div>
+                `;
+            }
+        });
+
+        // Profile dropdown functionality
+        function setupProfileDropdown() {
+            const profileInfo = document.querySelector('.profile-info');
+            const profileDropdown = document.getElementById('profileDropdown');
+            
+            if (profileInfo && profileDropdown) {
+                profileInfo.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    profileDropdown.classList.toggle('show');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!profileInfo.contains(e.target)) {
+                        profileDropdown.classList.remove('show');
+                    }
+                });
+            }
+
+            // Sign out functionality
+            const signOutBtn = document.getElementById('signOutBtn');
+            if (signOutBtn) {
+                signOutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (confirm('Are you sure you want to sign out?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('userData');
+                        window.location.href = '/customer-login';
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

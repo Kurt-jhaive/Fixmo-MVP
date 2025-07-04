@@ -723,6 +723,10 @@ class CustomerDashboard {
         }
     }
 
+    showPage(page) {
+        this.navigateToPage(page);
+    }
+
     navigateToPage(page) {
         // Hide all pages
         document.querySelectorAll('.page').forEach(p => {
@@ -767,21 +771,27 @@ class CustomerDashboard {
             const response = await DashboardUtils.makeRequest('/auth/bookings');
             const appointments = response.appointments || [];
 
-            if (!appointments || appointments.length === 0) {
+            // Filter bookings to only show approved, on the way, in progress, and completed
+            const allowedStatuses = ['approved', 'on the way', 'in progress', 'completed'];
+            const filteredAppointments = appointments.filter(booking => 
+                allowedStatuses.includes(booking.appointment_status)
+            );
+
+            if (!filteredAppointments || filteredAppointments.length === 0) {
                 container.innerHTML = this.renderEmptyBookings();
                 return;
             }
 
-            // Show all appointments without grouping
+            // Show filtered appointments with horizontal design
             container.innerHTML = `
                 <div class="bookings-sections">
                     <div class="bookings-section">
                         <h3 class="section-title">
                             <i class="fas fa-calendar-check"></i>
-                            All Bookings (${appointments.length})
+                            Active Bookings (${filteredAppointments.length})
                         </h3>
-                        <div class="bookings-grid">
-                            ${appointments.map(booking => this.renderBookingCard(booking)).join('')}
+                        <div class="bookings-container-horizontal">
+                            ${filteredAppointments.map(booking => this.renderBookingCard(booking)).join('')}
                         </div>
                     </div>
                 </div>
@@ -837,6 +847,158 @@ class CustomerDashboard {
     }
 
     renderBookingCard(booking) {
+        return this.renderBookingCardHorizontal(booking);
+    }
+
+    renderBookingCardHorizontal(booking) {
+        // Only enable call and cancel buttons for "approved" status
+        const isApproved = booking.appointment_status === 'approved';
+        const canCancel = isApproved;
+        const canCall = isApproved;
+        
+        const serviceImage = booking.service.picture 
+            ? `<img src="/${booking.service.picture}" alt="${booking.service.title}" onerror="this.style.display='none'; this.parentNode.innerHTML='<i class=\\"fas fa-tools\\"></i>';">` 
+            : '<i class="fas fa-tools"></i>';
+
+        const providerImage = booking.provider.profile_photo 
+            ? `<img src="/${booking.provider.profile_photo}" alt="${booking.provider.name}" onerror="this.style.display='none'; this.parentNode.innerHTML='<i class=\\"fas fa-user\\"></i>';">` 
+            : '<i class="fas fa-user"></i>';
+
+        return `
+            <div class="booking-card-horizontal" data-booking-id="${booking.appointment_id}">
+                <div class="booking-service-image">
+                    ${serviceImage}
+                </div>
+                
+                <div class="booking-main-content">
+                    <div class="booking-header-horizontal">
+                        <div class="booking-status-section">
+                            <span class="status-badge-horizontal ${this.getStatusClass(booking.appointment_status)}">
+                                ${this.getStatusText(booking.appointment_status)}
+                            </span>
+                        </div>
+                        <div class="booking-date-section">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>${this.formatDate(booking.scheduled_date)}</span>
+                        </div>
+                    </div>
+
+                    <div class="booking-service-details">
+                        <h3 class="service-title-horizontal">${booking.service.title}</h3>
+                        <p class="service-description-horizontal">${this.truncateText(booking.service.description, 120)}</p>
+                        <div class="service-price-horizontal">
+                            <i class="fas fa-peso-sign"></i>
+                            <span>Starting from ₱${booking.service.startingPrice.toFixed(2)}</span>
+                            ${booking.final_price ? `<span class="final-price"> • Final: ₱${booking.final_price.toFixed(2)}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="booking-provider-section">
+                        <div class="provider-avatar-horizontal">
+                            ${providerImage}
+                        </div>
+                        <div class="provider-info-horizontal">
+                            <h4 class="provider-name-horizontal">${booking.provider.name}</h4>
+                            <div class="provider-location-horizontal">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>${booking.provider.location || 'Location not specified'}</span>
+                            </div>
+                            ${booking.provider.rating ? `
+                                <div class="provider-rating-horizontal">
+                                    <i class="fas fa-star"></i>
+                                    <span>${booking.provider.rating.toFixed(1)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="booking-appointment-details">
+                        <div class="appointment-detail-item">
+                            <i class="fas fa-clock"></i>
+                            <span><strong>Time:</strong> ${this.formatTime(booking.timeSlot.startTime)} - ${this.formatTime(booking.timeSlot.endTime)}</span>
+                        </div>
+                        ${booking.repairDescription ? `
+                            <div class="appointment-detail-item">
+                                <i class="fas fa-edit"></i>
+                                <span><strong>Issue:</strong> ${this.truncateText(booking.repairDescription, 100)}</span>
+                            </div>
+                        ` : ''}
+                        <div class="appointment-detail-item">
+                            <i class="fas fa-calendar-plus"></i>
+                            <span><strong>Booked:</strong> ${this.formatDate(booking.created_at)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="booking-actions-section">
+                    ${this.renderBookingActions(booking)}
+                </div>
+            </div>
+        `;
+    }
+
+    renderBookingActions(booking) {
+        const canCall = booking.actions ? booking.actions.canCall : (booking.appointment_status === 'approved');
+        const canCancel = booking.actions ? booking.actions.canCancel : (booking.appointment_status === 'approved');
+        const status = booking.appointment_status;
+
+        let actionsHTML = '';
+
+        // Call provider button
+        if (canCall) {
+            actionsHTML += `
+                <button class="booking-action-btn primary call-provider" 
+                        data-phone="${booking.provider.phone_number}"
+                        data-provider-name="${booking.provider.name}">
+                    <i class="fas fa-phone"></i>
+                    Call Provider
+                </button>
+            `;
+        } else {
+            actionsHTML += `
+                <button class="booking-action-btn secondary" disabled>
+                    <i class="fas fa-phone"></i>
+                    Call Provider
+                </button>
+            `;
+        }
+
+        // Cancel booking button
+        if (canCancel) {
+            actionsHTML += `
+                <button class="booking-action-btn danger cancel-booking" 
+                        data-booking-id="${booking.appointment_id}"
+                        data-provider-name="${booking.provider.name}">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+            `;
+        } else {
+            actionsHTML += `
+                <button class="booking-action-btn secondary" disabled>
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+            `;
+        }
+
+        // Additional actions based on status
+        if (status === 'completed') {
+            actionsHTML += `
+                <button class="booking-action-btn secondary rate-service" 
+                        data-booking-id="${booking.appointment_id}"
+                        data-provider-name="${booking.provider.name}">
+                    <i class="fas fa-star"></i>
+                    Rate Service
+                </button>
+            `;
+        }
+
+        return actionsHTML;
+    }
+
+    // Legacy method - keeping for backward compatibility
+    renderBookingCardOld(booking) {
         // Only enable call and cancel buttons for "approved" status
         const isApproved = booking.appointment_status === 'approved';
         const canCancel = isApproved;
@@ -1255,6 +1417,9 @@ class CustomerDashboard {
                 return;
             }
 
+            // Get provider ID first
+            const providerId = service.provider.id;
+
             // Populate booking modal with service information
             this.populateBookingModal(service);
             
@@ -1269,12 +1434,37 @@ class CustomerDashboard {
             // Restrict calendar to available days
             await this.restrictCalendarToAvailableDays(providerId);
 
-            // Auto-load time slots for today
-            const today = new Date().toISOString().split('T')[0];
-            const providerId = service.provider.id;
+            // Find the next available day for this provider
+            const today = new Date();
+            const response = await DashboardUtils.makeRequest(`/auth/provider/${providerId}/weekly-days`);
             
-            // Update summary for today's date
-            const date = new Date(today);
+            let defaultDate = today.toISOString().split('T')[0];
+            
+            if (response.success && response.data.availableDays) {
+                const availableDays = response.data.availableDays;
+                const dayMapping = {
+                    'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3,
+                    'Thursday': 4, 'Friday': 5, 'Saturday': 6
+                };
+                const availableDayNumbers = availableDays.map(day => dayMapping[day]);
+                
+                // Find the next available day
+                for (let i = 0; i < 14; i++) { // Search up to 2 weeks ahead
+                    const testDate = new Date(today);
+                    testDate.setDate(today.getDate() + i);
+                    
+                    if (availableDayNumbers.includes(testDate.getDay())) {
+                        defaultDate = testDate.toISOString().split('T')[0];
+                        break;
+                    }
+                }
+            }
+            
+            // Set the default date
+            document.getElementById('bookingDate').value = defaultDate;
+            
+            // Update summary for the default date
+            const date = new Date(defaultDate);
             document.getElementById('summaryDate').textContent = date.toLocaleDateString('en-US', {
                 weekday: 'long',
                 year: 'numeric',
@@ -1282,8 +1472,8 @@ class CustomerDashboard {
                 day: 'numeric'
             });
             
-            // Load time slots for today
-            await this.loadAvailableTimeSlots(providerId, today);
+            // Load time slots for the default date
+            await this.loadAvailableTimeSlots(providerId, defaultDate);
 
         } catch (error) {
             console.error('Error opening booking modal:', error);
@@ -1342,26 +1532,18 @@ class CustomerDashboard {
         // Disable confirm button
         document.getElementById('confirmBooking').disabled = true;
 
-        // Set date range to current week only
+        // Set date restrictions for rolling weekly recurring booking
         const today = new Date();
-        const currentDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        
-        // Calculate start of week (Monday)
-        const startOfWeek = new Date(today);
-        const daysFromMonday = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; // Sunday = 6 days from Monday
-        startOfWeek.setDate(today.getDate() - daysFromMonday);
-        
-        // Calculate end of week (Sunday)
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        
-        const startDateString = startOfWeek.toISOString().split('T')[0];
-        const endDateString = endOfWeek.toISOString().split('T')[0];
         const todayString = today.toISOString().split('T')[0];
+        
+        // Calculate max date (allow booking up to 8 weeks in advance)
+        const maxDate = new Date(today);
+        maxDate.setDate(today.getDate() + (8 * 7)); // 8 weeks from today
+        const maxDateString = maxDate.toISOString().split('T')[0];
         
         const dateInput = document.getElementById('bookingDate');
         dateInput.min = todayString; // Can't book in the past
-        dateInput.max = endDateString; // Can't book beyond current week
+        dateInput.max = maxDateString; // Can book up to 8 weeks in advance
         dateInput.value = todayString; // Default to today
     }
 
@@ -1518,6 +1700,17 @@ class CustomerDashboard {
         const ampm = hour >= 12 ? 'PM' : 'AM';
         const displayHour = hour % 12 || 12;
         return `${displayHour}:${minutes} ${ampm}`;
+    }
+
+    truncateText(text, maxLength) {
+        if (!text) return '';
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    }
+
+    formatDate(dateString) {
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        return new Date(dateString).toLocaleDateString('en-US', options);
     }
 
     validateBookingForm() {
@@ -1766,17 +1959,14 @@ class CustomerDashboard {
                     const currentDate = new Date(newDateInput.value);
                     const currentDayOfWeek = currentDate.getDay();
                     if (!availableDayNumbers.includes(currentDayOfWeek)) {
-                        // Find the next available day in the current week
+                        // Find the next available day from today onwards
                         const today = new Date();
-                        const currentWeekStart = new Date(today);
-                        const daysFromMonday = today.getDay() === 0 ? 6 : today.getDay() - 1;
-                        currentWeekStart.setDate(today.getDate() - daysFromMonday);
+                        const maxSearchDays = 14; // Search up to 2 weeks ahead
                         
-                        // Try to find an available day in the current week
                         let foundValidDay = false;
-                        for (let i = 0; i < 7; i++) {
-                            const testDate = new Date(currentWeekStart);
-                            testDate.setDate(currentWeekStart.getDate() + i);
+                        for (let i = 0; i < maxSearchDays; i++) {
+                            const testDate = new Date(today);
+                            testDate.setDate(today.getDate() + i);
                             
                             if (testDate >= today && availableDayNumbers.includes(testDate.getDay())) {
                                 newDateInput.value = testDate.toISOString().split('T')[0];
@@ -1786,8 +1976,10 @@ class CustomerDashboard {
                         }
                         
                         if (!foundValidDay) {
-                            // Provider has no availability this week
-                            DashboardUtils.showToast(`This provider is not available this week. Available days: ${availableDays.join(', ')}`, 'warning');
+                            // Provider has no availability in the next 2 weeks
+                            DashboardUtils.showToast(`This provider has limited availability. Available days: ${availableDays.join(', ')}`, 'warning');
+                            // Set to today as fallback
+                            newDateInput.value = today.toISOString().split('T')[0];
                         }
                     }
                 }

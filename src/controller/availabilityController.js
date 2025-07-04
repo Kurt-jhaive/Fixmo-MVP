@@ -70,15 +70,40 @@ class AvailabilityController {
                 });
             }
 
-            // Delete existing availability for this provider
-            await prisma.availability.deleteMany({
+            // Instead of deleting all, we need to handle availability slots more carefully
+            // to avoid foreign key constraint violations
+            
+            // First, get existing availability slots that have appointments
+            const slotsWithAppointments = await prisma.availability.findMany({
                 where: {
-                    provider_id: providerId
+                    provider_id: providerId,
+                    appointments: {
+                        some: {} // Has at least one appointment
+                    }
+                },
+                select: {
+                    availability_id: true,
+                    dayOfWeek: true,
+                    startTime: true,
+                    endTime: true
                 }
             });
 
-            console.log('Deleted existing availability records');            // Insert new availability records
+            console.log(`Found ${slotsWithAppointments.length} slots with appointments`);
+
+            // Delete only availability slots that don't have appointments
+            await prisma.availability.deleteMany({
+                where: {
+                    provider_id: providerId,
+                    appointments: {
+                        none: {} // Has no appointments
+                    }
+                }
+            });
+
+            console.log('Deleted availability records without appointments');            // Process new availability records
             const availabilityRecords = [];
+            const updatePromises = [];
             
             for (const dayData of availabilityData) {
                 const { dayOfWeek, isAvailable, startTime, endTime } = dayData;
@@ -102,22 +127,46 @@ class AvailabilityController {
                         });
                     }
 
-                    availabilityRecords.push({
-                        provider_id: providerId,
-                        dayOfWeek: dayOfWeek,
-                        startTime: startTime,
-                        endTime: endTime,
-                        availability_isBooked: false,
-                        availability_isActive: isAvailable // Store the checkbox state
-                    });
+                    // Check if this slot already exists (especially those with appointments)
+                    const existingSlot = slotsWithAppointments.find(slot => 
+                        slot.dayOfWeek === dayOfWeek && 
+                        slot.startTime === startTime && 
+                        slot.endTime === endTime
+                    );
+
+                    if (existingSlot) {
+                        // Update existing slot that has appointments
+                        updatePromises.push(
+                            prisma.availability.update({
+                                where: { availability_id: existingSlot.availability_id },
+                                data: { availability_isActive: isAvailable }
+                            })
+                        );
+                    } else {
+                        // Create new slot
+                        availabilityRecords.push({
+                            provider_id: providerId,
+                            dayOfWeek: dayOfWeek,
+                            startTime: startTime,
+                            endTime: endTime,
+                            availability_isActive: isAvailable // Store the checkbox state
+                        });
+                    }
                 }
             }
 
+            // Execute updates for existing slots with appointments
+            if (updatePromises.length > 0) {
+                await Promise.all(updatePromises);
+                console.log(`Updated ${updatePromises.length} existing slots with appointments`);
+            }
+
+            // Create new slots
             if (availabilityRecords.length > 0) {
                 await prisma.availability.createMany({
                     data: availabilityRecords
                 });
-                console.log(`Created ${availabilityRecords.length} availability records`);
+                console.log(`Created ${availabilityRecords.length} new availability records`);
             }
 
             res.json({
@@ -214,10 +263,14 @@ class AvailabilityController {
                 }
             });
 
+            // Count booked slots by counting availabilities that have appointments
             const bookedSlots = await prisma.availability.count({
                 where: {
                     provider_id: providerId,
-                    availability_isBooked: true
+                    availability_isActive: true,
+                    appointments: {
+                        some: {} // Has at least one appointment
+                    }
                 }
             });
 
