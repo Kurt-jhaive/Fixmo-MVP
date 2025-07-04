@@ -2119,28 +2119,368 @@ export const cancelAppointmentEnhanced = async (req, res) => {
     }
 };
 
-// Debug endpoint to test authentication
+// Check phone number availability
+export const checkPhoneAvailability = async (req, res) => {
+    const { phoneNumber, userId } = req.body;
+
+    if (!phoneNumber) {
+        return res.status(400).json({ message: 'Phone number is required' });
+    }
+
+    try {
+        // Check if phone number is already in use by another customer
+        const existingCustomer = await prisma.user.findFirst({
+            where: { 
+                phone_number: phoneNumber,
+                ...(userId && { user_id: { not: parseInt(userId) } })
+            }
+        });
+
+        if (existingCustomer) {
+            return res.status(400).json({ message: 'Phone number is already registered with another customer account' });
+        }
+
+        // Check if phone number is used by a service provider
+        const existingProvider = await prisma.serviceProviderDetails.findFirst({
+            where: { provider_phone_number: phoneNumber }
+        });
+
+        if (existingProvider) {
+            return res.status(400).json({ message: 'Phone number is already registered with a service provider account' });
+        }
+
+        res.status(200).json({ message: 'Phone number is available' });
+
+    } catch (err) {
+        console.error('Error checking phone availability:', err);
+        res.status(500).json({ message: 'Server error checking phone availability' });
+    }
+};
+
+// Customer Profile Update Functions
+
+// Request OTP for customer profile update
+export const requestCustomerProfileUpdateOTP = async (req, res) => {
+    const { email } = req.body;
+    
+    try {
+        // Check if customer exists
+        const existingCustomer = await prisma.user.findUnique({ 
+            where: { email } 
+        });
+        
+        if (!existingCustomer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        // Delete any previous OTPs for this email to prevent re-use
+        await prisma.oTPVerification.deleteMany({ where: { email } });
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        
+        await prisma.oTPVerification.create({
+            data: {
+                email,
+                otp,
+                expires_at: expiresAt
+            }
+        });
+
+        await sendOTPEmail(email, otp);
+        res.status(200).json({ message: 'OTP sent to your current email for profile update verification' });
+    } catch (err) {
+        console.error('Profile update OTP request error:', err);
+        res.status(500).json({ message: 'Error sending OTP' });
+    }
+};
+
+// Step 1: Verify original email OTP and request new email OTP (for email changes)
+export const verifyOriginalEmailAndRequestNewEmailOTPCustomer = async (req, res) => {
+    try {
+        const {
+            email,
+            phone_number,
+            new_email,
+            otp
+        } = req.body;
+
+        console.log('Step 1 - Original email verification:', { email, new_email, otp });
+
+        // Verify OTP for original email first
+        const verificationResult = await verifyOTP(email, otp);
+        if (!verificationResult.success) {
+            return res.status(400).json({ message: verificationResult.message });
+        }
+
+        // Check if customer exists
+        const existingCustomer = await prisma.user.findUnique({ 
+            where: { email } 
+        });
+        
+        if (!existingCustomer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        // Check if email is being changed
+        const emailChanged = new_email && new_email !== email;
+        
+        if (emailChanged) {
+            // Validate new email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(new_email)) {
+                return res.status(400).json({ message: 'Invalid email format' });
+            }
+
+            // Check if new email is already taken
+            const customerEmailExists = await prisma.user.findFirst({ 
+                where: { email: new_email } 
+            });
+            
+            if (customerEmailExists) {
+                return res.status(400).json({ message: 'Email address is already registered with another customer account' });
+            }
+
+            // Also check service provider table
+            const providerEmailExists = await prisma.serviceProviderDetails.findFirst({ 
+                where: { provider_email: new_email } 
+            });
+            
+            if (providerEmailExists) {
+                return res.status(400).json({ message: 'Email address is already registered with a service provider account' });
+            }
+
+            // Clean up any existing OTPs for the new email
+            await prisma.oTPVerification.deleteMany({ where: { email: new_email } });
+
+            // Generate 6-digit OTP for new email
+            const newEmailOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+            
+            await prisma.oTPVerification.create({
+                data: {
+                    email: new_email,
+                    otp: newEmailOtp,
+                    expires_at: expiresAt
+                }
+            });
+
+            // Store pending profile update data temporarily
+            await prisma.oTPVerification.create({
+                data: {
+                    email: `temp_customer_${email}`, // Temporary key
+                    otp: JSON.stringify({
+                        email,
+                        phone_number,
+                        new_email,
+                        step: 'pending_new_email_verification'
+                    }),
+                    expires_at: expiresAt
+                }
+            });
+
+            await sendOTPEmail(new_email, newEmailOtp);
+            
+            // Clean up original email OTP after successful verification
+            await prisma.oTPVerification.deleteMany({ where: { email } });
+
+            res.status(200).json({ 
+                message: 'Original email verified. OTP sent to new email address for verification.',
+                nextStep: 'verify_new_email',
+                newEmail: new_email
+            });
+        } else {
+            // No email change, proceed with regular profile update
+            await updateCustomerProfileDirectly(req, res, email, phone_number, null);
+        }
+
+    } catch (err) {
+        console.error('Original email verification error:', err);
+        res.status(500).json({ message: 'Error processing verification' });
+    }
+};
+
+// Step 2: Verify new email OTP and complete profile update
+export const verifyNewEmailAndUpdateCustomerProfile = async (req, res) => {
+    try {
+        const {
+            new_email,
+            otp
+        } = req.body;
+
+        console.log('Step 2 - New email verification:', { new_email, otp });
+
+        // Verify OTP for new email
+        const verificationResult = await verifyOTP(new_email, otp);
+        if (!verificationResult.success) {
+            return res.status(400).json({ message: verificationResult.message });
+        }
+
+        // Retrieve pending profile update data
+        const pendingUpdate = await prisma.oTPVerification.findFirst({
+            where: {
+                email: { startsWith: 'temp_customer_' },
+                otp: { contains: new_email }
+            }
+        });
+
+        if (!pendingUpdate) {
+            return res.status(400).json({ message: 'No pending profile update found. Please start the process again.' });
+        }
+
+        const updateData = JSON.parse(pendingUpdate.otp);
+        
+        // Proceed with profile update
+        await updateCustomerProfileDirectly(req, res, updateData.email, updateData.phone_number, new_email);
+
+        // Clean up temporary data
+        await prisma.oTPVerification.deleteMany({ 
+            where: { 
+                OR: [
+                    { email: new_email },
+                    { email: { startsWith: 'temp_customer_' } }
+                ]
+            }
+        });
+
+    } catch (err) {
+        console.error('New email verification error:', err);
+        res.status(500).json({ message: 'Error completing profile update' });
+    }
+};
+
+// Helper function to update customer profile directly
+const updateCustomerProfileDirectly = async (req, res, email, phone_number, new_email) => {
+    try {
+        // Prepare update data
+        const updateData = {
+            ...(new_email && { email: new_email }),
+            ...(req.body.first_name && { first_name: req.body.first_name }),
+            ...(req.body.last_name && { last_name: req.body.last_name }),
+            ...(req.body.userName && { userName: req.body.userName }),
+            ...(req.body.birthday && { birthday: new Date(req.body.birthday) }),
+            ...(req.body.phone_number && { phone_number: req.body.phone_number }),
+            ...(req.body.user_location && { user_location: req.body.user_location }),
+            ...(req.body.exact_location && { exact_location: req.body.exact_location })
+        };
+
+        // Update customer profile
+        const updatedUser = await prisma.user.update({
+            where: { email },
+            data: updateData,
+            select: {
+                user_id: true,
+                first_name: true,
+                last_name: true,
+                userName: true,
+                email: true,
+                phone_number: true,
+                user_location: true,
+                exact_location: true,
+                profile_photo: true,
+                birthday: true,
+                is_verified: true,
+                created_at: true
+            }
+        });
+
+        res.status(200).json({
+            message: 'Profile updated successfully',
+            user: updatedUser
+        });
+    } catch (err) {
+        console.error('Error updating customer profile:', err);
+        res.status(500).json({ message: 'Error updating profile' });
+    }
+};
+
+// Controller for testing and debugging
 export const debugAuth = async (req, res) => {
     try {
-        console.log('🔍 Debug auth endpoint called');
-        console.log('🔑 req.userId:', req.userId);
-        console.log('🔑 req.headers:', req.headers);
-        
-        res.json({
+        res.status(200).json({
             success: true,
             message: 'Authentication working',
             userId: req.userId,
             timestamp: new Date().toISOString()
         });
-    } catch (error) {
-        console.error('❌ Debug auth error:', error);
-        res.status(500).json({
+    } catch (err) {
+        console.error('Debug auth error:', err);
+        res.status(500).json({ 
             success: false,
-            message: 'Debug auth failed',
-            error: error.message
+            message: 'Debug auth error' 
         });
     }
 };
 
+// Get customer profile for profile manager
+export const getCustomerProfile = async (req, res) => {
+    try {
+        const userId = req.userId; // From auth middleware
+        
+        if (!userId) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
 
+        const customer = await prisma.user.findUnique({
+            where: { user_id: userId },
+            select: {
+                user_id: true,
+                first_name: true,
+                last_name: true,
+                userName: true,
+                email: true,
+                phone_number: true,
+                user_location: true,
+                exact_location: true,
+                profile_photo: true,
+                birthday: true,
+                is_verified: true,
+                created_at: true
+            }
+        });
 
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found' });
+        }
+
+        res.status(200).json(customer);
+    } catch (err) {
+        console.error('Get customer profile error:', err);
+        res.status(500).json({ message: 'Error loading customer profile' });
+    }
+};
+
+// Legacy function - now routes to appropriate step based on email change
+export const updateCustomerProfileWithOTP = async (req, res) => {
+    try {
+        const {
+            email,
+            phone_number,
+            new_email,
+            otp
+        } = req.body;
+
+        console.log('Customer profile update request:', { email, phone_number, new_email, otp });
+
+        // Check if email is being changed
+        const emailChanged = new_email && new_email !== email;
+        
+        if (emailChanged) {
+            // Route to step 1: verify original email and request new email OTP
+            await verifyOriginalEmailAndRequestNewEmailOTPCustomer(req, res);
+        } else {
+            // No email change, proceed with regular verification and update
+            const verificationResult = await verifyOTP(email, otp);
+            if (!verificationResult.success) {
+                return res.status(400).json({ message: verificationResult.message });
+            }
+            
+            await updateCustomerProfileDirectly(req, res, email, phone_number, null);
+        }
+
+    } catch (err) {
+        console.error('Customer profile update error:', err);
+        res.status(500).json({ message: 'Error updating profile' });
+    }
+};

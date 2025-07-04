@@ -117,7 +117,6 @@ app.use('/api/certificates', certificateRoutes); // Mount certificate management
 app.use('/api/availability', availabilityRoutes); // Mount availability management routes
 app.use('/api/appointments', appointmentRoutes); // Mount appointment management routes
 
-// app.use('/users', usersRouter); // Uncomment if usersRouter is defined
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on http://0.0.0.0:${port}`);

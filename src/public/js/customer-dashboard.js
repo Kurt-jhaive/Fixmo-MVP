@@ -1634,26 +1634,37 @@ class CustomerDashboard {
         const container = document.getElementById('profileContainer');
         if (!container) return;
 
-        container.innerHTML = `
-            <div class="profile-form">
-                <h3>Personal Information</h3>
-                <form>
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" value="${this.userData.userName || ''}" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" value="customer@example.com" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label>Phone Number</label>
-                        <input type="tel" value="+63 912 345 6789" class="form-control">
-                    </div>
-                    <button type="submit" class="btn-primary">Update Profile</button>
-                </form>
-            </div>
-        `;
+        // Initialize the Customer Profile Manager if not already initialized
+        if (!this.profileManager) {
+            this.profileManager = new CustomerProfileManager();
+            // Store reference for profile manager to use dashboard data
+            this.profileManager.currentCustomer = this.userProfile;
+            // Also store customer data on window for global access
+            window.dashboard = window.dashboard || {};
+            window.dashboard.customerData = this.userProfile;
+            window.dashboard.showToast = (message, type) => DashboardUtils.showToast(message, type);
+            window.dashboard.updateProfileDisplay = () => this.updateProfileDisplay();
+        } else {
+            // Re-render the profile if manager already exists
+            this.profileManager.renderStaticProfile();
+        }
+    }
+
+    updateProfileDisplay() {
+        // Update the navbar profile display when profile is updated
+        if (this.profileManager && this.profileManager.currentCustomer) {
+            const updatedCustomer = this.profileManager.currentCustomer;
+            const profileName = document.getElementById('profileName');
+            const welcomeName = document.getElementById('welcomeName');
+            
+            const displayName = updatedCustomer.userName || `${updatedCustomer.first_name} ${updatedCustomer.last_name}`;
+            
+            if (profileName) profileName.textContent = displayName;
+            if (welcomeName) welcomeName.textContent = displayName;
+            
+            // Update stored user profile
+            this.userProfile = updatedCustomer;
+        }
     }
 
     async loadSettings() {
