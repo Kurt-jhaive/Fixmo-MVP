@@ -11,7 +11,7 @@ import serviceRoutes from './route/serviceRoutes.js'; // New service management 
 import certificateRoutes from './route/certificateRoutes.js'; // New certificate management routes
 import availabilityRoutes from './route/availabilityRoutes.js'; // New availability management routes
 import appointmentRoutes from './route/appointmentRoutes.js'; // New appointment management routes
-import adminRoute from './route/adminRoute.js'; // Use .js extension for ESM
+import adminRoutes from './route/adminRoutes.js'; // Comprehensive admin routes
 import cors from 'cors';
 
 const port = process.env.PORT || 3000;
@@ -105,12 +105,25 @@ app.get('/provider-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'provider-dashboard.html'));
 });
 
+// Admin Routes
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-access.html'));
+});
+
+app.get('/admin-login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+});
+
+app.get('/admin-dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
+});
+
 
 
 app.use('/auth', testRoutes); // Test routes
 app.use('/auth', authCustomerRoutes); // Mount customer routes first
 app.use('/auth', serviceProviderRoutes); // Mount service provider routes 
-app.use('/auth', adminRoute); // Mount admin routes
+app.use('/api/admin', adminRoutes); // Mount comprehensive admin routes
 app.use('/api/serviceProvider', serviceProviderRoutes); // Mount service provider routes for API access
 app.use('/api/services', serviceRoutes); // Mount service management routes
 app.use('/api/certificates', certificateRoutes); // Mount certificate management routes

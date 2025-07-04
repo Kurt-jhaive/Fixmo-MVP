@@ -368,20 +368,13 @@
 
         // Initialize location picker
         function initializeLocationPicker() {
-            // Check if the container exists and is visible
+            // Check if the container exists
             const container = document.getElementById('providerLocationPicker');
             if (!container) {
                 console.error('Location picker container not found');
                 return;
             }
-            
-            // Make sure the container is visible
-            if (container.offsetParent === null) {
-                console.warn('Location picker container is not visible, retrying...');
-                setTimeout(initializeLocationPicker, 500);
-                return;
-            }
-            
+
             try {
                 providerLocationPicker = new LocationPicker('providerLocationPicker', {
                     defaultZoom: 15,
@@ -406,8 +399,7 @@
                 console.log('Location picker initialized successfully');
             } catch (error) {
                 console.error('Error initializing location picker:', error);
-                // Retry after a delay
-                setTimeout(initializeLocationPicker, 1000);
+                showError('Failed to initialize location picker. Please refresh the page.');
             }
         }
 
@@ -442,12 +434,19 @@
                     
                     // Initialize location picker after showing registration form
                     setTimeout(() => {
-                        initializeLocationPicker();
-                        
-                        // Add listener for street address changes
-                        const addressInput = document.getElementById('providerAddress');
-                        if (addressInput) {
-                            addressInput.addEventListener('input', debounce(updateProviderLocationPickerSearch, 1000));
+                        // Double check that the container is visible and ready
+                        const container = document.getElementById('providerLocationPicker');
+                        if (container && container.offsetParent !== null) {
+                            initializeLocationPicker();
+                            
+                            // Add listener for street address changes
+                            const addressInput = document.getElementById('providerAddress');
+                            if (addressInput) {
+                                addressInput.addEventListener('input', debounce(updateProviderLocationPickerSearch, 1000));
+                            }
+                        } else {
+                            console.warn('Location picker container not ready, retrying...');
+                            setTimeout(initializeLocationPicker, 1000);
                         }
                     }, 500);
                 },
@@ -733,13 +732,7 @@
             }
 
             // Validate exact location is selected
-            const exactLocationElement = document.getElementById('exactLocation');
-            if (!exactLocationElement) {
-                showError('Location picker not initialized. Please refresh the page and try again.');
-                return;
-            }
-            
-            const exactLocationValue = exactLocationElement.value;
+            const exactLocationValue = document.getElementById('exactLocation').value;
             if (!exactLocationValue || exactLocationValue.trim() === '') {
                 showError('Please pin your exact service area location on the map. Your location will be automatically set based on your address selections.');
                 return;
@@ -756,7 +749,7 @@
             formData.append('provider_password', password);
             formData.append('provider_phone_number', document.getElementById('phoneNumber').value);
             formData.append('provider_location', getFullProviderAddress());
-            formData.append('provider_exact_location', exactLocationElement.value);
+            formData.append('provider_exact_location', document.getElementById('exactLocation').value);
             formData.append('provider_uli', document.getElementById('providerUli').value);
             formData.append('otp', '123456'); // Dummy OTP since email is already verified
             

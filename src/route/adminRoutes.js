@@ -1,5 +1,5 @@
-const express = require('express');
-const adminController = require('../controller/adminControllerNew');
+import express from 'express';
+import adminController from '../controller/adminControllerNew.js';
 
 const router = express.Router();
 
@@ -40,4 +40,4 @@ router.post('/verify-customer', adminController.verifyCustomer);
 router.get('/unverified-service-providers', adminController.getUnverifiedServiceProviders);
 router.get('/unverified-customers', adminController.getUnverifiedCustomers);
 
-module.exports = router;
+export default router;
