@@ -213,6 +213,7 @@ class AdminController {
                     email: true,
                     phone_number: true,
                     profile_photo: true,
+                    valid_id: true,
                     userName: true,
                     is_verified: true,
                     is_activated: true,
@@ -220,7 +221,14 @@ class AdminController {
                 }
             });
 
-            res.json({ users });
+            // Fix file paths to include /uploads/ prefix
+            const usersWithFixedPaths = users.map(user => ({
+                ...user,
+                profile_photo: user.profile_photo ? `/uploads/${user.profile_photo}` : null,
+                valid_id: user.valid_id ? `/uploads/${user.valid_id}` : null
+            }));
+
+            res.json({ users: usersWithFixedPaths });
         } catch (error) {
             console.error('Error fetching users:', error);
             res.status(500).json({ message: 'Internal server error' });
@@ -255,7 +263,14 @@ class AdminController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            res.json({ user });
+            // Fix file paths to include /uploads/ prefix
+            const userWithFixedPaths = {
+                ...user,
+                profile_photo: user.profile_photo ? `/uploads/${user.profile_photo}` : null,
+                valid_id: user.valid_id ? `/uploads/${user.valid_id}` : null
+            };
+
+            res.json({ user: userWithFixedPaths });
         } catch (error) {
             console.error('Error fetching user:', error);
             res.status(500).json({ message: 'Internal server error' });
@@ -322,6 +337,7 @@ class AdminController {
                     provider_email: true,
                     provider_phone_number: true,
                     provider_profile_photo: true,
+                    provider_valid_id: true,
                     provider_userName: true,
                     provider_isVerified: true,
                     provider_isActivated: true,
@@ -330,7 +346,14 @@ class AdminController {
                 }
             });
 
-            res.json({ providers });
+            // Fix file paths to include /uploads/ prefix
+            const providersWithFixedPaths = providers.map(provider => ({
+                ...provider,
+                provider_profile_photo: provider.provider_profile_photo ? `/uploads/${provider.provider_profile_photo}` : null,
+                provider_valid_id: provider.provider_valid_id ? `/uploads/${provider.provider_valid_id}` : null
+            }));
+
+            res.json({ providers: providersWithFixedPaths });
         } catch (error) {
             console.error('Error fetching providers:', error);
             res.status(500).json({ message: 'Internal server error' });
@@ -360,7 +383,15 @@ class AdminController {
                 return res.status(404).json({ message: 'Provider not found' });
             }
 
-            res.json({ provider: { ...provider, certificates: provider.provider_certificates } });
+            // Fix file paths to include /uploads/ prefix
+            const providerWithFixedPaths = {
+                ...provider,
+                provider_profile_photo: provider.provider_profile_photo ? `/uploads/${provider.provider_profile_photo}` : null,
+                provider_valid_id: provider.provider_valid_id ? `/uploads/${provider.provider_valid_id}` : null,
+                certificates: provider.provider_certificates
+            };
+
+            res.json({ provider: providerWithFixedPaths });
         } catch (error) {
             console.error('Error fetching provider:', error);
             res.status(500).json({ message: 'Internal server error' });
