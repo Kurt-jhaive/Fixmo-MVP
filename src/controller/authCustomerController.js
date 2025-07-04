@@ -1211,14 +1211,16 @@ export const getCustomerStats = async (req, res) => {
                 where: {
                     customer_id: parseInt(userId),
                     appointment_status: {
-                        in: ['pending', 'confirmed', 'in_progress']
+                        in: ['Pending', 'pending', 'accepted', 'approved', 'confirmed', 'in_progress', 'on the way']
                     }
                 }
             }),
             prisma.appointment.count({
                 where: {
                     customer_id: parseInt(userId),
-                    appointment_status: 'completed'
+                    appointment_status: {
+                        in: ['completed', 'finished']
+                    }
                 }
             }),
             prisma.rating.findMany({
