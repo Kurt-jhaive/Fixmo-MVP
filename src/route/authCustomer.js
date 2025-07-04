@@ -31,12 +31,7 @@ import {
   getAppointmentDetails,
   getCustomerBookingsDetailed,
   debugAuth,
-  cancelAppointmentEnhanced,
-  getCustomerProfile,
-  requestCustomerProfileUpdateOTP,
-  verifyOriginalEmailAndRequestNewEmailOTPCustomer,
-  verifyNewEmailAndUpdateCustomerProfile,
-  updateCustomerProfileWithOTP
+  cancelAppointmentEnhanced
 } from '../controller/authCustomerController.js';
 
 const router = express.Router();
@@ -131,8 +126,6 @@ router.get('/service-listings', getServiceListingsForCustomer);
 router.get('/service-categories', getServiceCategories);
 // Get customer statistics
 router.get('/customer-stats/:userId', getCustomerStats);
-// Get customer profile (requires authentication)
-router.get('/profile', authMiddleware, getCustomerProfile);
 
 // Customer appointment routes
 // Get provider availability for booking
@@ -162,12 +155,6 @@ router.get('/appointment/:appointmentId', getAppointmentDetails);
 router.get('/bookings', authMiddleware, getCustomerBookingsDetailed);
 router.get('/debug-auth', authMiddleware, debugAuth);
 router.put('/bookings/:appointment_id/cancel', authMiddleware, cancelAppointmentEnhanced);
-
-// Customer Profile Update Routes
-router.post('/profile-update-request-otp', requestCustomerProfileUpdateOTP);
-router.post('/profile-update-verify-original-email', verifyOriginalEmailAndRequestNewEmailOTPCustomer);
-router.post('/profile-update-verify-new-email', verifyNewEmailAndUpdateCustomerProfile);
-router.post('/profile-update-verify-otp', upload.fields([{ name: 'profile_photo', maxCount: 1 }]), updateCustomerProfileWithOTP);
 
 export default router;
 
