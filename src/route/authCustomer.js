@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import authMiddleware from '../middleware/authMiddleware.js';
+import { requireCustomerSession } from '../middleware/sessionAuth.js';
 import {
   login,
   requestOTP,
@@ -85,6 +86,7 @@ const fileFilter = (req, file, cb) => {
     cb(new Error(`${file.fieldname} must be an image file (JPG, PNG, GIF, etc.)`), false);
   }
 };
+
 const upload = multer({ 
   storage, 
   fileFilter,
@@ -104,6 +106,7 @@ router.post('/verify-register', upload.fields([
   { name: 'profile_photo', maxCount: 1 },
   { name: 'valid_id', maxCount: 1 }
 ]), verifyOTPAndRegister); // Step 2: Validate OTP + register with file upload
+
 // Forgot password: request OTP
 router.post('/forgot-password-request-otp', requestForgotPasswordOTP);
 // Forgot password: verify OTP and reset password
@@ -112,6 +115,7 @@ router.post('/forgot-password-verify-otp', verifyForgotPasswordOTPAndReset);
 router.post('/reset-password', resetPassword);
 // Simple password reset (OTP already verified)
 router.post('/reset-password-only', resetPasswordOnly);
+
 // Get user profile and verification status
 router.get('/user-profile/:userId', getUserProfile);
 // Update verification documents
@@ -119,6 +123,7 @@ router.post('/update-verification-documents', upload.fields([
   { name: 'profilePicture', maxCount: 1 },
   { name: 'validId', maxCount: 1 }
 ]), updateVerificationDocuments);
+
 // Get service listings for customer dashboard
 router.get('/service-listings', getServiceListingsForCustomer);
 // Get service categories
@@ -153,6 +158,7 @@ router.get('/appointment/:appointmentId', getAppointmentDetails);
 // Enhanced customer booking routes (requires authentication)
 router.get('/bookings', authMiddleware, getCustomerBookingsDetailed);
 router.put('/bookings/:appointment_id/cancel', authMiddleware, cancelAppointmentEnhanced);
+router.post('/bookings/:appointment_id/rate', requireCustomerSession, addRatetoProvider);
 
 export default router;
 

@@ -6,6 +6,7 @@
     <title>Customer Dashboard - Fixmo</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/customer-dashboard.css">
+    <link rel="stylesheet" href="css/profile-manager.css">
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -201,6 +202,34 @@
                 <h1>My Bookings</h1>
                 <p>Manage your active service bookings</p>
             </div>
+            
+            <!-- Booking Filters -->
+            <div class="booking-filters">
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">
+                        <i class="fas fa-list"></i> All Bookings
+                    </button>
+                    <button class="filter-btn" data-filter="pending">
+                        <i class="fas fa-clock"></i> Pending
+                    </button>
+                    <button class="filter-btn" data-filter="accepted">
+                        <i class="fas fa-check"></i> Accepted
+                    </button>
+                    <button class="filter-btn" data-filter="on the way">
+                        <i class="fas fa-route"></i> On the Way
+                    </button>
+                    <button class="filter-btn" data-filter="in progress">
+                        <i class="fas fa-wrench"></i> In Progress
+                    </button>
+                    <button class="filter-btn" data-filter="completed">
+                        <i class="fas fa-check-circle"></i> Completed
+                    </button>
+                    <button class="filter-btn" data-filter="cancelled">
+                        <i class="fas fa-times-circle"></i> Cancelled
+                    </button>
+                </div>
+            </div>
+            
             <div class="bookings-container" id="bookingsContainer">
                 <!-- Active bookings will be loaded here -->
             </div>
@@ -395,7 +424,7 @@
     <!-- Scripts -->
     <script src="js/notification-manager.js"></script>
     <script src="js/dashboard-utils.js"></script>
-    <script src="js/customer-dashboard.js"></script>
     <script src="js/customer-profile-manager.js"></script>
+    <script src="js/customer-dashboard.js"></script>
 </body>
 </html>

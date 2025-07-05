@@ -101,6 +101,7 @@ class DashboardUtils {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include', // Include cookies for session-based auth
             };
 
             // Add auth token if available - check both token names for compatibility
@@ -122,15 +123,9 @@ class DashboardUtils {
             if (!response.ok) {
                 // Handle specific HTTP errors
                 if (response.status === 401) {
-                    // Only logout if this was an authenticated request and we have a token
-                    const token = localStorage.getItem('fixmo_user_token') || localStorage.getItem('token');
-                    if (token && defaultOptions.headers['Authorization']) {
-                        console.warn('User session expired or invalid token');
-                        // Don't auto-logout, just throw the error and let the calling code handle it
-                        throw new Error('Session expired. Please log in again.');
-                    } else {
-                        throw new Error('Authentication required');
-                    }
+                    // For session-based auth, redirect to login
+                    console.warn('User session expired or not authenticated');
+                    throw new Error('Session expired. Please log in again.');
                 } else if (response.status === 404) {
                     throw new Error('Service not found. Please try again later.');
                 } else {

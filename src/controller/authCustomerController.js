@@ -712,45 +712,36 @@ export const cancelAppointment = async (req, res) => {
 };
 
 export const addRatetoProvider = async (req, res) => {
-    const {
-        provider_id,
-        user_id,
-        appointment_id,
-        rating_value,
-        rating_comment
-    } = req.body;
+    const { rating, comment } = req.body;
+    const { appointment_id } = req.params;
+    const user_id = req.user?.user_id; // From auth middleware
 
     try {
         // Validate required fields
-        if (!provider_id || !user_id || !appointment_id || !rating_value) {
+        if (!appointment_id || !rating) {
             return res.status(400).json({ 
-                message: 'Provider ID, User ID, Appointment ID, and rating value are required' 
+                message: 'Appointment ID and rating are required' 
             });
         }
 
         // Validate rating value is between 1 and 5
-        if (rating_value < 1 || rating_value > 5) {
+        if (rating < 1 || rating > 5) {
             return res.status(400).json({ 
                 message: 'Rating value must be between 1 and 5' 
             });
         }
 
-        // Validate that the user exists
+        // Validate that the user exists and is authenticated
+        if (!user_id) {
+            return res.status(401).json({ message: 'User authentication required' });
+        }
+
         const user = await prisma.user.findUnique({
             where: { user_id: parseInt(user_id) }
         });
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Validate that the service provider exists
-        const serviceProvider = await prisma.serviceProviderDetails.findUnique({
-            where: { provider_id: parseInt(provider_id) }
-        });
-
-        if (!serviceProvider) {
-            return res.status(404).json({ message: 'Service provider not found' });
         }
 
         // Validate that the appointment exists and belongs to the user
@@ -771,9 +762,16 @@ export const addRatetoProvider = async (req, res) => {
             return res.status(403).json({ message: 'You can only rate appointments you were involved in' });
         }
 
-        // Check if the appointment was with the specified provider
-        if (appointment.provider_id !== parseInt(provider_id)) {
-            return res.status(400).json({ message: 'Appointment was not with the specified service provider' });
+        // Get the provider ID from the appointment
+        const provider_id = appointment.provider_id;
+
+        // Validate that the service provider exists
+        const serviceProvider = await prisma.serviceProviderDetails.findUnique({
+            where: { provider_id: parseInt(provider_id) }
+        });
+
+        if (!serviceProvider) {
+            return res.status(404).json({ message: 'Service provider not found' });
         }
 
         // Check if the appointment is completed (only completed appointments can be rated)
@@ -797,8 +795,8 @@ export const addRatetoProvider = async (req, res) => {
         // Create the rating
         const newRating = await prisma.rating.create({
             data: {
-                rating_value: parseInt(rating_value),
-                rating_comment: rating_comment || null,
+                rating_value: parseInt(rating),
+                rating_comment: comment || null,
                 appointment_id: parseInt(appointment_id),
                 user_id: parseInt(user_id),
                 provider_id: parseInt(provider_id)
@@ -842,6 +840,7 @@ export const addRatetoProvider = async (req, res) => {
         });
 
         return res.status(201).json({
+            success: true,
             message: 'Rating submitted successfully',
             rating: newRating,
             provider_new_average_rating: parseFloat(averageRating.toFixed(2))

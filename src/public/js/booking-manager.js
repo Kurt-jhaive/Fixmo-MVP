@@ -12,6 +12,7 @@ class BookingManager {
         this.pollingInterval = null;
         this.selectedBookingForCancellation = null;
         this.selectedBookingForRating = null;
+        this.selectedBookingForFinish = null;
         this.selectedRating = 0;
         
         this.init();
@@ -155,6 +156,21 @@ class BookingManager {
                     if (ratingModal && ratingModal.style.display === 'block') {
                         this.closeRatingModal();
                     }
+                    const finishJobModal = document.getElementById('finishJobModal');
+                    if (finishJobModal && finishJobModal.style.display === 'block') {
+                        this.closeFinishJobModal();
+                    }
+                }
+            });
+        }
+
+        // Add event listeners for finish job modal
+        const finishJobModal = document.getElementById('finishJobModal');
+        if (finishJobModal) {
+            // Close modal when clicking outside
+            finishJobModal.addEventListener('click', (e) => {
+                if (e.target === finishJobModal) {
+                    this.closeFinishJobModal();
                 }
             });
         }
@@ -397,8 +413,16 @@ class BookingManager {
                 
             case 'in-progress':
                 actions.push(`
-                    <button class="btn-success btn-sm" onclick="bookingManager.showCompleteModal(${booking.appointment_id})">
-                        <i class="fas fa-check-circle"></i> Complete
+                    <button class="btn-warning btn-sm" onclick="bookingManager.showFinishModal(${booking.appointment_id})">
+                        <i class="fas fa-check-circle"></i> Finish Job
+                    </button>
+                `);
+                break;
+                
+            case 'finished':
+                actions.push(`
+                    <button class="btn-success btn-sm" onclick="bookingManager.updateBookingStatus(${booking.appointment_id}, 'completed')">
+                        <i class="fas fa-check-double"></i> Mark Completed
                     </button>
                 `);
                 break;
@@ -421,9 +445,10 @@ class BookingManager {
     getStatusIcon(status) {
         const icons = {
             'pending': 'fas fa-clock',
-            'accepted': 'fas fa-thumbs-up',
+            'approved': 'fas fa-thumbs-up',
             'confirmed': 'fas fa-check-circle',
             'in-progress': 'fas fa-play-circle',
+            'finished': 'fas fa-flag-checkered',
             'completed': 'fas fa-check-double',
             'cancelled': 'fas fa-times-circle',
             'no-show': 'fas fa-user-times'
@@ -434,9 +459,10 @@ class BookingManager {
     formatStatus(status) {
         const statusMap = {
             'pending': 'Pending',
-            'accepted': 'Accepted',
+            'approved': 'Approved',
             'confirmed': 'Confirmed',
             'in-progress': 'In Progress',
+            'finished': 'Finished',
             'completed': 'Completed',
             'cancelled': 'Cancelled',
             'no-show': 'No Show'
@@ -509,8 +535,10 @@ class BookingManager {
         const statsElements = {
             'stats-total': this.statsData.totalBookings,
             'stats-pending': this.statsData.pendingBookings,
-            'stats-accepted': this.statsData.acceptedBookings,
+            'stats-approved': this.statsData.acceptedBookings,
             'stats-confirmed': this.statsData.confirmedBookings,
+            'stats-in-progress': this.statsData.inProgressBookings,
+            'stats-finished': this.statsData.finishedBookings,
             'stats-completed': this.statsData.completedBookings,
             'stats-today': this.statsData.todayBookings,
             'stats-rating': this.statsData.averageRating
@@ -751,8 +779,15 @@ class BookingManager {
                 break;
             case 'in-progress':
                 actions.push(`
+                    <button class="btn-warning" onclick="bookingManager.showFinishModalFromModal(${booking.appointment_id})">
+                        <i class="fas fa-flag-checkered"></i> Finish Job
+                    </button>
+                `);
+                break;
+            case 'finished':
+                actions.push(`
                     <button class="btn-success" onclick="bookingManager.updateBookingStatusFromModal(${booking.appointment_id}, 'completed')">
-                        <i class="fas fa-check-circle"></i> Complete
+                        <i class="fas fa-check-double"></i> Mark Completed
                     </button>
                 `);
                 break;
@@ -910,6 +945,255 @@ class BookingManager {
         
         this.selectedBookingForCancellation = booking;
         this.showCancellationModal();
+    }
+
+    showFinishModal(bookingId) {
+        const booking = this.bookings.find(b => b.appointment_id === bookingId);
+        if (!booking) {
+            this.showToast('Booking not found', 'error');
+            return;
+        }
+        
+        this.selectedBookingForFinish = booking;
+        this.showFinishJobModal();
+    }
+
+    showFinishModalFromModal(bookingId) {
+        // Close the details modal first
+        this.closeBookingDetailsModal();
+        // Then show the finish modal
+        this.showFinishModal(bookingId);
+    }
+
+    showFinishJobModal() {
+        const modal = document.getElementById('finishJobModal');
+        if (!modal) {
+            console.error('Finish job modal not found!');
+            this.showToast('Error loading finish job modal', 'error');
+            return;
+        }
+        
+        // Reset form
+        const priceInput = modal.querySelector('#finalPrice');
+        if (priceInput) {
+            priceInput.value = '';
+            const formGroup = priceInput.closest('.form-group');
+            if (formGroup) {
+                formGroup.classList.remove('error');
+                const existingError = formGroup.querySelector('.error-message');
+                if (existingError) existingError.remove();
+            }
+        }
+        
+        // Update modal content with current booking info
+        if (this.selectedBookingForFinish) {
+            const booking = this.selectedBookingForFinish;
+            const customerSpan = modal.querySelector('#finishJobCustomer');
+            const serviceSpan = modal.querySelector('#finishJobService');
+            const priceSpan = modal.querySelector('#finishJobStartingPrice');
+            
+            if (customerSpan) customerSpan.textContent = `${booking.customer.first_name} ${booking.customer.last_name}`;
+            if (serviceSpan) serviceSpan.textContent = booking.service?.service_title || 'N/A';
+            if (priceSpan) priceSpan.textContent = (booking.service?.service_startingprice || 0).toFixed(2);
+        }
+        
+        modal.style.display = 'block';
+        
+        // Focus on the input
+        setTimeout(() => {
+            if (priceInput) priceInput.focus();
+        }, 100);
+    }
+
+    createFinishJobModal() {
+        const modalHTML = `
+            <div class="modal" id="finishJobModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-flag-checkered"></i> Finish Job</h3>
+                        <button class="modal-close" onclick="bookingManager.closeFinishJobModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="finish-job-info">
+                            <p><strong>Customer:</strong> <span id="finishJobCustomer"></span></p>
+                            <p><strong>Service:</strong> <span id="finishJobService"></span></p>
+                            <p><strong>Starting Price:</strong> ₱<span id="finishJobStartingPrice"></span></p>
+                        </div>
+                        <div class="form-group">
+                            <label for="finalPrice">
+                                <i class="fas fa-peso-sign"></i> Final Price (₱)
+                            </label>
+                            <input 
+                                type="number" 
+                                id="finalPrice" 
+                                min="0.01" 
+                                step="0.01" 
+                                placeholder="0.00" 
+                                required
+                                autocomplete="off"
+                                onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                            >
+                            <small class="form-help">Enter the final amount to charge the customer</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="bookingManager.closeFinishJobModal()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button class="btn-success" onclick="bookingManager.confirmFinishJob()">
+                            <i class="fas fa-flag-checkered"></i> Finish Job
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Populate modal with booking info
+        if (this.selectedBookingForFinish) {
+            const booking = this.selectedBookingForFinish;
+            const customerSpan = document.getElementById('finishJobCustomer');
+            const serviceSpan = document.getElementById('finishJobService');
+            const priceSpan = document.getElementById('finishJobStartingPrice');
+            
+            if (customerSpan) {
+                customerSpan.textContent = `${booking.customer.first_name} ${booking.customer.last_name}`;
+            }
+            if (serviceSpan) {
+                serviceSpan.textContent = booking.service?.service_title || 'N/A';
+            }
+            if (priceSpan) {
+                priceSpan.textContent = (booking.service?.service_startingprice || 0).toFixed(2);
+            }
+        }
+        
+        // Add event listeners for better UX
+        const priceInput = document.getElementById('finalPrice');
+        if (priceInput) {
+            priceInput.addEventListener('input', (e) => {
+                // Remove any error styling when user starts typing
+                const formGroup = e.target.closest('.form-group');
+                if (formGroup) {
+                    formGroup.classList.remove('error');
+                    const existingError = formGroup.querySelector('.error-message');
+                    if (existingError) existingError.remove();
+                }
+            });
+
+            // Focus on the input when modal opens
+            setTimeout(() => {
+                priceInput.focus();
+            }, 100);
+        }
+        
+        // Show the modal
+        const modal = document.getElementById('finishJobModal');
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    }
+
+    closeFinishJobModal() {
+        const modal = document.getElementById('finishJobModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    async confirmFinishJob() {
+        const finalPriceInput = document.getElementById('finalPrice');
+        const finalPrice = finalPriceInput.value.trim();
+        const formGroup = finalPriceInput.closest('.form-group');
+        
+        // Clear previous error states
+        formGroup.classList.remove('error');
+        const existingError = formGroup.querySelector('.error-message');
+        if (existingError) existingError.remove();
+
+        // Validate final price
+        if (!finalPrice) {
+            this.showFinishJobError(formGroup, 'Please enter a final price');
+            return;
+        }
+
+        const priceValue = parseFloat(finalPrice);
+        if (isNaN(priceValue) || priceValue <= 0) {
+            this.showFinishJobError(formGroup, 'Please enter a valid final price greater than 0');
+            return;
+        }
+
+        // Validate against starting price (optional warning)
+        if (this.selectedBookingForFinish && this.selectedBookingForFinish.service) {
+            const startingPrice = this.selectedBookingForFinish.service.service_startingprice || 0;
+            if (priceValue < startingPrice * 0.5) {
+                const confirmLowPrice = confirm(`The final price (₱${priceValue.toFixed(2)}) is significantly lower than the starting price (₱${startingPrice.toFixed(2)}). Are you sure you want to proceed?`);
+                if (!confirmLowPrice) {
+                    return;
+                }
+            }
+        }
+
+        if (!this.selectedBookingForFinish) {
+            this.showToast('No booking selected', 'error');
+            return;
+        }
+
+        // Disable the button to prevent double submission
+        const submitButton = document.querySelector('#finishJobModal .btn-success');
+        const originalText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+        try {
+            const data = await this.makeAuthenticatedRequest(
+                `/api/serviceProvider/appointments/${this.selectedBookingForFinish.appointment_id}/finish`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        final_price: priceValue
+                    })
+                }
+            );
+
+            if (data.success) {
+                this.showToast('Job finished successfully! Final price set.', 'success');
+                this.closeFinishJobModal();
+                await this.loadBookings();
+                this.renderBookings();
+            } else {
+                throw new Error(data.message || 'Failed to finish job');
+            }
+        } catch (error) {
+            console.error('Error finishing job:', error);
+            this.showToast('Error finishing job: ' + error.message, 'error');
+        } finally {
+            // Re-enable the button
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+            }
+        }
+    }
+
+    showFinishJobError(formGroup, message) {
+        formGroup.classList.add('error');
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+        formGroup.appendChild(errorDiv);
+        
+        // Focus on the input
+        const input = formGroup.querySelector('input');
+        if (input) {
+            input.focus();
+            input.select();
+        }
     }
 
     showCompleteModal(bookingId) {

@@ -1506,6 +1506,224 @@ class CustomerDashboard {
                     transform: translateY(0);
                 }
             }
+
+            .modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            }
+
+            .modal-content {
+                background: white;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+                width: 90%;
+                max-width: 500px;
+                margin: 0 auto;
+                position: relative;
+            }
+
+            .modal-header {
+                padding: 16px;
+                border-bottom: 1px solid #e5e7eb;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .modal-title {
+                font-size: 1.25rem;
+                font-weight: 500;
+                margin: 0;
+            }
+
+            .modal-close {
+                background: none;
+                border: none;
+                font-size: 1.2rem;
+                color: #888;
+                cursor: pointer;
+                transition: color 0.3s;
+            }
+
+            .modal-close:hover {
+                color: #333;
+            }
+
+            .modal-body {
+                padding: 16px;
+            }
+
+            .modal-footer {
+                padding: 12px;
+                display: flex;
+                justify-content: flex-end;
+                border-top: 1px solid #e5e7eb;
+            }
+
+            .btn-primary {
+                background: #4f8cff;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+
+            .btn-primary:hover {
+                background: #007bff;
+            }
+
+            .btn-secondary {
+                background: #e0e0e0;
+                color: #333;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+
+            .btn-secondary:hover {
+                background: #d1d5db;
+            }
+
+            .rating-modal {
+                max-width: 420px;
+                margin: 60px auto;
+                border-radius: 18px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            }
+
+            .rating-modal .modal-header {
+                padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+                border-bottom: none;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .rating-modal .modal-title {
+                margin: 0;
+                font-size: 1.3rem;
+                font-weight: 600;
+            }
+
+            .rating-modal .modal-close {
+                background: none;
+                border: none;
+                font-size: 1.2rem;
+                color: #888;
+                cursor: pointer;
+                transition: color 0.3s;
+            }
+
+            .rating-modal .modal-close:hover {
+                color: #333;
+            }
+
+            .rating-provider {
+                text-align: center;
+                margin-bottom: 1rem;
+            }
+
+            .rating-provider h4 {
+                margin: 0 0 0.25rem 0;
+                font-size: 1.1rem;
+                font-weight: 500;
+                color: #333;
+            }
+
+            .rating-provider p {
+                margin: 0;
+                color: #666;
+                font-size: 0.98rem;
+            }
+
+            .rating-stars {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin-bottom: 1rem;
+            }
+
+            .star-rating {
+                font-size: 2rem;
+                color: #ffd700;
+                display: flex;
+                gap: 0.25rem;
+            }
+
+            .star-rating .star {
+                cursor: pointer;
+                transition: transform 0.2s ease;
+                color: #ddd;
+            }
+
+            .star-rating .star:hover {
+                transform: scale(1.1);
+            }
+
+            .star-rating .star.selected {
+                color: #ffd700;
+            }
+
+            .rating-text {
+                margin-top: 0.5rem;
+                color: #888;
+                font-size: 1rem;
+            }
+
+            .rating-comment {
+                margin-bottom: 1rem;
+            }
+
+            .rating-comment label {
+                font-size: 0.98rem;
+                color: #444;
+                font-weight: 500;
+            }
+
+            .rating-comment textarea {
+                width: 100%;
+                min-height: 70px;
+                border-radius: 8px;
+                border: 1.5px solid #e0e0e0;
+                padding: 0.75rem;
+                margin-top: 0.25rem;
+                font-size: 1rem;
+            }
+
+            .char-count {
+                text-align: right;
+                color: #aaa;
+                font-size: 0.92rem;
+                margin-top: 0.25rem;
+            }
+
+            @keyframes toastSlideOut {
+                from {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateX(100%);
+                }
+            }
         `;
         document.head.appendChild(style);
         
@@ -2323,11 +2541,167 @@ class CustomerDashboard {
             // Don't block the booking process if this fails
         }
     }
+
+    showRatingModal(bookingId, providerName) {
+        // Modern, centered modal with improved alignment
+        const modalHTML = `
+            <div class="modal-overlay" id="ratingModalOverlay">
+                <div class="modal-content rating-modal" style="max-width: 420px; margin: 60px auto; border-radius: 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.18);">
+                    <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; padding: 1.5rem 1.5rem 0.5rem 1.5rem; border-bottom: none;">
+                        <h3 style="margin: 0; font-size: 1.3rem; font-weight: 600;">Rate Your Service</h3>
+                        <button class="modal-close" style="background: none; border: none; font-size: 1.2rem; color: #888; cursor: pointer;" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body" style="padding: 1.5rem;">
+                        <div class="rating-provider" style="text-align: center; margin-bottom: 1rem;">
+                            <h4 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; font-weight: 500; color: #333;">${providerName}</h4>
+                            <p style="margin: 0; color: #666; font-size: 0.98rem;">How was your service experience?</p>
+                        </div>
+                        <div class="rating-stars" style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem;">
+                            <div class="star-rating" style="font-size: 2rem; color: #ffd700; display: flex; gap: 0.25rem;">
+                                <span class="star" data-rating="1"><i class="fas fa-star"></i></span>
+                                <span class="star" data-rating="2"><i class="fas fa-star"></i></span>
+                                <span class="star" data-rating="3"><i class="fas fa-star"></i></span>
+                                <span class="star" data-rating="4"><i class="fas fa-star"></i></span>
+                                <span class="star" data-rating="5"><i class="fas fa-star"></i></span>
+                            </div>
+                            <div class="rating-text" style="margin-top: 0.5rem; color: #888; font-size: 1rem;">
+                                <span id="ratingText">Click to rate</span>
+                            </div>
+                        </div>
+                        <div class="rating-comment" style="margin-bottom: 1rem;">
+                            <label for="ratingComment" style="font-size: 0.98rem; color: #444; font-weight: 500;">Your Review (Optional)</label>
+                            <textarea id="ratingComment" placeholder="Share your experience with this service provider..." maxlength="500" style="width: 100%; min-height: 70px; border-radius: 8px; border: 1.5px solid #e0e0e0; padding: 0.75rem; margin-top: 0.25rem; font-size: 1rem;"></textarea>
+                            <div class="char-count" style="text-align: right; color: #aaa; font-size: 0.92rem; margin-top: 0.25rem;">
+                                <span id="charCount">0</span>/500 characters
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="display: flex; gap: 1rem; justify-content: flex-end; padding: 1rem 1.5rem 1.5rem 1.5rem; background: #f9f9f9; border-radius: 0 0 18px 18px;">
+                        <button class="btn-secondary" style="padding: 0.6rem 1.2rem; border-radius: 8px; border: none; background: #e0e0e0; color: #444; font-weight: 500; cursor: pointer;" onclick="this.closest('.modal-overlay').remove()">
+                            Cancel
+                        </button>
+                        <button class="btn-primary" id="submitRatingBtn" style="padding: 0.6rem 1.2rem; border-radius: 8px; border: none; background: #4f8cff; color: white; font-weight: 600; cursor: pointer;" disabled>
+                            Submit Rating
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        this.setupRatingModalListeners(bookingId);
+    }
+
+    setupRatingModalListeners(bookingId) {
+        const overlay = document.getElementById('ratingModalOverlay');
+        const stars = overlay.querySelectorAll('.star');
+        const ratingText = overlay.querySelector('#ratingText');
+        const commentBox = overlay.querySelector('#ratingComment');
+        const charCount = overlay.querySelector('#charCount');
+        const submitBtn = overlay.querySelector('#submitRatingBtn');
+
+        let selectedRating = 0;
+
+        // Star click event
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                selectedRating = parseInt(star.getAttribute('data-rating'));
+                this.updateStarRatingDisplay(selectedRating, stars, ratingText);
+                submitBtn.disabled = false;
+            });
+        });
+
+        // Comment input event
+        commentBox.addEventListener('input', () => {
+            const length = commentBox.value.length;
+            charCount.textContent = length;
+            submitBtn.disabled = length === 0 && selectedRating === 0;
+        });
+
+        // Submit button event
+        submitBtn.addEventListener('click', async () => {
+            if (selectedRating > 0) {
+                await this.submitRating(bookingId, selectedRating, commentBox.value);
+                overlay.remove();
+            } else {
+                DashboardUtils.showToast('Please select a rating before submitting', 'warning');
+            }
+        });
+
+        // Close modal on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        });
+    }
+
+    updateStarRatingDisplay(rating, starElements, textElement) {
+        // Update star icons
+        starElements.forEach(star => {
+            const starRating = parseInt(star.getAttribute('data-rating'));
+            if (starRating <= rating) {
+                star.classList.add('selected');
+            } else {
+                star.classList.remove('selected');
+            }
+        });
+
+        // Update rating text
+        const ratingTexts = {
+            1: 'Terrible',
+            2: 'Bad',
+            3: 'Okay',
+            4: 'Good',
+            5: 'Excellent'
+        };
+        textElement.textContent = ratingTexts[rating] || 'Click to rate';
+    }
+
+    async submitRating(bookingId, rating, comment) {
+        try {
+            const response = await DashboardUtils.makeRequest(`/auth/bookings/${bookingId}/rate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    rating,
+                    comment
+                })
+            });
+
+            if (response.success) {
+                DashboardUtils.showToast('Thank you for your feedback!', 'success');
+                // Optionally, refresh booking data or update UI
+                await this.loadBookings();
+            } else {
+                DashboardUtils.showToast('Error submitting rating. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Error submitting rating:', error);
+            DashboardUtils.showToast('Error submitting rating. Please try again.', 'error');
+        }
+    }
 }
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.dashboard = new CustomerDashboard();
+
+    // Event delegation for Rate Service button
+    document.body.addEventListener('click', function(e) {
+        const rateBtn = e.target.closest('.rate-service');
+        if (rateBtn) {
+            e.preventDefault();
+            const bookingId = rateBtn.dataset.bookingId;
+            const providerName = rateBtn.dataset.providerName;
+            if (window.dashboard && typeof window.dashboard.showRatingModal === 'function') {
+                window.dashboard.showRatingModal(bookingId, providerName);
+            }
+        }
+    });
 });
 
 // Add styles for skeleton loading and additional components
@@ -2456,6 +2830,213 @@ const additionalStyles = `
     display: flex;
     align-items: center;
     gap: 5px;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.modal-header {
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.modal-close:hover {
+    color: #333;
+}
+
+.modal-body {
+    padding: 16px;
+}
+
+.modal-footer {
+    padding: 12px;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn-primary {
+    background: #4f8cff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-primary:hover {
+    background: #007bff;
+}
+
+.btn-secondary {
+    background: #e0e0e0;
+    color: #333;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn-secondary:hover {
+    background: #d1d5db;
+}
+
+.rating-modal {
+    max-width: 420px;
+    margin: 60px auto;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+
+.rating-modal .modal-header {
+    padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rating-modal .modal-title {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.rating-modal .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.rating-modal .modal-close:hover {
+    color: #333;
+}
+
+.rating-provider {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.rating-provider h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.rating-provider p {
+    margin: 0;
+    color: #666;
+    font-size: 0.98rem;
+}
+
+.rating-stars {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.star-rating {
+    font-size: 2rem;
+    color: #ffd700;
+    display: flex;
+    gap: 0.25rem;
+}
+
+.star-rating .star {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    color: #ddd;
+}
+
+.star-rating .star:hover {
+    transform: scale(1.1);
+}
+
+.star-rating .star.selected {
+    color: #ffd700;
+}
+
+.rating-text {
+    margin-top: 0.5rem;
+    color: #888;
+    font-size: 1rem;
+}
+
+.rating-comment {
+    margin-bottom: 1rem;
+}
+
+.rating-comment label {
+    font-size: 0.98rem;
+    color: #444;
+    font-weight: 500;
+}
+
+.rating-comment textarea {
+    width: 100%;
+    min-height: 70px;
+    border-radius: 8px;
+    border: 1.5px solid #e0e0e0;
+    padding: 0.75rem;
+    margin-top: 0.25rem;
+    font-size: 1rem;
+}
+
+.char-count {
+    text-align: right;
+    color: #aaa;
+    font-size: 0.92rem;
+    margin-top: 0.25rem;
 }
 
 @keyframes toastSlideOut {

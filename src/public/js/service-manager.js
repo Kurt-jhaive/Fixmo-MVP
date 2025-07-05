@@ -506,6 +506,7 @@ class ServiceManager {
     renderServiceImage(service, serviceName = 'Service') {
         const hasValidImage = service.service_picture && 
                               service.service_picture !== 'undefined' && 
+                              service.service_picture !== 'null' && 
                               service.service_picture !== null && 
                               service.service_picture.trim() !== '';
         
@@ -515,15 +516,15 @@ class ServiceManager {
                 <div class="service-image">
                     <img src="${imageSrc}" alt="${this.escapeHtml(serviceName)}" 
                          style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px;"
-                         onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\\'service-placeholder\\' style=\\'height: 200px; background: #f0f0f0; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666;\\'>\\n<i class=\\'fas fa-image\\' style=\\'font-size: 2rem; margin-bottom: 8px;\\'></i>\\n<span>No Image</span>\\n</div>'">
+                         onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\\'service-placeholder\\' style=\\'height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 500;\\'>\\n<i class=\\'fas fa-tools\\' style=\\'font-size: 48px; margin-bottom: 8px;\\'></i>\\n<span>${this.escapeHtml(serviceName)}</span>\\n</div>'">
                 </div>
             `;
         } else {
             return `
                 <div class="service-image">
-                    <div class="service-placeholder" style="height: 200px; background: #f0f0f0; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #666;">
-                        <i class="fas fa-image" style="font-size: 2rem; margin-bottom: 8px;"></i>
-                        <span>No Image</span>
+                    <div class="service-placeholder" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 500;">
+                        <i class="fas fa-tools" style="font-size: 48px; margin-bottom: 8px;"></i>
+                        <span>${this.escapeHtml(serviceName)}</span>
                     </div>
                 </div>
             `;

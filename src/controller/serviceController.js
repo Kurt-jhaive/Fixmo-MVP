@@ -53,6 +53,15 @@ export const getProviderServices = async (req, res) => {
             }
         });        // Transform the data to match the expected frontend format
         const transformedServices = services.map(service => {
+            // Ensure service picture has a valid path or null for fallback
+            let servicePicture = service.service_picture;
+            if (servicePicture && servicePicture !== 'undefined' && servicePicture !== 'null') {
+                // Ensure proper path format
+                servicePicture = servicePicture.startsWith('/') ? servicePicture : `/${servicePicture}`;
+            } else {
+                servicePicture = null; // Use null for fallback handling
+            }
+            
             return {
                 listing_id: service.service_id,
                 service_id: service.service_id, // Add both for compatibility
@@ -60,7 +69,7 @@ export const getProviderServices = async (req, res) => {
                 service_title: service.service_title, // Add both for compatibility
                 description: service.service_description,
                 service_description: service.service_description, // Add both for compatibility
-                service_picture: service.service_picture, // Add service picture
+                service_picture: servicePicture, // Add cleaned service picture
                 price: service.service_startingprice,
                 service_startingprice: service.service_startingprice, // Add both for compatibility
                 price_per_hour: service.service_startingprice,
@@ -149,7 +158,7 @@ export const createService = async (req, res) => {
 
         // Get the uploaded file path if image was uploaded
         const servicePicture = req.file ? 
-            '/uploads/' + req.file.path.replace(/\\/g, '/').split('/uploads/')[1] : 
+            '/uploads/service-images/' + req.file.filename : 
             null;
 
         console.log('Create service request:', {

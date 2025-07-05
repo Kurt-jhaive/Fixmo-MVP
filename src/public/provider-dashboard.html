@@ -319,6 +319,20 @@
                     <div class="count" id="stats-confirmed">0</div>
                     <div class="label">Confirmed</div>
                 </div>
+                <div class="booking-stat-card in-progress">
+                    <div class="icon">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <div class="count" id="stats-in-progress">0</div>
+                    <div class="label">In Progress</div>
+                </div>
+                <div class="booking-stat-card finished">
+                    <div class="icon">
+                        <i class="fas fa-flag-checkered"></i>
+                    </div>
+                    <div class="count" id="stats-finished">0</div>
+                    <div class="label">Finished</div>
+                </div>
                 <div class="booking-stat-card completed">
                     <div class="icon">
                         <i class="fas fa-check-double"></i>
@@ -362,11 +376,17 @@
                     <button class="booking-filter-btn" data-filter="pending">
                         <i class="fas fa-clock"></i> Pending
                     </button>
+                    <button class="booking-filter-btn" data-filter="approved">
+                        <i class="fas fa-thumbs-up"></i> Approved
+                    </button>
                     <button class="booking-filter-btn" data-filter="confirmed">
                         <i class="fas fa-check-circle"></i> Confirmed
                     </button>
                     <button class="booking-filter-btn" data-filter="in-progress">
                         <i class="fas fa-play-circle"></i> In Progress
+                    </button>
+                    <button class="booking-filter-btn" data-filter="finished">
+                        <i class="fas fa-flag-checkered"></i> Finished
                     </button>
                     <button class="booking-filter-btn" data-filter="completed">
                         <i class="fas fa-check-double"></i> Completed
@@ -866,6 +886,94 @@
                     <button class="btn-secondary" id="rescheduleBookingCancel">Cancel</button>
                     <button class="btn-primary" id="rescheduleBookingConfirm">Reschedule</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancellation Modal -->
+    <div id="cancellationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Cancel Booking</h2>
+                <span class="close" onclick="bookingManager.closeCancellationModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p><strong>Are you sure you want to cancel this booking?</strong></p>
+                <p>This action cannot be undone.</p>
+                
+                <div class="form-group">
+                    <label for="cancellationReason">Reason for cancellation:</label>
+                    <select id="cancellationReason" class="form-control">
+                        <option value="">Select a reason...</option>
+                        <option value="emergency">Emergency situation</option>
+                        <option value="scheduling_conflict">Scheduling conflict</option>
+                        <option value="equipment_unavailable">Equipment not available</option>
+                        <option value="weather_conditions">Weather conditions</option>
+                        <option value="customer_request">Customer requested cancellation</option>
+                        <option value="technical_issues">Technical issues</option>
+                        <option value="personal_reasons">Personal reasons</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="customReasonGroup" style="display: none;">
+                    <label for="customReason">Please specify:</label>
+                    <textarea id="customReason" class="form-control" rows="3" placeholder="Enter your reason for cancellation..."></textarea>
+                </div>
+                
+                <div class="cancellation-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>The customer will be notified of the cancellation.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="bookingManager.closeCancellationModal()">Keep Booking</button>
+                <button class="btn-danger" onclick="bookingManager.confirmCancellation()">
+                    <i class="fas fa-times"></i> Cancel Booking
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Finish Job Modal -->
+    <div id="finishJobModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-flag-checkered"></i> Finish Job</h3>
+                <button class="modal-close" onclick="bookingManager.closeFinishJobModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="finish-job-info">
+                    <p><strong>Customer:</strong> <span id="finishJobCustomer"></span></p>
+                    <p><strong>Service:</strong> <span id="finishJobService"></span></p>
+                    <p><strong>Starting Price:</strong> ₱<span id="finishJobStartingPrice"></span></p>
+                </div>
+                <div class="form-group">
+                    <label for="finalPrice">
+                        <i class="fas fa-peso-sign"></i> Final Price (₱)
+                    </label>
+                    <input 
+                        type="number" 
+                        id="finalPrice" 
+                        min="0.01" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        required
+                        autocomplete="off"
+                        onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                    >
+                    <small class="form-help">Enter the final amount to charge the customer</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="bookingManager.closeFinishJobModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn-success" onclick="bookingManager.confirmFinishJob()">
+                    <i class="fas fa-flag-checkered"></i> Finish Job
+                </button>
             </div>
         </div>
     </div>

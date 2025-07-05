@@ -1621,7 +1621,7 @@ export const updateAppointmentStatusProvider = async (req, res) => {
         }
 
         // Validate status values - use the correct valid statuses
-        const validStatuses = ['pending', 'approved', 'confirmed', 'in-progress', 'completed', 'cancelled', 'no-show'];
+        const validStatuses = ['pending', 'approved', 'confirmed', 'in-progress', 'finished', 'completed', 'cancelled', 'no-show'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,
@@ -1883,6 +1883,92 @@ export const rateCustomerAppointment = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error submitting rating',
+            error: error.message
+        });
+    }
+};
+
+// Finish appointment with final price
+export const finishAppointment = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const { final_price } = req.body;
+        const providerId = req.userId;
+
+        if (!providerId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Provider ID not found in session' 
+            });
+        }
+
+        if (!final_price || final_price <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid final price is required'
+            });
+        }
+
+        const appointment = await prisma.appointment.findUnique({
+            where: { appointment_id: parseInt(appointmentId) }
+        });
+
+        if (!appointment) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Appointment not found' 
+            });
+        }
+
+        if (appointment.provider_id !== parseInt(providerId)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'You can only finish your own appointments' 
+            });
+        }
+
+        if (appointment.appointment_status !== 'in-progress') {
+            return res.status(400).json({
+                success: false,
+                message: 'Only in-progress appointments can be finished'
+            });
+        }
+
+        const updatedAppointment = await prisma.appointment.update({
+            where: { appointment_id: parseInt(appointmentId) },
+            data: { 
+                appointment_status: 'finished',
+                final_price: parseFloat(final_price)
+            },
+            include: {
+                customer: {
+                    select: {
+                        user_id: true,
+                        first_name: true,
+                        last_name: true,
+                        email: true,
+                        phone_number: true
+                    }
+                },
+                service: {
+                    select: {
+                        service_title: true,
+                        service_description: true
+                    }
+                }
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Appointment finished with final price',
+            data: updatedAppointment
+        });
+    } catch (error) {
+        console.error('Error finishing appointment:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error',
             error: error.message
         });
     }
