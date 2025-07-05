@@ -5,6 +5,24 @@ import jwt from 'jsonwebtoken';
 const prisma = new PrismaClient();
 
 class AdminController {
+    // Utility function to fix image paths
+    static fixImagePath(path) {
+        if (!path) return null;
+        
+        // If path already starts with /uploads/, return as is
+        if (path.startsWith('/uploads/')) {
+            return path;
+        }
+        
+        // If path starts with uploads\ or uploads/, normalize and add leading slash
+        if (path.startsWith('uploads\\') || path.startsWith('uploads/')) {
+            return '/' + path.replace(/\\/g, '/');
+        }
+        
+        // Otherwise, assume it's a relative path and add /uploads/ prefix
+        return `/uploads/${path.replace(/\\/g, '/')}`;
+    }
+
     // Admin Authentication
     async adminLogin(req, res) {
         try {
@@ -221,12 +239,11 @@ class AdminController {
                 }
             });
 
-            // Fix file paths to include /uploads/ prefix
-            const usersWithFixedPaths = users.map(user => ({
-                ...user,
-                profile_photo: user.profile_photo ? `/uploads/${user.profile_photo}` : null,
-                valid_id: user.valid_id ? `/uploads/${user.valid_id}` : null
-            }));
+        const usersWithFixedPaths = users.map(user => ({
+            ...user,
+            profile_photo: AdminController.fixImagePath(user.profile_photo),
+            valid_id: AdminController.fixImagePath(user.valid_id)
+        }));
 
             res.json({ users: usersWithFixedPaths });
         } catch (error) {
@@ -263,11 +280,10 @@ class AdminController {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            // Fix file paths to include /uploads/ prefix
             const userWithFixedPaths = {
                 ...user,
-                profile_photo: user.profile_photo ? `/uploads/${user.profile_photo}` : null,
-                valid_id: user.valid_id ? `/uploads/${user.valid_id}` : null
+                profile_photo: AdminController.fixImagePath(user.profile_photo),
+                valid_id: AdminController.fixImagePath(user.valid_id)
             };
 
             res.json({ user: userWithFixedPaths });
@@ -346,11 +362,10 @@ class AdminController {
                 }
             });
 
-            // Fix file paths to include /uploads/ prefix
             const providersWithFixedPaths = providers.map(provider => ({
                 ...provider,
-                provider_profile_photo: provider.provider_profile_photo ? `/uploads/${provider.provider_profile_photo}` : null,
-                provider_valid_id: provider.provider_valid_id ? `/uploads/${provider.provider_valid_id}` : null
+                provider_profile_photo: AdminController.fixImagePath(provider.provider_profile_photo),
+                provider_valid_id: AdminController.fixImagePath(provider.provider_valid_id)
             }));
 
             res.json({ providers: providersWithFixedPaths });
@@ -383,11 +398,10 @@ class AdminController {
                 return res.status(404).json({ message: 'Provider not found' });
             }
 
-            // Fix file paths to include /uploads/ prefix
             const providerWithFixedPaths = {
                 ...provider,
-                provider_profile_photo: provider.provider_profile_photo ? `/uploads/${provider.provider_profile_photo}` : null,
-                provider_valid_id: provider.provider_valid_id ? `/uploads/${provider.provider_valid_id}` : null,
+                provider_profile_photo: AdminController.fixImagePath(provider.provider_profile_photo),
+                provider_valid_id: AdminController.fixImagePath(provider.provider_valid_id),
                 certificates: provider.provider_certificates
             };
 
@@ -467,6 +481,7 @@ class AdminController {
 
             const formattedCertificates = certificates.map(cert => ({
                 ...cert,
+                certificate_file_path: AdminController.fixImagePath(cert.certificate_file_path),
                 provider_name: `${cert.provider.provider_first_name} ${cert.provider.provider_last_name}`,
                 provider_email: cert.provider.provider_email,
                 provider_phone: cert.provider.provider_phone_number,
@@ -516,6 +531,7 @@ class AdminController {
 
             const formattedCertificate = {
                 ...certificate,
+                certificate_file_path: AdminController.fixImagePath(certificate.certificate_file_path),
                 provider_name: `${certificate.provider.provider_first_name} ${certificate.provider.provider_last_name}`,
                 provider_email: certificate.provider.provider_email,
                 provider_phone: certificate.provider.provider_phone_number,
