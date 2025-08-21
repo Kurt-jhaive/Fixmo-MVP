@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Provider - Manage Listings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .nav-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #117a8b;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .form-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* File input styling */
+        .form-group input[type="file"] {
+            padding: 8px;
+            border: 2px dashed #007bff;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+
+        .form-group input[type="file"]:hover {
+            background: #e9ecef;
+            border-color: #0056b3;
+        }
+
+        .form-group input[type="file"]:focus {
+            border-color: #0056b3;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        /* Image preview styling */
+        #imagePreview {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        #previewImg {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+
+        #previewImg:hover {
+            transform: scale(1.02);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .listings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .listing-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .listing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .listing-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .listing-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .listing-price {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .listing-content {
+            padding: 20px;
+        }
+
+        .listing-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .listing-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .listing-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .listing-actions .btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #888;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .listings-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-buttons {
+                flex-direction: column;
+            }
+            
+            .listing-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ Service Provider Dashboard</h1>
+            <p>Manage your service listings and availability</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-section">
+            <div class="nav-buttons">
+                <a href="/" class="btn btn-info">🏠 Home</a>
+                <a href="/booking" class="btn btn-primary">📅 Booking System</a>
+                <a href="availability_test.html" class="btn btn-warning">⏰ Manage Availability</a>
+                <button class="btn btn-success" onclick="showAddListingForm()">➕ Add New Listing</button>
+            </div>
+        </div>
+
+        <!-- Provider Info Section -->
+        <div class="form-section">
+            <h2>👤 Provider Information</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="providerId">Provider ID (for testing)</label>
+                    <input type="number" id="providerId" value="1" placeholder="Enter your provider ID">
+                </div>
+                <div class="form-group">
+                    <label for="providerName">Provider Name</label>
+                    <input type="text" id="providerName" value="John Smith" placeholder="Enter your name">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="loadMyListings()">📋 Load My Listings</button>
+        </div>
+
+        <!-- Messages -->
+        <div id="messageContainer"></div>
+
+        <!-- Add Listing Form -->
+        <div id="addListingSection" class="form-section" style="display: none;">
+            <h2>➕ Add New Service Listing</h2>
+            <form id="addListingForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="serviceTitle">Service Title</label>
+                        <input type="text" id="serviceTitle" placeholder="e.g., Computer Repair Service" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="servicePrice">Starting Price ($)</label>
+                        <input type="number" id="servicePrice" step="0.01" placeholder="e.g., 50.00" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="serviceDescription">Service Description</label>
+                    <textarea id="serviceDescription" placeholder="Describe your service in detail..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="servicePicture">Service Image (Landscape only)</label>
+                    <input type="file" id="servicePicture" name="service_picture" accept="image/*" onchange="validateImageOrientation(this)">
+                    <small style="color: #666; font-size: 0.85rem; margin-top: 5px; display: block;">
+                        Upload a landscape image (width > height) to showcase your service. Max 5MB.
+                    </small>
+                    <div id="imagePreview" style="margin-top: 10px; display: none;">
+                        <img id="previewImg" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 2px solid #ddd;" alt="Preview">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="serviceCategory">Service Category</label>
+                        <select id="serviceCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="1">Computer Services</option>
+                            <option value="2">Automotive Services</option>
+                            <option value="3">Electrical Services</option>
+                            <option value="4">Plumbing Services</option>
+                            <option value="5">Carpentry Services</option>
+                            <option value="6">Beauty Services</option>
+                            <option value="7">Cleaning Services</option>
+                            <option value="8">Repair Services</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="specificServiceId">Specific Service ID (Optional)</label>
+                        <input type="number" id="specificServiceId" placeholder="Leave blank to auto-generate">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <button type="button" class="btn btn-warning" onclick="hideAddListingForm()">❌ Cancel</button>
+                    <button type="submit" class="btn btn-success">✅ Create Listing</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Listings Display -->
+        <div class="form-section">
+            <h2>📋 My Service Listings</h2>
+            <div id="loadingListings" class="loading" style="display: none;">
+                Loading your service listings...
+            </div>
+            <div id="listingsContainer">
+                <div class="empty-state">
+                    <h3>No listings found</h3>
+                    <p>Click "Load My Listings" to see your service listings or "Add New Listing" to create one.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentProviderId = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            currentProviderId = document.getElementById('providerId').value;
+        });
+
+        // Show add listing form
+        function showAddListingForm() {
+            document.getElementById('addListingSection').style.display = 'block';
+            document.getElementById('addListingSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Hide add listing form
+        function hideAddListingForm() {
+            document.getElementById('addListingSection').style.display = 'none';
+            document.getElementById('addListingForm').reset();
+            // Hide image preview when form is reset
+            document.getElementById('imagePreview').style.display = 'none';
+        }
+
+        // Handle add listing form submission
+        document.getElementById('addListingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const providerId = document.getElementById('providerId').value;
+            if (!providerId) {
+                showMessage('Please enter your Provider ID', 'error');
+                return;
+            }
+
+            // Create FormData to handle file upload
+            const formData = new FormData();
+            formData.append('provider_id', providerId);
+            formData.append('service_title', document.getElementById('serviceTitle').value);
+            formData.append('service_description', document.getElementById('serviceDescription').value);
+            formData.append('service_startingprice', document.getElementById('servicePrice').value);
+            formData.append('category_id', document.getElementById('serviceCategory').value);
+            
+            const specificServiceId = document.getElementById('specificServiceId').value;
+            if (specificServiceId) {
+                formData.append('specific_service_id', specificServiceId);
+            }
+
+            // Add image file if selected
+            const serviceImage = document.getElementById('servicePicture').files[0];
+            if (serviceImage) {
+                formData.append('service_picture', serviceImage);
+            }
+
+            try {
+                const response = await fetch('/auth/addListing', {
+                    method: 'POST',
+                    body: formData // Don't set Content-Type header, browser will set it automatically for FormData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('Service listing created successfully!', 'success');
+                    hideAddListingForm();
+                    loadMyListings(); // Refresh listings
+                } else {
+                    showMessage(result.message || 'Failed to create listing', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating listing:', error);
+                showMessage('Network error. Please try again.', 'error');
+            }
+        });
+
+        // Load provider's listings
+        async function loadMyListings() {
+            const providerId = document.getElementById('providerId').value;
+            if (!providerId) {
+                showMessage('Please enter your Provider ID', 'error');
+                return;
+            }
+
+            document.getElementById('loadingListings').style.display = 'block';
+            
+            try {
+                const response = await fetch(`http://192.168.100.165:3000/auth/service-listings?provider_id=${providerId}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayListings(data.listings || []);
+                    showMessage(`Loaded ${data.count || 0} service listings`, 'success');
+                } else {
+                    showMessage(data.message || 'Failed to load listings', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading listings:', error);
+                showMessage('Failed to load listings', 'error');
+            } finally {
+                document.getElementById('loadingListings').style.display = 'none';
+            }
+        }
+
+        // Display listings
+        function displayListings(listings) {
+            const container = document.getElementById('listingsContainer');
+            
+            if (!listings || listings.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No service listings found</h3>
+                        <p>Create your first service listing to start receiving bookings from customers.</p>
+                        <button class="btn btn-success" onclick="showAddListingForm()">➕ Add Your First Listing</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="listings-grid">
+                    ${listings.map(listing => `
+                        <div class="listing-card">
+                            <div class="listing-header">
+                                <div class="listing-title">${listing.service_title}</div>
+                                <div class="listing-price">Starting at $${listing.service_startingprice}</div>
+                            </div>
+                            <div class="listing-content">
+                                <div class="listing-description">
+                                    ${listing.service_description}
+                                </div>
+                                <div class="listing-meta">
+                                    <span>Service ID: ${listing.service_id}</span>
+                                    <span>Provider: ${listing.serviceProvider.provider_first_name} ${listing.serviceProvider.provider_last_name}</span>
+                                </div>
+                                <div class="listing-meta">
+                                    <span>📍 ${listing.serviceProvider.provider_location || 'Location not set'}</span>
+                                    <span>⭐ ${listing.serviceProvider.provider_rating.toFixed(1)}</span>
+                                </div>
+                                <div class="listing-actions">
+                                    <button class="btn btn-primary" onclick="viewListingBookings(${listing.service_id})">
+                                        📅 View Bookings
+                                    </button>
+                                    <button class="btn btn-warning" onclick="editListing(${listing.service_id})">
+                                        ✏️ Edit
+                                    </button>
+                                    <button class="btn btn-info" onclick="viewInMarketplace(${listing.service_id})">
+                                        👁️ Preview
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // View listing bookings
+        async function viewListingBookings(serviceId) {
+            const providerId = document.getElementById('providerId').value;
+            
+            try {
+                const response = await fetch(`http://192.168.100.165:3000/auth/provider/${providerId}/appointments`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    const appointments = data.appointments || [];
+                    const listingAppointments = appointments.filter(apt => 
+                        apt.repairDescription && apt.repairDescription.includes(`Service ID: ${serviceId}`)
+                    );
+                    
+                    alert(`Service ID ${serviceId} has ${listingAppointments.length} bookings:\n\n${
+                        listingAppointments.map(apt => 
+                            `• ${apt.customer.first_name} ${apt.customer.last_name} - ${new Date(apt.scheduled_date).toLocaleDateString()}`
+                        ).join('\n') || 'No bookings found'
+                    }`);
+                } else {
+                    showMessage(data.message || 'Failed to load bookings', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                showMessage('Failed to load bookings', 'error');
+            }
+        }
+
+        // Edit listing
+        function editListing(serviceId) {
+            alert(`Edit functionality for Service ID ${serviceId} would be implemented here.`);
+            // In a real implementation, you would populate the form with existing data
+        }
+
+        // View in marketplace
+        function viewInMarketplace(serviceId) {
+            // Open the customer marketplace view
+            window.open(`/marketplace?service_id=${serviceId}`, '_blank');
+        }
+
+        // Utility functions
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="message ${type}">${message}</div>`;
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        // Update provider ID reference when changed
+        document.getElementById('providerId').addEventListener('change', function() {
+            currentProviderId = this.value;
+        });
+
+        // Image validation and preview functions
+        function validateImageOrientation(input) {
+            const file = input.files[0];
+            const previewContainer = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            
+            if (!file) {
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            // Check file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                showMessage('File size must be less than 5MB', 'error');
+                input.value = '';
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            // Check if it's an image
+            if (!file.type.startsWith('image/')) {
+                showMessage('Please select a valid image file', 'error');
+                input.value = '';
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            // Create image object to check dimensions
+            const img = new Image();
+            img.onload = function() {
+                if (this.width <= this.height) {
+                    showMessage('Please select a landscape image (width must be greater than height)', 'error');
+                    input.value = '';
+                    previewContainer.style.display = 'none';
+                    return;
+                }
+                
+                // Show preview if validation passes
+                previewImg.src = URL.createObjectURL(file);
+                previewContainer.style.display = 'block';
+                showMessage('Image looks good! ✓', 'success');
+            };
+            
+            img.onerror = function() {
+                showMessage('Invalid image file', 'error');
+                input.value = '';
+                previewContainer.style.display = 'none';
+            };
+            
+            img.src = URL.createObjectURL(file);
+        }
+    </script>
+</body>
+</html>

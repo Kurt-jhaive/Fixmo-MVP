@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixmo - Service Provider Registration</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Fixmo Registration Styles -->
+    <link href="css/fixmo-registration.css" rel="stylesheet">
+    <!-- Location Picker Styles -->
+    <link href="css/location-picker.css" rel="stylesheet">
+    <!-- Reusable OTP Verification -->
+    <script src="js/otp-verifier.js"></script>
+    <!-- Location Picker Component -->
+    <script src="js/location-picker.js"></script>
+    
+</head>
+<body>
+    <div class="register-container">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <div class="logo">FIXMO</div>
+            <div class="tagline">Service Provider Registration</div>
+            <div class="subtitle">Join our platform as a professional service provider</div>
+        </div>        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step active" id="step1">1</div>
+            <div class="step" id="step2">2</div>
+        </div><!-- Error/Success Messages -->
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>        <!-- Email Verification Form (Step 1) -->
+        <div id="emailForm" class="form-container">
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-envelope"></i> Email Verification
+                </div>
+                
+                <p style="text-align: center; color: #666; margin-bottom: 25px;">
+                    Enter your email address to receive a verification code.
+                </p>
+
+                <!-- Email Input -->
+                <div id="emailInputSection">
+                    <form id="emailVerificationForm">
+                        <div class="form-group">
+                            <label for="emailAddress">Email Address <span class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <input type="email" id="emailAddress" class="form-control" placeholder="Enter your email address" required>
+                                <i class="fas fa-envelope input-icon"></i>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="register-button">
+                            <i class="fas fa-paper-plane"></i> Send Verification Code
+                        </button>
+                    </form>
+                </div>                <!-- OTP Verification -->
+                <div id="otpInputSection" style="display: none;">
+                    <form id="otpVerificationForm">
+                        <p style="text-align: center; color: #666; margin-bottom: 25px;">
+                            We've sent a 6-digit verification code to your email address.
+                        </p>
+
+                        <div class="form-group">
+                            <label style="text-align: center; display: block; margin-bottom: 15px;">Enter Verification Code</label>
+                            <div class="otp-container">
+                                <input type="text" class="otp-tile" maxlength="1" data-index="0">
+                                <input type="text" class="otp-tile" maxlength="1" data-index="1">
+                                <input type="text" class="otp-tile" maxlength="1" data-index="2">
+                                <input type="text" class="otp-tile" maxlength="1" data-index="3">
+                                <input type="text" class="otp-tile" maxlength="1" data-index="4">
+                                <input type="text" class="otp-tile" maxlength="1" data-index="5">
+                            </div>
+                        </div>
+
+                        <div class="resend-otp">
+                            <button type="button" id="resendBtn" onclick="resendOTP()">Resend Code</button>
+                            <span id="resendTimer" style="color: #999; display: none;"></span>
+                        </div>
+
+                        <button type="submit" class="register-button">
+                            <i class="fas fa-check"></i> Verify Email
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>        <!-- Registration Form (Step 2) -->
+        <div id="providerForm" class="form-container" style="display: none;">
+            <form id="registerForm">
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-user"></i> Personal Information
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name <span class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <input type="text" id="firstName" class="form-control" placeholder="Enter first name" required>
+                                <i class="fas fa-user input-icon"></i>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name <span class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <input type="text" id="lastName" class="form-control" placeholder="Enter last name" required>
+                                <i class="fas fa-user input-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="userName">Username <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <input type="text" id="userName" class="form-control" placeholder="Choose a unique username" required>
+                            <i class="fas fa-at input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="birthday">Birthday (Must be at least 18 years old)</label>
+                        <div class="input-wrapper">
+                            <input type="date" id="birthday" class="form-control" max="" placeholder="Select your birth date">
+                            <i class="fas fa-birthday-cake input-icon"></i>
+                        </div>
+                        <small class="form-text">You must be 18 or older to register as a service provider</small>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-envelope"></i> Contact Information
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email Address <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <input type="email" id="email" class="form-control" placeholder="Verified email address" readonly style="background: #f0f8ff;">
+                            <i class="fas fa-envelope input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phoneNumber">Phone Number <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <input type="tel" pattern="[0-9]{4}[0-9]{3}[0-9]{4}" id="phoneNumber" class="form-control" placeholder="Enter your 12 digit phone number (09xxxxxxxxx)" required>
+                            <i class="fas fa-phone input-icon"></i>
+                        </div>
+                    </div>                    <div class="form-group">
+                        <label for="providerDistrict">Service District <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <select id="providerDistrict" class="form-control" required>
+                                <option value="">Select Service District</option>
+                            </select>
+                            <i class="fas fa-map-marker-alt input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="providerCity">Service City/Municipality <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <select id="providerCity" class="form-control" required disabled>
+                                <option value="">Select City/Municipality</option>
+                            </select>
+                            <i class="fas fa-city input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="providerBarangay">Service Barangay <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <select id="providerBarangay" class="form-control" required disabled>
+                                <option value="">Select Barangay</option>
+                            </select>
+                            <i class="fas fa-home input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="providerAddress">Service Area Details</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="providerAddress" class="form-control" placeholder="Specific area, street, or coverage details (optional)">
+                            <i class="fas fa-road input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationPicker">Pin Your Service Area Location <span class="required">*</span></label>
+                        <div id="providerLocationPicker"></div>
+                        <small class="form-text">Your service area location will be automatically set based on your address selections above. Adjust the pin for precise location visibility to customers.</small>
+                        <input type="hidden" id="exactLocation" name="exactLocation" required>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-id-card"></i> Professional Information
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="providerUli">Unique Learner Identifier (ULI) <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <input type="text" id="providerUli" class="form-control" placeholder="Enter your 14 Unique Learner Identifier (ULI) number" maxlength="14" required>
+                            <i class="fas fa-certificate input-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-lock"></i> Security
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="password">Password <span class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <input type="password" id="password" class="form-control" placeholder="Create a strong password" required>
+                                <i class="fas fa-lock input-icon"></i>
+                                <i class="fas fa-eye password-toggle" onclick="togglePassword('password')"></i>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm Password <span class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm your password" required>
+                                <i class="fas fa-lock input-icon"></i>
+                                <i class="fas fa-eye password-toggle" onclick="togglePassword('confirmPassword')"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-upload"></i> Required Documents
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="profilePhoto">Profile Photo <span class="required">*</span></label>
+                        <div class="file-upload">
+                            <input type="file" id="profilePhoto" accept="image/*" required>
+                            <label for="profilePhoto" class="file-upload-label">
+                                <i class="fas fa-camera"></i>
+                                Upload Profile Photo
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="validId">Valid ID/License <span class="required">*</span></label>
+                        <div class="file-upload">
+                            <input type="file" id="validId" accept="image/*" required>
+                            <label for="validId" class="file-upload-label">
+                                <i class="fas fa-id-card"></i>
+                                Upload Valid ID
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-certificate"></i> Professional Certificates
+                    </div>
+                      <div id="certificatesContainer">
+                        <div class="certificate-entry" data-index="0">                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="certificateName0">Certificate Name <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <select id="certificateName0" name="certificateName" class="form-control" required>
+                                            <option value="">Select a TESDA Certificate</option>
+
+                                            <!-- 📱 Electronics & Gadget Repair -->
+                                            <option value="Computer Systems Servicing NC II">Computer Systems Servicing NC II (includes Mobile Gadget Repair)</option>
+                                            <option value="Consumer Electronics Servicing NC II/III">Consumer Electronics Servicing NC II/III</option>
+                                            <option value="Electronic Products Assembly and Servicing NC II">Electronic Products Assembly and Servicing NC II</option>
+                                            <option value="Telecom OSP Installation (Fiber Optic Cable) NC II">Telecom OSP Installation (Fiber Optic Cable) NC II</option>
+
+                                            <!-- ❄️ Air Conditioning & Appliance Services -->
+                                            <option value="RAC Servicing NC I/II">RAC Servicing NC I/II (Domestic Refrigeration and Air Conditioning)</option>
+                                            <option value="RAC Servicing (PACU/CRE) NC II">RAC Servicing (PACU/CRE) NC II</option>
+                                            <option value="Refrigeration and Air-conditioning NC I">Refrigeration and Air-conditioning NC I</option>
+
+                                            <!-- ⚡ Electrical Services -->
+                                            <option value="Electrical Installation and Maintenance NC II/III">Electrical Installation and Maintenance NC II/III</option>
+                                            <option value="Auto Electrical Assembly NC II">Auto Electrical Assembly NC II</option>
+
+                                            <!-- 🚰 Plumbing Services -->
+                                            <option value="Plumbing NC I/II/III">Plumbing NC I/II/III</option>
+
+                                            <!-- 🔨 Carpentry & Handyman Services -->
+                                            <option value="Carpentry NC II/III">Carpentry NC II/III</option>
+                                            <option value="Building Maintenance Handyman">Building Maintenance Handyman</option>
+                                            <option value="Building Wiring Installation NC II">Building Wiring Installation NC II</option>
+
+                                            <!-- 🧱 Masonry & Tile Work -->
+                                            <option value="Masonry NC I/II">Masonry NC I/II</option>
+                                            <option value="Tile Setting NC II">Tile Setting NC II</option>
+                                            <option value="Reinforced Steel Bar Installation NC II">Reinforced Steel Bar Installation NC II</option>
+
+                                            <!-- 🔧 Welding / Metalwork -->
+                                            <option value="Shielded Metal Arc Welding (SMAW) NC I/II">Shielded Metal Arc Welding (SMAW) NC I/II</option>
+                                            <option value="Gas Metal Arc Welding (GMAW) NC II">Gas Metal Arc Welding (GMAW) NC II</option>
+                                            <option value="Gas Tungsten Arc Welding (GTAW) NC II">Gas Tungsten Arc Welding (GTAW) NC II</option>
+
+                                            <!-- 📡 Cable / TV Installation -->
+                                            <option value="Cable Television (CATV) Installation NC II">Cable Television (CATV) Installation NC II</option>
+                                        </select>
+                                        <i class="fas fa-certificate input-icon"></i>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="certificateNumber0">Certificate Number <span class="required">*</span></label>
+                                    <div class="input-wrapper">
+                                        <input type="text" id="certificateNumber0" name="certificateNumber" class="form-control" placeholder="Enter certificate number" required>
+                                        <i class="fas fa-hashtag input-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="certificateFile0">Certificate File <span class="required">*</span></label>
+                                    <div class="file-upload">
+                                        <input type="file" id="certificateFile0" name="certificateFile" accept="image/*,application/pdf" required>
+                                        <label for="certificateFile0" class="file-upload-label">
+                                            <i class="fas fa-file-upload"></i>
+                                            Upload Certificate
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="expiryDate0">Expiry Date (Optional)</label>
+                                    <div class="input-wrapper">
+                                        <input type="date" id="expiryDate0" name="expiryDate" class="form-control">
+                                        <i class="fas fa-calendar input-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="register-button" onclick="addCertificate()" style="background: #28a745; margin-bottom: 20px;">
+                        <i class="fas fa-plus"></i> Add Another Certificate
+                    </button>
+                </div>
+
+                <button type="submit" class="register-button">
+                    <i class="fas fa-user-plus"></i> Complete Registration
+                </button>
+            </form>
+        </div>        <!-- OTP Verification Form (Step 3) -->
+        <div id="otpForm" class="form-container" style="display: none;">
+            <!-- This section is no longer used since OTP verification happens in step 1 -->
+        </div>
+
+        <!-- Login Link -->
+        <div class="login-link">
+            Already have an account? <a href="/fixmo-login">Sign in here</a>
+        </div>
+    </div>    <script>
+        let verifiedEmail = '';
+        let resendCooldown = 0;
+        let locationData;
+        let otpVerifier;
+        let providerLocationPicker;
+
+        // Initialize location picker
+        function initializeLocationPicker() {
+            // Check if the container exists
+            const container = document.getElementById('providerLocationPicker');
+            if (!container) {
+                console.error('Location picker container not found');
+                return;
+            }
+
+            try {
+                providerLocationPicker = new LocationPicker('providerLocationPicker', {
+                    defaultZoom: 15,
+                    defaultLat: 14.5995, // Manila default
+                    defaultLng: 120.9842,
+                    showSearchBox: true,
+                    allowManualPin: true,
+                    showCurrentLocation: true,
+                    onLocationSelect: (location) => {
+                        const hiddenInput = document.getElementById('exactLocation');
+                        if (hiddenInput && location) {
+                            hiddenInput.value = JSON.stringify({
+                                lat: location.lat,
+                                lng: location.lng,
+                                coordinates: location.latLng
+                            });
+                        } else if (hiddenInput) {
+                            hiddenInput.value = '';
+                        }
+                    }
+                });
+                console.log('Location picker initialized successfully');
+            } catch (error) {
+                console.error('Error initializing location picker:', error);
+                showError('Failed to initialize location picker. Please refresh the page.');
+            }
+        }
+
+        // Initialize OTP verifier
+        function initializeOTPVerifier() {
+            otpVerifier = new OTPVerifier({
+                userType: 'provider',
+                showMessage: (message, type) => {
+                    if (type === 'error') {
+                        showError(message);
+                    } else {
+                        showSuccess(message);
+                    }
+                },
+                onSuccess: (data) => {
+                    showSuccess('Email verified successfully! Please complete your registration.');
+                    
+                    // Update step indicator
+                    document.getElementById('step1').classList.remove('active');
+                    document.getElementById('step1').classList.add('completed');
+                    document.getElementById('step2').classList.add('active');
+                    
+                    // Show registration form
+                    document.getElementById('emailForm').style.display = 'none';
+                    document.getElementById('providerForm').style.display = 'block';
+                    
+                    // Pre-fill email in registration form
+                    document.getElementById('email').value = verifiedEmail;
+                    
+                    // Focus on first name field
+                    document.getElementById('firstName').focus();
+                    
+                    // Initialize location picker after showing registration form
+                    setTimeout(() => {
+                        // Double check that the container is visible and ready
+                        const container = document.getElementById('providerLocationPicker');
+                        if (container && container.offsetParent !== null) {
+                            initializeLocationPicker();
+                            
+                            // Add listener for street address changes
+                            const addressInput = document.getElementById('providerAddress');
+                            if (addressInput) {
+                                addressInput.addEventListener('input', debounce(updateProviderLocationPickerSearch, 1000));
+                            }
+                        } else {
+                            console.warn('Location picker container not ready, retrying...');
+                            setTimeout(initializeLocationPicker, 1000);
+                        }
+                    }, 500);
+                },
+                onError: (error) => {
+                    const otpTiles = document.querySelectorAll('.otp-tile');                    otpVerifier.showOTPError(otpTiles);
+                    otpVerifier.clearOTPTiles(otpTiles);
+                }
+            });
+        }
+
+        // Load NCR location data and initialize dropdowns
+        async function loadNCRData() {
+            try {
+                const response = await fetch('/assets/locationdetails.json');
+                const json = await response.json();
+                locationData = json.NCR.province_list;
+                populateProviderDistricts();
+                console.log('NCR location data loaded successfully');
+            } catch (error) {
+                console.error('Failed to load location data:', error);
+                showError('Failed to load location data. Please refresh the page.');
+            }
+        }
+
+        function populateProviderDistricts() {
+            const districtSelect = document.getElementById('providerDistrict');
+            districtSelect.innerHTML = '<option value="">Select Service District</option>';
+
+            Object.keys(locationData).forEach(district => {
+                const option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                districtSelect.appendChild(option);
+            });
+
+            districtSelect.addEventListener('change', handleProviderDistrictChange);
+        }
+
+        function handleProviderDistrictChange(e) {
+            const selectedDistrict = e.target.value;
+            const cities = locationData[selectedDistrict]?.municipality_list || {};
+
+            const citySelect = document.getElementById('providerCity');
+            citySelect.innerHTML = '<option value="">Select City/Municipality</option>';
+            citySelect.disabled = !selectedDistrict;
+
+            if (selectedDistrict) {
+                Object.keys(cities).forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    citySelect.appendChild(option);
+                });
+
+                citySelect.addEventListener('change', () => handleProviderCityChange(cities));
+            }
+
+            // Reset barangay
+            const barangaySelect = document.getElementById('providerBarangay');
+            barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+            barangaySelect.disabled = true;
+            
+            // Update location picker search
+            updateProviderLocationPickerSearch();
+        }
+
+        function handleProviderCityChange(cities) {
+            const selectedCity = document.getElementById('providerCity').value;
+            const barangays = cities[selectedCity]?.barangay_list || [];
+
+            const barangaySelect = document.getElementById('providerBarangay');
+            barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+            barangaySelect.disabled = !selectedCity;
+
+            if (selectedCity) {
+                barangays.forEach(barangay => {
+                    const option = document.createElement('option');
+                    option.value = barangay;
+                    option.textContent = barangay;
+                    barangaySelect.appendChild(option);
+                });
+                
+                // Add change listener for barangay
+                barangaySelect.addEventListener('change', updateProviderLocationPickerSearch);
+            }
+            
+            // Update location picker search
+            updateProviderLocationPickerSearch();
+        }
+
+        // Function to update provider location picker search based on address selections
+        function updateProviderLocationPickerSearch() {
+            if (!providerLocationPicker) return;
+            
+            const district = document.getElementById('providerDistrict').value;
+            const city = document.getElementById('providerCity').value;
+            const barangay = document.getElementById('providerBarangay').value;
+            const address = document.getElementById('providerAddress').value;
+            
+            // Build search query from selected address components
+            let searchQuery = '';
+            if (address) searchQuery += address + ', ';
+            if (barangay) searchQuery += barangay + ', ';
+            if (city) searchQuery += city + ', ';
+            if (district) searchQuery += district + ', ';
+            searchQuery += 'Metro Manila, Philippines';
+            
+            // Update the search input and trigger search
+            if (searchQuery.trim() !== 'Metro Manila, Philippines') {
+                const searchInput = document.getElementById('providerLocationPicker-search');
+                if (searchInput) {
+                    searchInput.value = searchQuery;
+                    providerLocationPicker.searchLocation(searchQuery);
+                }
+            }
+        }
+
+        // Debounce function to limit API calls
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function getFullProviderAddress() {
+            const district = document.getElementById('providerDistrict').value;
+            const city = document.getElementById('providerCity').value;
+            const barangay = document.getElementById('providerBarangay').value;
+            const address = document.getElementById('providerAddress').value;
+
+            let fullAddress = '';
+            if (address) fullAddress += address + ', ';
+            if (barangay) fullAddress += barangay + ', ';
+            if (city) fullAddress += city + ', ';
+            if (district) fullAddress += district + ', ';
+            fullAddress += 'Metro Manila';
+
+            return fullAddress;        }
+
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            document.getElementById('emailAddress').focus();
+            initializeOTPVerifier();
+            loadNCRData();
+        });
+
+        // Email verification form handler (Step 1)
+        document.getElementById('emailVerificationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('emailAddress').value;
+            
+            if (!email) {
+                showError('Please enter your email address');
+                return;            }
+
+            const result = await otpVerifier.requestOTP(email);
+            
+            if (result.success) {
+                verifiedEmail = email;
+                
+                // Hide email input and show OTP input
+                document.getElementById('emailInputSection').style.display = 'none';
+                document.getElementById('otpInputSection').style.display = 'block';
+                
+                // Focus on first OTP tile
+                document.querySelector('.otp-tile[data-index="0"]').focus();
+                
+                // Start resend cooldown
+                startResendCooldown();
+            }
+        });        // OTP verification form handler
+        document.getElementById('otpVerificationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const otpTiles = document.querySelectorAll('.otp-tile');
+            const otp = otpVerifier.getOTPFromTiles(otpTiles);
+            
+            // Validate OTP format
+            const validation = otpVerifier.validateOTP(otp);
+            if (!validation.valid) {
+                showError(validation.message);
+                otpVerifier.showOTPError(otpTiles);
+                return;
+            }
+
+            // Verify OTP with backend
+            await otpVerifier.verifyOTP(verifiedEmail, otp);
+        });        // Password visibility toggle
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = event.target;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Message display functions
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(hideMessages, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(hideMessages, 5000);
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // File upload label update
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', function() {
+                const label = this.nextElementSibling;
+                if (this.files && this.files[0]) {
+                    label.innerHTML = `<i class="fas fa-check"></i> ${this.files[0].name}`;
+                    label.style.borderColor = '#38a169';
+                    label.style.color = '#38a169';
+                }
+            });
+        });        // Provider registration form handler (Step 2)
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            // Validate password strength
+            if (password.length < 8) {
+                showError('Password must be at least 8 characters long');
+                return;
+            }
+
+            // Validate at least one certificate is provided
+            const certificateEntries = document.querySelectorAll('.certificate-entry');
+            let validCertificates = 0;
+            
+            certificateEntries.forEach(entry => {
+                const nameSelect = entry.querySelector('select[name="certificateName"]');
+                const numberInput = entry.querySelector('input[name="certificateNumber"]');
+                const fileInput = entry.querySelector('input[name="certificateFile"]');
+                
+                if (nameSelect.value && numberInput.value.trim() && fileInput.files[0]) {
+                    validCertificates++;
+                }
+            });
+            
+            if (validCertificates === 0) {
+                showError('Please provide at least one professional certificate');
+                return;
+            }
+
+            // Validate exact location is selected
+            const exactLocationValue = document.getElementById('exactLocation').value;
+            if (!exactLocationValue || exactLocationValue.trim() === '') {
+                showError('Please pin your exact service area location on the map. Your location will be automatically set based on your address selections.');
+                return;
+            }
+
+            // Prepare form data for final registration
+            const formData = new FormData();
+              // Add form data using the verified email
+            formData.append('provider_first_name', document.getElementById('firstName').value);
+            formData.append('provider_last_name', document.getElementById('lastName').value);
+            formData.append('provider_userName', document.getElementById('userName').value);
+            formData.append('provider_email', verifiedEmail);
+            formData.append('provider_birthday', document.getElementById('birthday').value);
+            formData.append('provider_password', password);
+            formData.append('provider_phone_number', document.getElementById('phoneNumber').value);
+            formData.append('provider_location', getFullProviderAddress());
+            formData.append('provider_exact_location', document.getElementById('exactLocation').value);
+            formData.append('provider_uli', document.getElementById('providerUli').value);
+            formData.append('otp', '123456'); // Dummy OTP since email is already verified
+            
+            // Add file uploads if present
+            const profilePhoto = document.getElementById('profilePhoto').files[0];
+            const validId = document.getElementById('validId').files[0];
+            
+            if (profilePhoto) {
+                formData.append('provider_profile_photo', profilePhoto);
+            }
+            if (validId) {
+                formData.append('provider_valid_id', validId);
+            }            // Collect certificate data
+            const certificateNames = [];
+            const certificateNumbers = [];
+            const expiryDates = [];
+            
+            certificateEntries.forEach(entry => {
+                const nameSelect = entry.querySelector('select[name="certificateName"]');
+                const numberInput = entry.querySelector('input[name="certificateNumber"]');
+                const fileInput = entry.querySelector('input[name="certificateFile"]');
+                const expiryInput = entry.querySelector('input[name="expiryDate"]');
+                
+                if (nameSelect && nameSelect.value && numberInput && numberInput.value.trim() && fileInput && fileInput.files[0]) {
+                    certificateNames.push(nameSelect.value);
+                    certificateNumbers.push(numberInput.value.trim());
+                    expiryDates.push(expiryInput && expiryInput.value ? expiryInput.value : '');
+                    formData.append('certificateFile', fileInput.files[0]);
+                }
+            });
+            
+            // Add certificate metadata as JSON strings for better handling
+            formData.append('certificateNames', JSON.stringify(certificateNames));
+            formData.append('certificateNumbers', JSON.stringify(certificateNumbers));
+            formData.append('expiryDates', JSON.stringify(expiryDates));try {
+                console.log('Submitting provider registration...', {
+                    email: verifiedEmail,
+                    certificatesCount: validCertificates
+                });
+                
+                const response = await fetch('/auth/provider-verify-register', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                console.log('Registration response:', { status: response.status, data });
+
+                if (response.ok) {
+                    showSuccess('Registration successful! Redirecting to login...');
+                    
+                    // Redirect to login after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = '/fixmo-login';
+                    }, 3000);
+                } else {
+                    console.error('Registration failed:', data);
+                    showError(data.message || 'Registration failed');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showError('Network error. Please try again.');
+            }
+        });        // Resend OTP functionality
+        async function resendOTP() {
+            if (resendCooldown > 0) return;
+              
+            const result = await otpVerifier.requestOTP(verifiedEmail);
+            
+            if (result.success) {
+                startResendCooldown();
+                
+                // Clear and focus OTP tiles
+                const otpTiles = document.querySelectorAll('.otp-tile');
+                otpVerifier.clearOTPTiles(otpTiles);
+            }
+        }
+
+        function startResendCooldown() {
+            resendCooldown = 60;
+            const resendBtn = document.getElementById('resendBtn');
+            const resendTimer = document.getElementById('resendTimer');
+            
+            if (resendBtn && resendTimer) {
+                resendBtn.disabled = true;
+                resendTimer.style.display = 'inline';
+                
+                const timer = setInterval(() => {
+                    resendTimer.textContent = `Resend in ${resendCooldown}s`;
+                    resendCooldown--;
+                    
+                    if (resendCooldown < 0) {
+                        clearInterval(timer);
+                        resendBtn.disabled = false;                        resendTimer.style.display = 'none';
+                    }
+                }, 1000);
+            }
+        }        // OTP Tile functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const otpTiles = document.querySelectorAll('.otp-tile');
+            
+            // Use the OTP verifier to set up tiles
+            setTimeout(() => {                if (otpVerifier) {
+                    otpVerifier.setupOTPTiles(otpTiles);
+                }
+            }, 100);
+
+            // Set birthday field restrictions (at least 18 years old)
+            const birthdayInput = document.getElementById('birthday');
+            if (birthdayInput) {
+                const today = new Date();
+                const eighteenYearsAgo = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+                const hundredYearsAgo = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+                
+                // Set max date to exactly 18 years ago (no current year visible)
+                const maxDate = eighteenYearsAgo.toISOString().split('T')[0];
+                const minDate = hundredYearsAgo.toISOString().split('T')[0];
+                
+                birthdayInput.setAttribute('max', maxDate);
+                birthdayInput.setAttribute('min', minDate);
+                
+                // Add validation on change
+                birthdayInput.addEventListener('change', function() {
+                    const selectedDate = new Date(this.value);
+                    const today = new Date();
+                    let age = today.getFullYear() - selectedDate.getFullYear();
+                    const monthDiff = today.getMonth() - selectedDate.getMonth();
+                    
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < selectedDate.getDate())) {
+                        age--;
+                    }
+                    
+                    if (age < 18) {
+                        showError('You must be at least 18 years old to register as a service provider.');
+                        this.value = '';
+                        return;
+                    }
+                    
+                    if (age > 100) {
+                        showError('Please enter a valid birth date.');
+                        this.value = '';
+                        return;
+                    }
+                });
+                
+                // Add focus event to show placeholder year when calendar opens
+                birthdayInput.addEventListener('focus', function() {
+                    if (!this.value) {
+                        // Don't set default value automatically, let user choose
+                        // but restrict the year range in the picker
+                    }
+                });
+            }
+        });
+
+        // Add Certificate functionality
+        let certificateCount = 1;
+        
+        function addCertificate() {
+            const container = document.getElementById('certificatesContainer');
+            const newCertificate = document.createElement('div');
+            newCertificate.className = 'certificate-entry';
+            newCertificate.setAttribute('data-index', certificateCount);
+            
+            newCertificate.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="certificateName${certificateCount}">Certificate Name <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <select id="certificateName${certificateCount}" name="certificateName" class="form-select" required>
+                                <option value="">Select a TESDA Certificate</option>
+                                <option value="Automotive Servicing NC I">Automotive Servicing NC I</option>
+                                <option value="Automotive Servicing NC II">Automotive Servicing NC II</option>
+                                <option value="Automotive Servicing NC III">Automotive Servicing NC III</option>
+                                <option value="Computer Hardware Servicing NC II">Computer Hardware Servicing NC II</option>
+                                <option value="Computer Programming NC IV">Computer Programming NC IV</option>
+                                <option value="Consumer Electronics Servicing NC II">Consumer Electronics Servicing NC II</option>
+                                <option value="Electrical Installation and Maintenance NC II">Electrical Installation and Maintenance NC II</option>
+                                <option value="Electrical Installation and Maintenance NC III">Electrical Installation and Maintenance NC III</option>
+                                <option value="Electronic Products Assembly and Servicing NC II">Electronic Products Assembly and Servicing NC II</option>
+                                <option value="HVAC/R (Heating, Ventilation, Air Conditioning and Refrigeration) Servicing NC I">HVAC/R Servicing NC I</option>
+                                <option value="HVAC/R (Heating, Ventilation, Air Conditioning and Refrigeration) Servicing NC II">HVAC/R Servicing NC II</option>
+                                <option value="HVAC/R (Heating, Ventilation, Air Conditioning and Refrigeration) Servicing NC III">HVAC/R Servicing NC III</option>
+                                <option value="Plumbing NC I">Plumbing NC I</option>
+                                <option value="Plumbing NC II">Plumbing NC II</option>
+                                <option value="Welding NC I">Welding NC I</option>
+                                <option value="Welding NC II">Welding NC II</option>
+                                <option value="Welding NC III">Welding NC III</option>
+                                <option value="Carpentry NC II">Carpentry NC II</option>
+                                <option value="Carpentry NC III">Carpentry NC III</option>
+                                <option value="Masonry NC I">Masonry NC I</option>
+                                <option value="Masonry NC II">Masonry NC II</option>
+                                <option value="Painting NC II">Painting NC II</option>
+                                <option value="Tile Setting NC I">Tile Setting NC I</option>
+                                <option value="Tile Setting NC II">Tile Setting NC II</option>
+                                <option value="Beauty Care NC II">Beauty Care NC II</option>
+                                <option value="Beauty Care NC III">Beauty Care NC III</option>
+                                <option value="Massage Therapy NC II">Massage Therapy NC II</option>
+                                <option value="Dressmaking NC II">Dressmaking NC II</option>
+                                <option value="Food and Beverage Services NC II">Food and Beverage Services NC II</option>
+                                <option value="Food and Beverage Services NC III">Food and Beverage Services NC III</option>
+                                <option value="Cookery NC II">Cookery NC II</option>
+                                <option value="Cookery NC III">Cookery NC III</option>
+                                <option value="Housekeeping NC II">Housekeeping NC II</option>
+                                <option value="Tour Guiding Services NC II">Tour Guiding Services NC II</option>
+                                <option value="Other TESDA Certificate">Other TESDA Certificate</option>
+                            </select>
+                            <i class="fas fa-certificate input-icon"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="certificateNumber${certificateCount}">Certificate Number <span class="required">*</span></label>
+                        <div class="input-wrapper">
+                            <input type="text" id="certificateNumber${certificateCount}" name="certificateNumber" class="form-control" placeholder="Enter certificate number" required>
+                            <i class="fas fa-hashtag input-icon"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="certificateFile${certificateCount}">Certificate File <span class="required">*</span></label>
+                        <div class="file-upload">
+                            <input type="file" id="certificateFile${certificateCount}" name="certificateFile" accept="image/*,application/pdf" required>
+                            <label for="certificateFile${certificateCount}" class="file-upload-label">
+                                <i class="fas fa-file-upload"></i>
+                                Upload Certificate
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="expiryDate${certificateCount}">Expiry Date (Optional)</label>
+                        <div class="input-wrapper">
+                            <input type="date" id="expiryDate${certificateCount}" name="expiryDate" class="form-control">
+                            <i class="fas fa-calendar input-icon"></i>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: right; margin-bottom: 20px;">
+                    <button type="button" class="remove-certificate-btn" onclick="removeCertificate(this)" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer;">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(newCertificate);
+            
+            // Add file upload listener for the new input
+            const fileInput = newCertificate.querySelector('input[type="file"]');
+            fileInput.addEventListener('change', function() {
+                const label = this.nextElementSibling;
+                if (this.files && this.files[0]) {
+                    label.innerHTML = `<i class="fas fa-check"></i> ${this.files[0].name}`;
+                    label.style.borderColor = '#38a169';
+                    label.style.color = '#38a169';
+                }
+            });
+            
+            certificateCount++;
+        }
+        
+        function removeCertificate(button) {
+            const certificateEntry = button.closest('.certificate-entry');
+            const container = document.getElementById('certificatesContainer');
+            
+            // Don't allow removing if it's the only certificate
+            if (container.children.length > 1) {
+                certificateEntry.remove();
+            } else {
+                showError('At least one certificate is required');
+            }        }
+    </script>
+</body>
+</html>

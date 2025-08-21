@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard - Fixmo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/customer-dashboard.css">
+    <link rel="stylesheet" href="css/profile-manager.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <!-- Logo -->
+            <div class="nav-logo">
+                <span class="logo-text">FIXMO</span>
+                <i class="fas fa-tools logo-icon"></i>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="Search for services..." class="search-input">
+                    <button type="button" id="searchBtn" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- User Profile -->
+            <div class="nav-profile">
+                <div class="profile-info">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="profile-details">
+                        <span class="profile-name" id="profileName">Loading...</span>
+                        <span class="profile-status" id="profileStatus">
+                            <i class="fas fa-shield-alt verification-icon"></i>
+                            <span id="verificationText">Unverified</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="#" class="dropdown-item" data-page="dashboard">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                    <a href="#" class="dropdown-item" data-page="bookings">
+                        <i class="fas fa-calendar-check"></i> Bookings
+                    </a>
+                    <a href="#" class="dropdown-item" data-page="profile">
+                        <i class="fas fa-user-edit"></i> Edit Profile
+                    </a>
+                    <a href="#" class="dropdown-item" data-page="settings">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item" id="signOutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page active">
+            <!-- Verification Alert -->
+            <div id="verificationAlert" class="verification-alert" style="display: none;">
+                <div class="alert-content">
+                    <i class="fas fa-exclamation-triangle alert-icon"></i>
+                    <div class="alert-text">
+                        <h4>Account Verification Required</h4>
+                        <p>Please upload your valid ID and profile picture to verify your account and access all features.</p>
+                    </div>
+                    <button class="verify-btn" id="verifyAccountBtn">
+                        <i class="fas fa-upload"></i> Verify Now
+                    </button>
+                </div>
+            </div>
+
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <h1 class="welcome-title">Welcome back, <span id="welcomeName">Customer</span>!</h1>
+                <p class="welcome-subtitle">Find and book professional services in your area</p>
+            </div>            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="activeBookings">0</h3>
+                        <p>Active Bookings</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="completedBookings">0</h3>
+                        <p>Completed Services</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="averageRating">0.0</h3>
+                        <p>Average Rating</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filter Section -->
+            <div class="search-filter-section">
+                <div class="section-header">
+                    <h2>Find Services</h2>
+                    <p>Discover professional services in your area</p>
+                </div>
+                
+                <div class="filter-controls">
+                    <div class="category-filter">
+                        <label for="categorySelect">Category:</label>
+                        <select id="categorySelect" class="filter-select">
+                            <option value="">All Categories</option>
+                            <option value="plumbing">Plumbing</option>
+                            <option value="electrical">Electrical</option>
+                            <option value="cleaning">Cleaning</option>
+                            <option value="carpentry">Carpentry</option>
+                            <option value="painting">Painting</option>
+                            <option value="appliance-repair">Appliance Repair</option>
+                            <option value="gardening">Gardening</option>
+                            <option value="pest-control">Pest Control</option>
+                        </select>
+                    </div>
+                    
+                    <div class="location-filter">
+                        <label for="locationSelect">Location:</label>
+                        <select id="locationSelect" class="filter-select">
+                            <option value="">All Locations</option>
+                            <option value="manila">Manila</option>
+                            <option value="quezon-city">Quezon City</option>
+                            <option value="makati">Makati</option>
+                            <option value="taguig">Taguig</option>
+                            <option value="pasig">Pasig</option>
+                        </select>
+                    </div>
+                    
+                    <div class="sort-filter">
+                        <label for="sortSelect">Sort by:</label>
+                        <select id="sortSelect" class="filter-select">
+                            <option value="rating">Highest Rated</option>
+                            <option value="price-low">Price: Low to High</option>
+                            <option value="price-high">Price: High to Low</option>
+                            <option value="distance">Nearest</option>
+                            <option value="newest">Newest</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommended Services -->
+            <div class="recommended-section">
+                <div class="section-header">
+                    <h2>Recommended for You</h2>
+                    <p>Based on your previous bookings and preferences</p>
+                </div>
+                <div class="services-grid" id="recommendedServices">
+                    <!-- Recommended services will be loaded here -->
+                </div>
+            </div>
+
+            <!-- All Services -->
+            <div class="all-services-section">
+                <div class="section-header">
+                    <h2>All Services</h2>
+                    <div class="results-info">
+                        <span id="resultsCount">0 services found</span>
+                    </div>
+                </div>
+                <div class="services-grid" id="allServices">
+                    <!-- All services will be loaded here -->
+                </div>
+                <div class="load-more-container">
+                    <button class="load-more-btn" id="loadMoreBtn">
+                        <i class="fas fa-plus"></i> Load More Services
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookings Page -->
+        <div id="bookingsPage" class="page">
+            <div class="page-header">
+                <h1>My Bookings</h1>
+                <p>Manage your active service bookings</p>
+            </div>
+            
+            <!-- Booking Filters -->
+            <div class="booking-filters">
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">
+                        <i class="fas fa-list"></i> All Bookings
+                    </button>
+                    <button class="filter-btn" data-filter="pending">
+                        <i class="fas fa-clock"></i> Pending
+                    </button>
+                    <button class="filter-btn" data-filter="accepted">
+                        <i class="fas fa-check"></i> Accepted
+                    </button>
+                    <button class="filter-btn" data-filter="on the way">
+                        <i class="fas fa-route"></i> On the Way
+                    </button>
+                    <button class="filter-btn" data-filter="in progress">
+                        <i class="fas fa-wrench"></i> In Progress
+                    </button>
+                    <button class="filter-btn" data-filter="completed">
+                        <i class="fas fa-check-circle"></i> Completed
+                    </button>
+                    <button class="filter-btn" data-filter="cancelled">
+                        <i class="fas fa-times-circle"></i> Cancelled
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bookings-container" id="bookingsContainer">
+                <!-- Active bookings will be loaded here -->
+            </div>
+        </div>
+
+
+
+        <!-- Profile Page -->
+        <div id="profilePage" class="page">
+            <div class="page-header">
+                <h1>Edit Profile</h1>
+                <p>Update your personal information and verification documents</p>
+            </div>
+            <div class="profile-container" id="profileContainer">
+                <!-- Profile form will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settingsPage" class="page">
+            <div class="page-header">
+                <h1>Settings</h1>
+                <p>Manage your account preferences and notifications</p>
+            </div>
+            <div class="settings-container" id="settingsContainer">
+                <!-- Settings will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Book Service</h3>
+                <button class="modal-close" id="bookingModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="bookingContent">
+                    <!-- Service Information -->
+                    <div class="booking-service-info">
+                        <div class="service-summary">
+                            <div class="service-image-small" id="bookingServiceImage">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                            <div class="service-details">
+                                <h4 id="bookingServiceTitle">Service Title</h4>
+                                <p id="bookingServiceProvider">Provider Name</p>
+                                <p class="service-price">Starting from <span id="bookingServicePrice">₱0.00</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Booking Form -->
+                    <form id="bookingForm">
+                        <input type="hidden" id="bookingProviderId" name="provider_id">
+                        <input type="hidden" id="bookingServiceId" name="service_id">
+                        <input type="hidden" id="bookingPrice" name="final_price">
+                        
+                        <!-- Date Selection -->
+                        <div class="form-group">
+                            <label for="bookingDate">
+                                <i class="fas fa-calendar-alt"></i>
+                                Select Date
+                            </label>
+                            <input type="date" id="bookingDate" name="scheduled_date" class="form-control" required>
+                            <small class="form-help">Choose your preferred appointment date</small>
+                        </div>
+
+                        <!-- Time Slots -->
+                        <div class="form-group">
+                            <label>
+                                <i class="fas fa-clock"></i>
+                                Available Time Slots
+                            </label>
+                            <div id="timeSlotsContainer" class="time-slots-container">
+                                <div class="time-slots-loading">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Select a date to view available time slots</p>
+                                </div>
+                            </div>
+                            <input type="hidden" id="selectedTimeSlot" name="scheduled_time">
+                        </div>
+
+                        <!-- Repair Description -->
+                        <div class="form-group">
+                            <label for="repairDescription">
+                                <i class="fas fa-edit"></i>
+                                Describe Your Issue (Optional)
+                            </label>
+                            <textarea id="repairDescription" name="repairDescription" class="form-control" rows="4" 
+                                     placeholder="Please describe what needs to be fixed or serviced..."></textarea>
+                            <small class="form-help">Provide details to help the service provider prepare</small>
+                        </div>
+
+                        <!-- Booking Summary -->
+                        <div class="booking-summary">
+                            <h4>Booking Summary</h4>
+                            <div class="summary-item">
+                                <span>Service:</span>
+                                <span id="summaryServiceTitle">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Provider:</span>
+                                <span id="summaryProviderName">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Date:</span>
+                                <span id="summaryDate">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Time:</span>
+                                <span id="summaryTime">-</span>
+                            </div>
+                            <div class="summary-item total">
+                                <span>Starting Price:</span>
+                                <span id="summaryPrice">₱0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" id="cancelBooking">Cancel</button>
+                            <button type="submit" class="btn-primary" id="confirmBooking" disabled>
+                                <i class="fas fa-check"></i>
+                                Confirm Booking
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Modal -->
+    <div id="verificationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Account Verification</h3>
+                <button class="modal-close" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="verificationForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="profilePicture">Profile Picture</label>
+                        <div class="file-upload-area" id="profilePictureArea">
+                            <i class="fas fa-camera upload-icon"></i>
+                            <p>Click to upload profile picture</p>
+                            <input type="file" id="profilePicture" name="profilePicture" accept="image/*" hidden>
+                        </div>
+                        <div class="preview-container" id="profilePreview" style="display: none;">
+                            <img id="profilePreviewImg" alt="Profile Preview">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="validId">Valid ID</label>
+                        <div class="file-upload-area" id="validIdArea">
+                            <i class="fas fa-id-card upload-icon"></i>
+                            <p>Click to upload valid ID</p>
+                            <input type="file" id="validId" name="validId" accept="image/*" hidden>
+                        </div>
+                        <div class="preview-container" id="validIdPreview" style="display: none;">
+                            <img id="validIdPreviewImg" alt="ID Preview">
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelVerification">Cancel</button>
+                        <button type="submit" class="btn-primary">Submit for Verification</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/notification-manager.js"></script>
+    <script src="js/dashboard-utils.js"></script>
+    <script src="js/customer-profile-manager.js"></script>
+    <script src="js/customer-dashboard.js"></script>
+</body>
+</html>

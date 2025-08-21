@@ -6,121 +6,163 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-model User{
-    user_id Int @id @default(autoincrement())
-    first_name String
-    last_name String
-    userName String @unique
-    email String @unique
-    password String
-    phone_number String @unique
-    profile_photo String?
-    valid_id String?
-    user_location String?
-    created_at DateTime @default(now())
-    user_rating Rating[]
-    user_appointments Appointment[]
-    is_verified Boolean @default(false)
+
+model User {
+  user_id           Int           @id @default(autoincrement())
+  first_name        String
+  last_name         String
+  email             String        @unique
+  phone_number      String        @unique
+  profile_photo     String?
+  valid_id          String?
+  user_location     String?
+  created_at        DateTime      @default(now())
+  is_verified       Boolean       @default(false)
+  password          String
+  userName          String        @unique
+  is_activated      Boolean       @default(true)
+  birthday          DateTime?
+  exact_location    String?
+  user_appointments Appointment[]
+  user_rating       Rating[]
 }
 
-model ServiceProviderDetails{
-    provider_id Int @id @default(autoincrement())
-    provider_first_name String
-    provider_last_name String
-    provider_password String
-    provider_userName String @unique
-    provider_email String @unique
-    provider_phone_number String @unique
-    provider_profile_photo String?
-    provider_valid_id String?
-    provider_isVerified Boolean @default(false)
-    created_at DateTime @default(now())
-    provider_rating Float @default(0.0)
-    provider_location String?
-    provider_appointments Appointment[]
-    provider_services ServiceListing[]
-    provider_ratings Rating[]
-    provider_uli String @unique
-    provider_certificates Certificate[]
-    provider_availability Availability[]
-    
+model ServiceProviderDetails {
+  provider_id             Int              @id @default(autoincrement())
+  provider_first_name     String
+  provider_last_name      String
+  provider_email          String           @unique
+  provider_phone_number   String           @unique
+  provider_profile_photo  String?
+  provider_valid_id       String?
+  provider_isVerified     Boolean          @default(false)
+  created_at              DateTime         @default(now())
+  provider_rating         Float            @default(0.0)
+  provider_location       String?
+  provider_uli            String           @unique
+  provider_password       String
+  provider_userName       String           @unique
+  provider_isActivated    Boolean          @default(true)
+  provider_birthday       DateTime?
+  provider_exact_location String?
+  provider_appointments   Appointment[]
+  provider_availability   Availability[]
+  provider_certificates   Certificate[]
+  provider_ratings        Rating[]
+  provider_services       ServiceListing[]
 }
 
-model Certificate{
-    certificate_id Int @id @default(autoincrement())
-    certificate_name String
-    certificate_number String @unique
-    certificate_file_path String
-    expiry_date DateTime?
-    provider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
-    provider_id Int
+model Certificate {
+  certificate_id        Int                    @id @default(autoincrement())
+  certificate_name      String
+  certificate_file_path String
+  expiry_date           DateTime?
+  provider_id           Int
+  certificate_number    String                 @unique
+  certificate_status    String                 @default("Pending")
+  created_at            DateTime               @default(now())
+  provider              ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+  CoveredService        CoveredService[]
 }
 
-
-model ServiceListing{
-    service_id Int @id @default(autoincrement())
-    service_title String
-    service_description String
-    service_startingprice Float
-    serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
-    provider_id Int
-    specific_services SpecificService[]
-    
+model ServiceListing {
+  service_id              Int                    @id @default(autoincrement())
+  service_title           String
+  service_description     String
+  service_startingprice   Float
+  provider_id             Int
+  servicelisting_isActive Boolean                @default(true)
+  service_picture         String?
+  appointments            Appointment[]
+  serviceProvider         ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+  specific_services       SpecificService[]
 }
 
-model SpecificService{
-    specific_service_id Int @id @default(autoincrement())
-    specific_service_title String
-    specific_service_description String
-    serviceListing ServiceListing @relation(fields: [service_id], references: [service_id])
-    service_id Int
-
-
+model ServiceCategory {
+  category_id       Int               @id @default(autoincrement())
+  category_name     String
+  specific_services SpecificService[]
 }
 
-model Availability{
-    availability_id Int @id @default(autoincrement())
-    dayOfWeek String
-    startTime String
-    endTime String
-    serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
-    provider_id Int
+model SpecificService {
+  specific_service_id          Int              @id @default(autoincrement())
+  specific_service_title       String
+  specific_service_description String
+  service_id                   Int
+  category_id                  Int
+  covered_by_certificates      CoveredService[]
+  category                     ServiceCategory  @relation(fields: [category_id], references: [category_id])
+  serviceListing               ServiceListing   @relation(fields: [service_id], references: [service_id])
 }
 
-model Appointment{
-    appointment_id Int @id @default(autoincrement())
-    customer User @relation(fields: [customer_id], references: [user_id])
-    customer_id Int
-    serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
-    provider_id Int
-
-    appointment_status String
-    scheduled_date DateTime
-    actual_price Float?
-    repairDescription String?
-    created_at DateTime @default(now())
-    appointment_rating Rating[]
-
+model CoveredService {
+  covered_service_id  Int             @id @default(autoincrement())
+  specific_service_id Int
+  certificate_id      Int
+  certificate         Certificate     @relation(fields: [certificate_id], references: [certificate_id])
+  specific_service    SpecificService @relation(fields: [specific_service_id], references: [specific_service_id])
 }
 
-model Rating{
-    id Int @id @default(autoincrement())
-    rating_value Int
-    rating_comment String?
-    appointment Appointment @relation(fields: [appointment_id], references: [appointment_id])
-    appointment_id Int
-    user User @relation(fields: [user_id], references: [user_id])
-    user_id Int
-    serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
-    provider_id Int
+model Availability {
+  availability_id       Int                    @id @default(autoincrement())
+  dayOfWeek             String
+  startTime             String
+  endTime               String
+  provider_id           Int
+  availability_isActive Boolean                @default(true)
+  appointments          Appointment[]
+  serviceProvider       ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+}
+
+model Appointment {
+  appointment_id      Int                    @id @default(autoincrement())
+  customer_id         Int
+  provider_id         Int
+  appointment_status  String
+  scheduled_date      DateTime
+  repairDescription   String?
+  created_at          DateTime               @default(now())
+  final_price         Float?
+  availability_id     Int
+  service_id          Int
+  cancellation_reason String?
+  availability        Availability           @relation(fields: [availability_id], references: [availability_id])
+  customer            User                   @relation(fields: [customer_id], references: [user_id])
+  serviceProvider     ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+  service             ServiceListing         @relation(fields: [service_id], references: [service_id])
+  appointment_rating  Rating[]
+}
+
+model Rating {
+  id              Int                    @id @default(autoincrement())
+  rating_value    Int
+  rating_comment  String?
+  appointment_id  Int
+  user_id         Int
+  provider_id     Int
+  rated_by        String                 // 'customer' or 'provider'
+  created_at      DateTime               @default(now())
+  appointment     Appointment            @relation(fields: [appointment_id], references: [appointment_id])
+  serviceProvider ServiceProviderDetails @relation(fields: [provider_id], references: [provider_id])
+  user            User                   @relation(fields: [user_id], references: [user_id])
 }
 
 model OTPVerification {
-  id            Int      @id @default(autoincrement())
-  email         String
-  otp           String
-  expires_at    DateTime
-  created_at    DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  email      String
+  otp        String
+  expires_at DateTime
+  created_at DateTime @default(now())
 }
 
-
+model Admin {
+  admin_id       Int      @id @default(autoincrement())
+  admin_username String   @unique
+  admin_email    String   @unique
+  admin_password String
+  admin_name     String
+  admin_role     String   @default("admin")
+  created_at     DateTime @default(now())
+  last_login     DateTime?
+  is_active      Boolean  @default(true)
+}

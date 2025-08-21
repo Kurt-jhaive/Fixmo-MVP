@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Service Provider Dashboard - Fixmo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/provider-dashboard.css">
+    <link rel="stylesheet" href="css/availability.css">
+    <link rel="stylesheet" href="css/profile-manager.css">
+    <link rel="stylesheet" href="css/booking-manager.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <!-- Logo -->
+            <div class="nav-logo">
+                <span class="logo-text">FIXMO</span>
+                <span class="provider-badge">PRO</span>
+                <i class="fas fa-tools logo-icon"></i>
+            </div>
+
+            <!-- Navigation Menu -->
+            <div class="nav-menu">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="manage-services">
+                    <i class="fas fa-tools"></i>
+                    <span>Manage Services</span>
+                </a>
+                <a href="#" class="nav-item" data-page="bookings">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Bookings</span>
+                </a>
+                <a href="#" class="nav-item" data-page="profile">
+                    <i class="fas fa-user-edit"></i>
+                    <span>Edit Profile</span>
+                </a>
+            </div>
+
+            <!-- User Profile -->
+            <div class="nav-profile">
+                <div class="profile-info">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="profile-details">
+                        <span class="profile-name" id="profileName">Loading...</span>
+                        <span class="profile-status" id="profileStatus">
+                            <i class="fas fa-shield-alt verification-icon"></i>
+                            <span id="verificationText">Unverified</span>
+                        </span>
+                    </div>
+                    <div class="profile-dropdown-toggle">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <a href="#" class="dropdown-item" data-page="profile">
+                        <i class="fas fa-user-edit"></i> Edit Profile
+                    </a>
+                    <a href="#" class="dropdown-item" id="settingsBtn">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item" id="signOutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page active">
+            <!-- Verification Alert -->
+            <div id="verificationAlert" class="verification-alert" style="display: none;">
+                <div class="alert-content">
+                    <i class="fas fa-exclamation-triangle alert-icon"></i>
+                    <div class="alert-text">
+                        <h4>Provider Verification Required</h4>
+                        <p>Please complete your profile verification to start receiving bookings and showcase your services.</p>
+                    </div>
+                    <button class="verify-btn" id="verifyAccountBtn">
+                        <i class="fas fa-upload"></i> Complete Verification
+                    </button>
+                </div>
+            </div>
+
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <h1 class="welcome-title">Welcome back, <span id="welcomeName">Provider</span>!</h1>
+                <p class="welcome-subtitle">Manage your services and grow your business</p>
+            </div>
+
+            <!-- Provider Stats -->
+            <div class="stats-grid">
+                <div class="stat-card earnings">
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalEarnings">₱0</h3>
+                        <p>Total Earnings</p>
+                        <span class="stat-trend positive" id="earningsTrend">+0% this month</span>
+                    </div>
+                </div>
+                <div class="stat-card bookings">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="activeBookings">0</h3>
+                        <p>Active Bookings</p>
+                        <span class="stat-trend" id="bookingsTrend">0 pending approval</span>
+                    </div>
+                </div>
+                <div class="stat-card rating">
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="providerRating">0.0</h3>
+                        <p>Provider Rating</p>
+                        <span class="stat-trend" id="ratingTrend">Based on 0 reviews</span>
+                    </div>
+                </div>
+                <div class="stat-card services">
+                    <div class="stat-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalServices">0</h3>
+                        <p>Active Services</p>
+                        <span class="stat-trend" id="servicesTrend">0 draft services</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions-section">
+                <div class="section-header">
+                    <h2>Quick Actions</h2>
+                    <p>Manage your business efficiently</p>
+                </div>
+                <div class="actions-grid">                    <div class="action-card" onclick="window.dashboard.navigateToPage('manage-services')">
+                        <div class="action-icon">
+                            <i class="fas fa-plus-circle"></i>
+                        </div>
+                        <h3>Add New Service</h3>
+                        <p>Create a new service listing to attract more customers</p>
+                    </div>
+                    <div class="action-card" onclick="window.dashboard.navigateToPage('bookings')">
+                        <div class="action-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <h3>View Bookings</h3>
+                        <p>Check and manage your current and upcoming bookings</p>
+                    </div>
+                    <div class="action-card" onclick="window.dashboard.showAvailabilityModal()">
+                        <div class="action-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3>Set Availability</h3>
+                        <p>Update your working hours and available days</p>
+                    </div>
+                    <div class="action-card" onclick="window.dashboard.navigateToPage('profile')">
+                        <div class="action-icon">
+                            <i class="fas fa-user-cog"></i>
+                        </div>
+                        <h3>Update Profile</h3>
+                        <p>Keep your professional profile up to date</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity-section">
+                <div class="section-header">
+                    <h2>Recent Activity</h2>
+                    <a href="#" class="view-all-link" onclick="window.dashboard.navigateToPage('bookings')">View All</a>
+                </div>
+                <div class="activity-container" id="recentActivity">
+                    <!-- Recent activity will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Performance Overview -->
+            <div class="performance-section">
+                <div class="section-header">
+                    <h2>Performance Overview</h2>
+                    <p>Track your business growth</p>
+                </div>
+                <div class="performance-grid">
+                    <div class="performance-card">
+                        <h4>This Month</h4>
+                        <div class="performance-stats">
+                            <div class="performance-item">
+                                <span class="label">Bookings</span>
+                                <span class="value" id="monthlyBookings">0</span>
+                            </div>
+                            <div class="performance-item">
+                                <span class="label">Revenue</span>
+                                <span class="value" id="monthlyRevenue">₱0</span>
+                            </div>
+                            <div class="performance-item">
+                                <span class="label">Completion Rate</span>
+                                <span class="value" id="completionRate">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="performance-card">
+                        <h4>Popular Services</h4>
+                        <div class="popular-services" id="popularServices">
+                            <!-- Popular services will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>        <!-- Manage Services Page -->
+        <div id="manageServicesPage" class="page">
+            <div class="services-page-header">
+                <div class="services-page-title">
+                    <h1>Manage Services</h1>
+                    <p class="services-page-subtitle">Create and manage your service offerings</p>
+                </div>                <div class="services-header-actions">
+                    <button class="btn-secondary" id="viewCertificatesBtn">
+                        <i class="fas fa-certificate"></i> View Certificates
+                    </button>
+                    <button class="btn-secondary" id="addCertificateBtn">
+                        <i class="fas fa-plus"></i> Add Certificate
+                    </button>
+                    <button class="btn-primary" id="addServiceBtn">
+                        <i class="fas fa-plus"></i> Add New Service
+                    </button>
+                </div>
+            </div>
+
+            <div class="services-controls">
+                <div class="services-search">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="servicesSearchInput" placeholder="Search services...">
+                </div>                <div class="services-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="active">Active</button>
+                    <button class="filter-btn" data-filter="inactive">Inactive</button>
+                    <button class="filter-btn" data-filter="draft">Draft</button>
+                </div>
+            </div>            <div class="services-stats">
+                <div class="services-stat">
+                    <i class="fas fa-tools"></i>
+                    <span class="count" id="totalServicesCount">0</span>
+                    <span>Total Services</span>
+                </div>
+                <div class="services-stat">
+                    <i class="fas fa-check-circle"></i>
+                    <span class="count" id="activeServicesCount">0</span>
+                    <span>Active</span>
+                </div>
+                <div class="services-stat">
+                    <i class="fas fa-pause-circle"></i>
+                    <span class="count" id="inactiveServicesCount">0</span>
+                    <span>Inactive</span>
+                </div>
+                <div class="services-stat">
+                    <i class="fas fa-edit"></i>
+                    <span class="count" id="draftServicesCount">0</span>
+                    <span>Draft</span>
+                </div>
+            </div>
+
+            <div class="services-container" id="servicesContainer">
+                <!-- Services will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Bookings Page -->
+        <div id="bookingsPage" class="page">
+            <!-- Page Header -->
+            <div class="booking-page-header">
+                <div class="booking-page-title">
+                    <h1>Bookings Management</h1>
+                    <p class="booking-page-subtitle">Manage your appointments and customer requests</p>
+                </div>
+            </div>
+
+            <!-- Booking Statistics -->
+            <div class="booking-stats">
+                <div class="booking-stat-card total">
+                    <div class="icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="count" id="stats-total">0</div>
+                    <div class="label">Total Bookings</div>
+                </div>
+                <div class="booking-stat-card pending">
+                    <div class="icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="count" id="stats-pending">0</div>
+                    <div class="label">Pending</div>
+                </div>
+                <div class="booking-stat-card approved">
+                    <div class="icon">
+                        <i class="fas fa-thumbs-up"></i>
+                    </div>
+                    <div class="count" id="stats-approved">0</div>
+                    <div class="label">Approved</div>
+                </div>
+                <div class="booking-stat-card confirmed">
+                    <div class="icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="count" id="stats-confirmed">0</div>
+                    <div class="label">Confirmed</div>
+                </div>
+                <div class="booking-stat-card in-progress">
+                    <div class="icon">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <div class="count" id="stats-in-progress">0</div>
+                    <div class="label">In Progress</div>
+                </div>
+                <div class="booking-stat-card finished">
+                    <div class="icon">
+                        <i class="fas fa-flag-checkered"></i>
+                    </div>
+                    <div class="count" id="stats-finished">0</div>
+                    <div class="label">Finished</div>
+                </div>
+                <div class="booking-stat-card completed">
+                    <div class="icon">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="count" id="stats-completed">0</div>
+                    <div class="label">Completed</div>
+                </div>
+                <div class="booking-stat-card">
+                    <div class="icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="count" id="stats-today">0</div>
+                    <div class="label">Today</div>
+                </div>
+            </div>
+
+            <!-- Booking Controls -->
+            <div class="booking-controls">
+                <div class="booking-search-section">
+                    <div class="booking-search">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="bookingSearchInput" placeholder="Search bookings...">
+                    </div>
+                    <div class="booking-sort">
+                        <label for="bookingSortSelect">Sort by:</label>
+                        <select id="bookingSortSelect">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                            <option value="date_asc">Date (Earliest)</option>
+                            <option value="date_desc">Date (Latest)</option>
+                            <option value="price_high">Price (High to Low)</option>
+                            <option value="price_low">Price (Low to High)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="booking-filters">
+                    <button class="booking-filter-btn active" data-filter="all">
+                        <i class="fas fa-list"></i> All
+                    </button>
+                    <button class="booking-filter-btn" data-filter="pending">
+                        <i class="fas fa-clock"></i> Pending
+                    </button>
+                    <button class="booking-filter-btn" data-filter="approved">
+                        <i class="fas fa-thumbs-up"></i> Approved
+                    </button>
+                    <button class="booking-filter-btn" data-filter="confirmed">
+                        <i class="fas fa-check-circle"></i> Confirmed
+                    </button>
+                    <button class="booking-filter-btn" data-filter="in-progress">
+                        <i class="fas fa-play-circle"></i> In Progress
+                    </button>
+                    <button class="booking-filter-btn" data-filter="finished">
+                        <i class="fas fa-flag-checkered"></i> Finished
+                    </button>
+                    <button class="booking-filter-btn" data-filter="completed">
+                        <i class="fas fa-check-double"></i> Completed
+                    </button>
+                    <button class="booking-filter-btn" data-filter="cancelled">
+                        <i class="fas fa-times-circle"></i> Cancelled
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Info -->
+            <div class="booking-results-info">
+                <div class="booking-results-count" id="bookingResultsCount">0 bookings</div>
+                <div class="booking-view-options">
+                    <button class="view-option-btn active" data-view="card">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button class="view-option-btn" data-view="list">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bookings Container -->
+            <div class="bookings-container" id="bookingsContainer">
+                <!-- Bookings will be loaded here by booking-manager.js -->
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading bookings...</p>
+                </div>
+            </div>
+        </div>        <!-- Profile Page -->
+        <div id="profilePage" class="page">
+            <div class="page-header">
+                <h1>Edit Profile</h1>
+                <p>Update your professional information and credentials</p>
+            </div>
+            <div class="profile-container" id="profileContainer">
+                <!-- Profile form will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settingsPage" class="page">
+            <div class="page-header">
+                <h1>Account Settings</h1>
+                <p>Manage your account preferences and notifications</p>
+            </div>
+            <div class="settings-container" id="settingsContainer">
+                <!-- Settings will be loaded here -->
+            </div>
+        </div>
+    </main>    <!-- Add Service Modal -->
+    <div id="addServiceModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New Service</h3>
+                <button class="modal-close" id="addServiceModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addServiceForm">
+                    <input type="hidden" id="serviceId" name="serviceId">
+                    
+                    <div class="form-group">
+                        <label for="serviceTitle">Service Title *</label>
+                        <input type="text" id="serviceTitle" name="serviceTitle" class="form-control" 
+                               placeholder="e.g., Complete Home Repair Services" required>
+                        <small class="form-help">Give your service bundle a descriptive name</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serviceDescription">Service Description *</label>
+                        <textarea id="serviceDescription" name="serviceDescription" class="form-control" rows="3" 
+                                  placeholder="Describe what your service package includes and what makes you qualified..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="servicePicture">
+                            <i class="fas fa-image"></i>
+                            Service Image (Landscape only)
+                        </label>
+                        <input type="file" id="servicePicture" name="service_picture" class="form-control" 
+                               accept="image/*" onchange="validateImageOrientation(this)">
+                        <small class="form-help">
+                            <i class="fas fa-info-circle"></i>
+                            Upload a landscape image (width > height) to showcase your service. Max 5MB.
+                        </small>
+                        <div id="imagePreview" style="margin-top: 10px; display: none;">
+                            <img id="previewImg" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 2px solid #ddd;" alt="Preview">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="servicePrice">Starting Price (₱) *</label>
+                        <input type="number" id="servicePrice" name="servicePrice" class="form-control" 
+                               min="0" step="0.01" placeholder="500.00" required>
+                        <small class="form-help">Base price for your service package</small>
+                    </div>
+
+                    <div class="form-group">                        <label>Select Services Based on Your Certificates *</label>
+                        <div id="certificateServiceSelector" class="certificate-service-selector">
+                            <!-- Certificate-based service selection will be loaded here -->
+                        </div>
+                        <small class="form-help">Choose specific services you can offer based on your TESDA certificates</small>
+                    </div>                    <div id="selectedServicesList" class="selected-services-list" style="display: none;">
+                        <h4>Selected Services:</h4>
+                        <div id="selectedServicesContainer"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelAddService">Cancel</button>
+                        <button type="submit" class="btn-primary" id="submitServiceBtn">
+                            <i class="fas fa-plus"></i> Add Service
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Service Modal -->
+    <div id="editServiceModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Edit Service</h3>
+                <button class="modal-close" id="editServiceModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>            <div class="modal-body">
+                <form id="editServiceForm">
+                    <input type="hidden" id="editServiceId" name="serviceId">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editServiceTitle">Service Title</label>
+                            <input type="text" id="editServiceTitle" name="serviceTitle" class="form-control" 
+                                   placeholder="Service title" readonly>
+                            <small class="form-help">
+                                <i class="fas fa-info-circle"></i>
+                                Service title is automatically set based on your selected certificate and cannot be changed.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editServiceDescription">Service Description *</label>
+                        <textarea id="editServiceDescription" name="serviceDescription" class="form-control" rows="4" 
+                                  placeholder="Describe your service in detail. What do you offer? What makes your service special?" required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editServicePrice">Starting Price (₱) *</label>
+                            <input type="number" id="editServicePrice" name="servicePrice" class="form-control" 
+                                   min="0" step="0.01" placeholder="500.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editServiceDuration">Estimated Duration (hours)</label>
+                            <input type="number" id="editServiceDuration" name="serviceDuration" class="form-control" 
+                                   min="0.5" step="0.5" placeholder="2.0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editServiceLocation">Service Location</label>
+                            <select id="editServiceLocation" name="serviceLocation" class="form-control">
+                                <option value="customer">At Customer's Location</option>
+                                <option value="provider">At My Workshop</option>
+                                <option value="both">Both Locations</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editServiceStatus">Status</label>
+                            <select id="editServiceStatus" name="serviceStatus" class="form-control">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="draft">Draft</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editServiceRequirements">Requirements & Notes</label>
+                        <textarea id="editServiceRequirements" name="serviceRequirements" class="form-control" rows="3" 
+                                  placeholder="Any special requirements, tools needed, or additional notes for customers"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelEditService">Cancel</button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Update Service
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirmDeleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirm Delete</h3>
+                <button class="modal-close" id="confirmDeleteModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; padding: 1rem 0;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--provider-error); margin-bottom: 1rem;"></i>
+                    <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Delete Service</h4>
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                        Are you sure you want to delete "<span id="deleteServiceName">this service</span>"? 
+                        This action cannot be undone.
+                    </p>
+                    <div class="form-actions" style="border-top: none; padding-top: 0; margin-top: 0;">
+                        <button type="button" class="btn-secondary" id="cancelDelete">Cancel</button>
+                        <button type="button" class="btn-delete" id="confirmDelete">
+                            <i class="fas fa-trash"></i> Delete Service
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    <!-- Availability Modal -->
+    <div id="availabilityModal" class="modal availability-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-clock"></i> Manage Your Availability</h3>
+                <button class="modal-close" id="availabilityModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="availabilityForm">
+                    <!-- Availability form will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Certificate Modal -->
+    <div id="addCertificateModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3><i class="fas fa-certificate"></i> Add New Certificate</h3>
+                <button class="modal-close" id="addCertificateModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addCertificateForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="certificateSelect">
+                            <i class="fas fa-list"></i> Select TESDA Certificate *
+                        </label>
+                        <select id="certificateSelect" name="certificateSelect" class="form-control" required>
+                            <option value="">Choose a certificate...</option>
+                        </select>
+                        <small class="form-help">
+                            <i class="fas fa-info-circle"></i> 
+                            Select the certificate you want to upload
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="certificateNumber">
+                            <i class="fas fa-hashtag"></i> Certificate Number *
+                        </label>
+                        <input type="text" id="certificateNumber" name="certificateNumber" 
+                               class="form-control" placeholder="e.g., ABC-123-456" required>
+                        <small class="form-help">Enter the official certificate number</small>
+                    </div>                    <div class="form-group">
+                        <label for="certificateFile">
+                            <i class="fas fa-upload"></i> Certificate File *
+                        </label>
+                        <div class="file-upload-container">
+                            <input type="file" id="certificateFile" name="certificateFile" 
+                                   accept=".jpg,.jpeg,.png" required class="file-input">
+                            <label for="certificateFile" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span class="file-text">Choose File</span>
+                                <span class="file-help">No file chosen</span>
+                            </label>
+                        </div>
+                        <div id="selectedFileInfo" class="selected-file-info" style="display: none;">
+                            <!-- File info will be displayed here -->
+                        </div>
+                        <small class="form-help">
+                            <i class="fas fa-info-circle"></i> 
+                            JPG, JPEG, PNG images only (Max 10MB)
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="expiryDate">
+                            <i class="fas fa-calendar"></i> Expiry Date (Optional)
+                        </label>
+                        <input type="date" id="expiryDate" name="expiryDate" class="form-control">
+                        <small class="form-help">Leave blank if certificate doesn't expire</small>
+                    </div>
+
+                    <div class="certificate-preview" id="certificatePreview" style="display: none;">
+                        <h4><i class="fas fa-eye"></i> Certificate Preview</h4>
+                        <div class="preview-content">
+                            <div class="preview-info">
+                                <div class="preview-item">
+                                    <span class="label">Certificate Name:</span>
+                                    <span class="value" id="previewCertName"></span>
+                                </div>
+                                <div class="preview-item">
+                                    <span class="label">Certificate Number:</span>
+                                    <span class="value" id="previewCertNumber"></span>
+                                </div>
+                                <div class="preview-item">
+                                    <span class="label">Services Covered:</span>
+                                    <div class="services-preview" id="previewServices"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelAddCertificate">Cancel</button>
+                        <button type="submit" class="btn-primary" id="submitCertificateBtn">
+                            <i class="fas fa-plus"></i> Add Certificate
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Certificates Modal -->
+    <div id="viewCertificatesModal" class="modal">
+        <div class="modal-content extra-large">
+            <div class="modal-header">
+                <h3><i class="fas fa-certificate"></i> My Certificates</h3>
+                <button class="modal-close" id="viewCertificatesModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="certificates-controls">
+                    <div class="certificates-search">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="certificatesSearchInput" placeholder="Search certificates...">
+                    </div>
+                    <div class="certificates-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="approved">Approved</button>
+                        <button class="filter-btn" data-filter="pending">Pending</button>
+                        <button class="filter-btn" data-filter="rejected">Rejected</button>
+                    </div>
+                </div>                <div class="certificates-stats">
+                    <div class="certificates-stat">
+                        <i class="fas fa-certificate"></i>
+                        <span class="count" id="totalCertificatesCount">0</span>
+                        <span>Total</span>
+                    </div>
+                    <div class="certificates-stat">
+                        <i class="fas fa-check-circle"></i>
+                        <span class="count" id="approvedCertificatesCount">0</span>
+                        <span>Approved</span>
+                    </div>
+                    <div class="certificates-stat">
+                        <i class="fas fa-clock"></i>
+                        <span class="count" id="pendingCertificatesCount">0</span>
+                        <span>Pending</span>
+                    </div>
+                    <div class="certificates-stat">
+                        <i class="fas fa-times-circle"></i>
+                        <span class="count" id="rejectedCertificatesCount">0</span>
+                        <span>Rejected</span>
+                    </div>
+                </div>
+
+                <div class="certificates-container" id="certificatesContainer">
+                    <!-- Certificates will be loaded here -->
+                </div>
+
+                <div class="certificates-empty" id="certificatesEmpty" style="display: none;">
+                    <i class="fas fa-certificate"></i>
+                    <h3>No Certificates Found</h3>
+                    <p>You haven't uploaded any certificates yet.</p>
+                    <button class="btn-primary" onclick="window.certificateManager.showAddCertificateModal()">
+                        <i class="fas fa-plus"></i> Add Your First Certificate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Booking Modals -->
+    <!-- Booking Details Modal -->
+    <div id="bookingDetailsModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Booking Details</h3>
+                <button class="modal-close" id="bookingDetailsModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="bookingDetailsBody">
+                <!-- Booking details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Booking Modal -->
+    <div id="cancelBookingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cancel Booking</h3>
+                <button class="modal-close" id="cancelBookingModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this booking?</p>
+                <div class="form-group">
+                    <label for="cancellationReason">Reason for cancellation:</label>
+                    <textarea id="cancellationReason" rows="3" placeholder="Please provide a reason for cancellation..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="cancelBookingCancel">Cancel</button>
+                    <button class="btn-danger" id="cancelBookingConfirm">Confirm Cancellation</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Complete Booking Modal -->
+    <div id="completeBookingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Complete Booking</h3>
+                <button class="modal-close" id="completeBookingModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Mark this booking as completed?</p>
+                <div class="form-group">
+                    <label for="finalPrice">Final Price (₱):</label>
+                    <input type="number" id="finalPrice" min="0" step="0.01" placeholder="Enter final price">
+                </div>
+                <div class="form-group">
+                    <label for="completionNotes">Completion Notes:</label>
+                    <textarea id="completionNotes" rows="3" placeholder="Any additional notes about the completed work..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="completeBookingCancel">Cancel</button>
+                    <button class="btn-success" id="completeBookingConfirm">Mark as Completed</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reschedule Booking Modal -->
+    <div id="rescheduleBookingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reschedule Booking</h3>
+                <button class="modal-close" id="rescheduleBookingModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="newBookingDate">New Date:</label>
+                    <input type="date" id="newBookingDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="newBookingTime">New Time:</label>
+                    <input type="time" id="newBookingTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="rescheduleReason">Reason for rescheduling:</label>
+                    <textarea id="rescheduleReason" rows="3" placeholder="Please provide a reason for rescheduling..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="rescheduleBookingCancel">Cancel</button>
+                    <button class="btn-primary" id="rescheduleBookingConfirm">Reschedule</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancellation Modal -->
+    <div id="cancellationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Cancel Booking</h2>
+                <span class="close" onclick="bookingManager.closeCancellationModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p><strong>Are you sure you want to cancel this booking?</strong></p>
+                <p>This action cannot be undone.</p>
+                
+                <div class="form-group">
+                    <label for="cancellationReason">Reason for cancellation:</label>
+                    <select id="cancellationReason" class="form-control">
+                        <option value="">Select a reason...</option>
+                        <option value="emergency">Emergency situation</option>
+                        <option value="scheduling_conflict">Scheduling conflict</option>
+                        <option value="equipment_unavailable">Equipment not available</option>
+                        <option value="weather_conditions">Weather conditions</option>
+                        <option value="customer_request">Customer requested cancellation</option>
+                        <option value="technical_issues">Technical issues</option>
+                        <option value="personal_reasons">Personal reasons</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="customReasonGroup" style="display: none;">
+                    <label for="customReason">Please specify:</label>
+                    <textarea id="customReason" class="form-control" rows="3" placeholder="Enter your reason for cancellation..."></textarea>
+                </div>
+                
+                <div class="cancellation-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>The customer will be notified of the cancellation.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="bookingManager.closeCancellationModal()">Keep Booking</button>
+                <button class="btn-danger" onclick="bookingManager.confirmCancellation()">
+                    <i class="fas fa-times"></i> Cancel Booking
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Finish Job Modal -->
+    <div id="finishJobModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-flag-checkered"></i> Finish Job</h3>
+                <button class="modal-close" onclick="bookingManager.closeFinishJobModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="finish-job-info">
+                    <p><strong>Customer:</strong> <span id="finishJobCustomer"></span></p>
+                    <p><strong>Service:</strong> <span id="finishJobService"></span></p>
+                    <p><strong>Starting Price:</strong> ₱<span id="finishJobStartingPrice"></span></p>
+                </div>
+                <div class="form-group">
+                    <label for="finalPrice">
+                        <i class="fas fa-peso-sign"></i> Final Price (₱)
+                    </label>
+                    <input 
+                        type="number" 
+                        id="finalPrice" 
+                        min="0.01" 
+                        step="0.01" 
+                        placeholder="0.00" 
+                        required
+                        autocomplete="off"
+                        onkeypress="return event.charCode >= 48 && event.charCode <= 57 || event.charCode == 46"
+                    >
+                    <small class="form-help">Enter the final amount to charge the customer</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="bookingManager.closeFinishJobModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn-success" onclick="bookingManager.confirmFinishJob()">
+                    <i class="fas fa-flag-checkered"></i> Finish Job
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->    
+    <!-- Booking Details Modal -->
+    <div id="bookingDetailsModal" class="modal">
+        <div class="modal-content booking-details-modal">
+            <div class="modal-header">
+                <h2>Booking Details</h2>
+                <span class="close" onclick="bookingManager.closeBookingDetailsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="booking-details-content">
+                    <div class="booking-info-section">
+                        <h3>Customer Information</h3>
+                        <div class="customer-info">
+                            <div class="customer-avatar">
+                                <img id="customerAvatar" src="" alt="Customer Avatar">
+                            </div>
+                            <div class="customer-details">
+                                <p><strong>Name:</strong> <span id="customerName"></span></p>
+                                <p><strong>Email:</strong> <span id="customerEmail"></span></p>
+                                <p><strong>Phone:</strong> <span id="customerPhone"></span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="booking-info-section">
+                        <h3>Service Details</h3>
+                        <div class="service-info">
+                            <p><strong>Service:</strong> <span id="serviceName"></span></p>
+                            <p><strong>Description:</strong> <span id="serviceDescription"></span></p>
+                            <p><strong>Price:</strong> <span id="servicePrice"></span></p>
+                        </div>
+                    </div>
+
+                    <div class="booking-info-section">
+                        <h3>Appointment Details</h3>
+                        <div class="appointment-info">
+                            <p><strong>Date:</strong> <span id="appointmentDate"></span></p>
+                            <p><strong>Time:</strong> <span id="appointmentTime"></span></p>
+                            <p><strong>Status:</strong> <span id="appointmentStatus" class="status-badge"></span></p>
+                            <p><strong>Repair Description:</strong> <span id="repairDescription"></span></p>
+                        </div>
+                    </div>
+
+                    <div class="booking-info-section">
+                        <h3>Location</h3>
+                        <div class="location-info">
+                            <p><strong>Address:</strong> <span id="customerAddress"></span></p>
+                            <div class="location-actions">
+                                <button class="btn-primary btn-sm" onclick="bookingManager.openGoogleMaps()">
+                                    <i class="fas fa-map-marker-alt"></i> Open in Google Maps
+                                </button>
+                            </div>
+                        </div>
+                        <div class="booking-map-container">
+                            <div id="bookingDetailsMap" class="booking-map-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="bookingManager.closeBookingDetailsModal()">Close</button>
+                <div id="modalActionButtons" class="modal-action-buttons">
+                    <!-- Action buttons will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancellation Modal -->
+    <div id="cancellationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Cancel Booking</h2>
+                <span class="close" onclick="bookingManager.closeCancellationModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p><strong>Are you sure you want to cancel this booking?</strong></p>
+                <p>This action cannot be undone.</p>
+                
+                <div class="form-group">
+                    <label for="cancellationReason">Reason for cancellation:</label>
+                    <select id="cancellationReason" class="form-control">
+                        <option value="">Select a reason...</option>
+                        <option value="emergency">Emergency situation</option>
+                        <option value="scheduling_conflict">Scheduling conflict</option>
+                        <option value="equipment_unavailable">Equipment not available</option>
+                        <option value="weather_conditions">Weather conditions</option>
+                        <option value="customer_request">Customer requested cancellation</option>
+                        <option value="technical_issues">Technical issues</option>
+                        <option value="personal_reasons">Personal reasons</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="customReasonGroup" style="display: none;">
+                    <label for="customReason">Please specify:</label>
+                    <textarea id="customReason" class="form-control" rows="3" placeholder="Enter your reason for cancellation..."></textarea>
+                </div>
+                
+                <div class="cancellation-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>The customer will be notified of the cancellation.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="bookingManager.closeCancellationModal()">Keep Booking</button>
+                <button class="btn-danger" onclick="bookingManager.confirmCancellation()">
+                    <i class="fas fa-times"></i> Cancel Booking
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Modal -->
+    <div id="ratingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Rate This Customer</h2>
+                <span class="close" onclick="bookingManager.closeRatingModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="rating-section">
+                    <div class="customer-info-rating">
+                        <h4 id="ratingCustomerName"></h4>
+                        <p id="ratingServiceName"></p>
+                    </div>
+                    
+                    <div class="rating-input">
+                        <label>Your Rating:</label>
+                        <div class="star-rating" id="starRating">
+                            <i class="fas fa-star" data-rating="1"></i>
+                            <i class="fas fa-star" data-rating="2"></i>
+                            <i class="fas fa-star" data-rating="3"></i>
+                            <i class="fas fa-star" data-rating="4"></i>
+                            <i class="fas fa-star" data-rating="5"></i>
+                        </div>
+                        <span class="rating-text" id="ratingText">Rate this customer</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ratingComment">Comment (Optional):</label>
+                        <textarea id="ratingComment" class="form-control" rows="3" placeholder="Share your experience with this customer..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="bookingManager.closeRatingModal()">Skip Rating</button>
+                <button class="btn-primary" onclick="bookingManager.submitRating()">
+                    <i class="fas fa-star"></i> Submit Rating
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/dashboard-utils.js"></script>
+    <script src="js/certificate-manager.js"></script>
+    <script src="js/certificate-viewer-fix.js"></script>
+    <script src="js/availability-manager.js"></script>
+    <script src="js/service-manager.js"></script>
+    <script src="js/profile-manager.js"></script>
+    <script src="js/booking-manager.js"></script>
+    <script src="js/provider-dashboard.js"></script>
+</body>
+</html>

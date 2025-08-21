@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixmo - Professional Service Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles/fixmo_login_signup.css">
+
+</head>
+<body>
+    <div class="login-container">
+        <!-- Logo Section -->
+        <div class="logo-section">
+            <div class="logo">FIXMO</div>
+            <div class="tagline">Professional Service Platform</div>
+            <div class="subtitle">Connect • Book • Fix</div>
+        </div>        <!-- Error/Success Messages -->
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <!-- Login Tabs -->
+        <div class="login-tabs">
+            <button class="tab-button active" onclick="switchTab('customer')">
+                <i class="fas fa-user"></i> Customer
+            </button>
+            <button class="tab-button" onclick="switchTab('provider')">
+                <i class="fas fa-tools"></i> Service Provider
+            </button>
+        </div>
+
+        <!-- Customer Login Form -->
+        <form id="customerLoginForm" class="customer-form active">
+            <div class="form-group">
+                <label for="customerEmail">Email Address</label>
+                <div class="input-wrapper">
+                    <input type="email" id="customerEmail" class="form-control" placeholder="Enter your email" required>
+                    <i class="fas fa-envelope input-icon"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="customerPassword">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="customerPassword" class="form-control" placeholder="Enter your password" required>
+                    <i class="fas fa-lock input-icon"></i>
+                    <i class="fas fa-eye password-toggle" onclick="togglePassword('customerPassword')"></i>
+                </div>
+            </div>
+
+            <div class="form-options">
+                <label class="remember-me">
+                    <input type="checkbox" id="customerRemember">
+                    Remember me
+                </label>
+                <a href="#" class="forgot-password" onclick="showForgotPassword()">Forgot Password?</a>
+            </div>            <button type="submit" class="login-button">
+                <i class="fas fa-sign-in-alt"></i> Sign In as Customer
+            </button>
+        </form>
+
+        <!-- Service Provider Login Form -->
+        <form id="providerLoginForm" class="provider-form">
+            <div class="form-group">
+                <label for="providerEmail">Provider Email</label>
+                <div class="input-wrapper">
+                    <input type="email" id="providerEmail" class="form-control" placeholder="Enter your provider email" required>
+                    <i class="fas fa-envelope input-icon"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="providerPassword">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="providerPassword" class="form-control" placeholder="Enter your password" required>
+                    <i class="fas fa-lock input-icon"></i>
+                    <i class="fas fa-eye password-toggle" onclick="togglePassword('providerPassword')"></i>
+                </div>
+            </div>
+
+            <div class="form-options">
+                <label class="remember-me">
+                    <input type="checkbox" id="providerRemember">
+                    Remember me
+                </label>
+                <a href="#" class="forgot-password" onclick="showForgotPassword()">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="login-button">
+                <i class="fas fa-tools"></i> Sign In as Provider
+            </button>
+        </form>        <!-- Signup Link -->
+        <div class="signup-link">
+            Don't have an account? <a href="/fixmo-register" id="signupLink" onclick="showRegistration()">Sign up here</a>
+        </div>
+    </div>    <script>        // Tab switching functionality
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update forms
+            document.querySelectorAll('.customer-form, .provider-form').forEach(form => {
+                form.classList.remove('active');
+            });
+
+            // Update signup link based on active tab
+            const signupLink = document.getElementById('signupLink');
+            if (tab === 'customer') {
+                document.querySelector('.customer-form').classList.add('active');
+                signupLink.href = '/fixmo-register';
+                signupLink.textContent = 'Sign up as Customer';
+            } else {
+                document.querySelector('.provider-form').classList.add('active');
+                signupLink.href = '/fixmo-provider-register';
+                signupLink.textContent = 'Sign up as Service Provider';
+            }
+
+            hideMessages();
+        }
+
+        // Password visibility toggle
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = event.target;
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Message display functions
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(hideMessages, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(hideMessages, 5000);
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // Customer login handler
+        document.getElementById('customerLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('customerEmail').value;
+            const password = document.getElementById('customerPassword').value;
+            
+            if (!email || !password) {
+                showError('Please fill in all fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess('Login successful! Redirecting...');
+                    
+                    // Store user data
+                    localStorage.setItem('fixmo_user_token', data.token);
+                    localStorage.setItem('fixmo_user_id', data.userId);
+                    localStorage.setItem('fixmo_user_name', data.userName);
+                    localStorage.setItem('fixmo_user_type', 'customer');
+                      // Redirect to customer dashboard after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/customer-dashboard';
+                    }, 2000);
+                } else {
+                    showError(data.message || 'Login failed');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+                console.error('Login error:', error);
+            }        });        // Provider login handler
+        document.getElementById('providerLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('providerEmail').value;
+            const password = document.getElementById('providerPassword').value;
+            
+            if (!email || !password) {
+                showError('Please fill in all fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/auth/loginProvider', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        provider_email: email, 
+                        provider_password: password 
+                    })
+                });
+
+                const data = await response.json();                if (response.ok) {
+                    showSuccess('Login successful! Redirecting...');
+                    
+                    // Store basic auth data
+                    localStorage.setItem('fixmo_provider_token', data.token);
+                    localStorage.setItem('fixmo_provider_id', data.providerId);
+                    localStorage.setItem('fixmo_provider_name', data.providerUserName);
+                    localStorage.setItem('fixmo_user_type', 'provider');
+                    
+                    // Fetch complete provider profile and store it
+                    try {
+                        const profileResponse = await fetch(`/serviceProvider/profile/${data.providerId}`, {
+                            headers: {
+                                'Authorization': `Bearer ${data.token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (profileResponse.ok) {
+                            const providerProfile = await profileResponse.json();
+                            localStorage.setItem('serviceProvider', JSON.stringify(providerProfile));
+                        }
+                    } catch (profileError) {
+                        console.error('Error fetching provider profile:', profileError);
+                    }
+                    
+                    // Redirect to provider dashboard after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/provider-dashboard';
+                    }, 2000);
+                }else {
+                    showError(data.message || 'Login failed');
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+                console.error('Provider login error:', error);
+            }
+        });        // Registration redirect
+        function showRegistration() {
+            // Check which tab is currently active
+            const activeTab = document.querySelector('.tab-button.active');
+            const isCustomerTab = activeTab.textContent.trim().includes('Customer');
+            
+            if (isCustomerTab) {
+                window.location.href = '/fixmo-register';
+            } else {
+                window.location.href = '/fixmo-provider-register';
+            }
+        }        // Forgot password redirect
+        function showForgotPassword() {
+            window.location.href = '/fixmo-forgot-password';
+        }
+
+        // Signup placeholder
+        function showSignup() {
+            showError('Registration page coming soon!');
+        }        // Auto-focus on first input and initialize signup link
+        window.addEventListener('load', function() {
+            document.getElementById('customerEmail').focus();
+            // Initialize signup link for customer (default active tab)
+            const signupLink = document.getElementById('signupLink');
+            signupLink.textContent = 'Sign up as Customer';
+        });// Enter key handling
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const activeForm = document.querySelector('.customer-form.active, .provider-form.active');
+                if (activeForm) {
+                    activeForm.querySelector('button[type="submit"]').click();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

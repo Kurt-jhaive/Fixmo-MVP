@@ -11,17 +11,16 @@
         input, select { width: 100%; padding: 0.7em; margin-bottom: 1em; border: 1px solid #ccc; border-radius: 4px; }
         button { width: 100%; padding: 0.7em; background: #007bff; color: #fff; border: none; border-radius: 4px; font-size: 1em; cursor: pointer; }
         button:hover { background: #0056b3; }
-        .message { margin-top: 1em; text-align: center; }
-        .tab-btns { display: flex; justify-content: space-between; margin-bottom: 1em; }
-        .tab-btns button { width: 49%; background: #eee; color: #333; border: 1px solid #ccc; }
+        .message { margin-top: 1em; text-align: center; }        .tab-btns { display: flex; justify-content: space-between; margin-bottom: 1em; }
+        .tab-btns button { width: 32%; background: #eee; color: #333; border: 1px solid #ccc; }
         .tab-btns button.active { background: #007bff; color: #fff; border: none; }
     </style>
 </head>
-<body>
-    <div class="container">
+<body>    <div class="container">
         <div class="tab-btns">
             <button id="loginTab" class="active">Login</button>
             <button id="registerTab">Register</button>
+            <button id="forgotPasswordTab">Forgot Password</button>
         </div>
         <form id="loginForm">
             <h2>Test Login</h2>
@@ -30,6 +29,28 @@
             <button type="submit">Login</button>
             <div class="message" id="loginMessage"></div>
         </form>
+        
+        <!-- Forgot Password Forms -->
+        <form id="forgotPasswordEmailForm" style="display:none;">
+            <h2>Forgot Password - Step 1: Enter Email</h2>
+            <input type="email" id="forgotEmailStep1" placeholder="Email" required />
+            <button type="submit">Send Reset OTP</button>
+            <div class="message" id="forgotPasswordEmailMessage"></div>
+        </form>
+        <form id="forgotPasswordOTPForm" style="display:none;">
+            <h2>Forgot Password - Step 2: Enter OTP</h2>
+            <input type="text" id="forgotOtpStep2" placeholder="Enter OTP" maxlength="6" required />
+            <button type="submit">Verify OTP</button>
+            <div class="message" id="forgotPasswordOTPMessage"></div>
+        </form>
+        <form id="forgotPasswordResetForm" style="display:none;">
+            <h2>Forgot Password - Step 3: Reset Password</h2>
+            <input type="password" id="newPassword" placeholder="New Password" required />
+            <input type="password" id="confirmPassword" placeholder="Confirm New Password" required />
+            <button type="submit">Reset Password</button>
+            <div class="message" id="forgotPasswordResetMessage"></div>
+        </form>
+        
         <form id="registerEmailForm" style="display:none;">
             <h2>Register - Step 1: Enter Email</h2>
             <input type="email" id="regEmailStep1" placeholder="Email" required />
@@ -54,77 +75,305 @@
             <input type="text" id="user_location" placeholder="Location (optional)" />
             <button type="submit">Register</button>
             <div class="message" id="registerDetailsMessage"></div>
-        </form>
-    </div>
+        </form>    </div>
     <script>
-        // Tab switching
-        const loginTab = document.getElementById('loginTab');
-        const registerTab = document.getElementById('registerTab');
-        const loginForm = document.getElementById('loginForm');
-        const registerEmailForm = document.getElementById('registerEmailForm');
-        const registerOTPForm = document.getElementById('registerOTPForm');
-        const registerDetailsForm = document.getElementById('registerDetailsForm');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const forgotPasswordTab = document.getElementById('forgotPasswordTab');
+            const loginForm = document.getElementById('loginForm');
+            const registerEmailForm = document.getElementById('registerEmailForm');
+            const registerOTPForm = document.getElementById('registerOTPForm');
+            const registerDetailsForm = document.getElementById('registerDetailsForm');
+            const forgotPasswordEmailForm = document.getElementById('forgotPasswordEmailForm');
+            const forgotPasswordOTPForm = document.getElementById('forgotPasswordOTPForm');
+            const forgotPasswordResetForm = document.getElementById('forgotPasswordResetForm');
 
-        loginTab.onclick = () => {
-            loginTab.classList.add('active');
-            registerTab.classList.remove('active');
-            loginForm.style.display = '';
+            console.log('DOM loaded, setting up event listeners');
+
+        // OTP Rate limiting
+        let otpAttempts = {
+            register: { count: 0, lastAttempt: 0 },
+            forgotPassword: { count: 0, lastAttempt: 0 }
+        };
+
+        function hideAllForms() {
+            loginForm.style.display = 'none';
             registerEmailForm.style.display = 'none';
             registerOTPForm.style.display = 'none';
             registerDetailsForm.style.display = 'none';
+            forgotPasswordEmailForm.style.display = 'none';
+            forgotPasswordOTPForm.style.display = 'none';
+            forgotPasswordResetForm.style.display = 'none';
+        }
+
+        function removeActiveFromTabs() {
+            loginTab.classList.remove('active');
+            registerTab.classList.remove('active');
+            forgotPasswordTab.classList.remove('active');
+        }
+
+        loginTab.onclick = () => {
+            removeActiveFromTabs();
+            loginTab.classList.add('active');
+            hideAllForms();
+            loginForm.style.display = '';
         };
 
         registerTab.onclick = () => {
+            removeActiveFromTabs();
             registerTab.classList.add('active');
-            loginTab.classList.remove('active');
-            loginForm.style.display = 'none';
+            hideAllForms();
             registerEmailForm.style.display = '';
-            registerOTPForm.style.display = 'none';
-            registerDetailsForm.style.display = 'none';
         };
 
-        // Login handler
+        forgotPasswordTab.onclick = () => {
+            removeActiveFromTabs();        forgotPasswordTab.onclick = () => {
+            removeActiveFromTabs();
+            forgotPasswordTab.classList.add('active');
+            hideAllForms();
+            forgotPasswordEmailForm.style.display = '';
+        }};
+
+        // OTP Rate limiting functions
+        function canSendOTP(type) {
+            const now = Date.now();
+            const attempts = otpAttempts[type];
+            
+            // Reset count if 30 seconds have passed
+            if (now - attempts.lastAttempt > 30000) {
+                attempts.count = 0;
+            }
+            
+            return attempts.count < 3;
+        }
+
+        function recordOTPAttempt(type) {
+            const now = Date.now();
+            otpAttempts[type].count++;
+            otpAttempts[type].lastAttempt = now;
+        }
+
+        function getRemainingTime(type) {
+            const now = Date.now();
+            const attempts = otpAttempts[type];
+            const timeSince = now - attempts.lastAttempt;
+            const remaining = Math.ceil((30000 - timeSince) / 1000);
+            return Math.max(0, remaining);
+        }        // Login handler
+        console.log('Setting up login form event listener');
         loginForm.addEventListener('submit', async function(e) {
+            console.log('Login form submitted');
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
-            const res = await fetch('http://localhost:3000/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+            console.log('Login data:', { 
+                email: email, 
+                password: password,
+                emailLength: email.length,
+                passwordLength: password.length 
             });
-            let data;
-            try { data = await res.json(); } catch { data = {}; }
-            const msgDiv = document.getElementById('loginMessage');
-            if (res.ok) {
-                msgDiv.style.color = 'green';
-                msgDiv.textContent = 'Login successful!';
-            } else {
+            
+            try {
+                const requestBody = JSON.stringify({ email, password });
+                console.log('Request body:', requestBody);
+                
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: requestBody
+                });
+                console.log('Response status:', res.status);
+                let data;
+                try { data = await res.json(); } catch { data = {}; }
+                console.log('Response data:', data);
+                const msgDiv = document.getElementById('loginMessage');
+                if (res.ok) {
+                    msgDiv.style.color = 'green';
+                    msgDiv.textContent = 'Login successful!';
+                } else {
+                    msgDiv.style.color = 'red';
+                    msgDiv.textContent = data.message || 'Login failed.';
+                }
+            } catch (error) {
+                console.error('Login request error:', error);
+                const msgDiv = document.getElementById('loginMessage');
                 msgDiv.style.color = 'red';
-                msgDiv.textContent = data.message || 'Login failed.';
+                msgDiv.textContent = 'Network error. Please try again.';
             }
-        });
-
-        // Registration Step 1: Email handler
+        });// Registration Step 1: Email handler
         registerEmailForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const email = document.getElementById('regEmailStep1').value;
-            const res = await fetch('http://localhost:3000/auth/request-otp', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-            let data;
-            try { data = await res.json(); } catch { data = {}; }
+            const submitBtn = e.target.querySelector('button[type="submit"]');
             const msgDiv = document.getElementById('registerEmailMessage');
-            if (res.ok) {
-                msgDiv.style.color = 'green';
-                msgDiv.textContent = 'OTP sent to your email. Please check your inbox.';
-                registerEmailForm.style.display = 'none';
-                registerOTPForm.style.display = '';
-            } else {
+            
+            // Check rate limiting
+            if (!canSendOTP('register')) {
+                const remaining = getRemainingTime('register');
                 msgDiv.style.color = 'red';
-                msgDiv.textContent = data.message || 'Failed to send OTP.';
+                if (remaining > 0) {
+                    msgDiv.textContent = `Too many attempts. Please wait ${remaining} seconds before trying again.`;
+                } else {
+                    msgDiv.textContent = 'Maximum OTP attempts reached (3). Please wait 30 seconds.';
+                }
+                return;
+            }
+            
+            // Disable button to prevent multiple submissions
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending OTP...';
+            msgDiv.textContent = 'Sending OTP, please wait...';
+            msgDiv.style.color = 'blue';
+            
+            try {
+                const res = await fetch('/auth/request-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                let data;
+                try { data = await res.json(); } catch { data = {}; }
+                
+                if (res.ok) {
+                    recordOTPAttempt('register');
+                    msgDiv.style.color = 'green';
+                    msgDiv.textContent = 'OTP sent to your email. Please check your inbox.';
+                    registerEmailForm.style.display = 'none';
+                    registerOTPForm.style.display = '';
+                } else {
+                    msgDiv.style.color = 'red';
+                    msgDiv.textContent = data.message || 'Failed to send OTP.';
+                    // Re-enable button on error
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send OTP';
+                }
+            } catch (error) {
+                msgDiv.style.color = 'red';
+                msgDiv.textContent = 'Network error. Please try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send OTP';
+            }
+        });
+
+        // Forgot Password Step 1: Email handler
+        forgotPasswordEmailForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('forgotEmailStep1').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const msgDiv = document.getElementById('forgotPasswordEmailMessage');
+            
+            // Check rate limiting
+            if (!canSendOTP('forgotPassword')) {
+                const remaining = getRemainingTime('forgotPassword');
+                msgDiv.style.color = 'red';
+                if (remaining > 0) {
+                    msgDiv.textContent = `Too many attempts. Please wait ${remaining} seconds before trying again.`;
+                } else {
+                    msgDiv.textContent = 'Maximum OTP attempts reached (3). Please wait 30 seconds.';
+                }
+                return;
+            }
+            
+            // Disable button to prevent multiple submissions
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending OTP...';
+            msgDiv.textContent = 'Sending reset OTP, please wait...';
+            msgDiv.style.color = 'blue';
+            
+            try {
+                const res = await fetch('/auth/forgot-password-request-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                let data;
+                try { data = await res.json(); } catch { data = {}; }
+                
+                if (res.ok) {
+                    recordOTPAttempt('forgotPassword');
+                    msgDiv.style.color = 'green';
+                    msgDiv.textContent = 'Reset OTP sent to your email. Please check your inbox.';
+                    forgotPasswordEmailForm.style.display = 'none';
+                    forgotPasswordOTPForm.style.display = '';
+                } else {
+                    msgDiv.style.color = 'red';
+                    msgDiv.textContent = data.message || 'Failed to send reset OTP.';
+                    // Re-enable button on error
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Send Reset OTP';
+                }
+            } catch (error) {
+                msgDiv.style.color = 'red';
+                msgDiv.textContent = 'Network error. Please try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Reset OTP';
+            }
+        });
+
+        // Forgot Password Step 2: OTP verification handler
+        forgotPasswordOTPForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            forgotPasswordOTPForm.style.display = 'none';
+            forgotPasswordResetForm.style.display = '';
+        });
+
+        // Forgot Password Step 3: Password reset handler
+        forgotPasswordResetForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const msgDiv = document.getElementById('forgotPasswordResetMessage');
+            
+            if (newPassword !== confirmPassword) {
+                msgDiv.style.color = 'red';
+                msgDiv.textContent = 'Passwords do not match.';
+                return;
+            }
+            
+            // Disable button to prevent multiple submissions
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Resetting...';
+            msgDiv.textContent = 'Resetting password, please wait...';
+            msgDiv.style.color = 'blue';
+            
+            try {
+                const res = await fetch('/auth/forgot-password-verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('forgotEmailStep1').value,
+                        otp: document.getElementById('forgotOtpStep2').value,
+                        newPassword: newPassword
+                    })
+                });
+                let data;
+                try { data = await res.json(); } catch { data = {}; }
+                
+                if (res.ok) {
+                    msgDiv.style.color = 'green';
+                    msgDiv.textContent = 'Password reset successful! You can now login with your new password.';
+                    // Reset form and go back to login
+                    setTimeout(() => {
+                        loginTab.click();
+                        forgotPasswordEmailForm.reset();
+                        forgotPasswordOTPForm.reset();
+                        forgotPasswordResetForm.reset();
+                    }, 2000);
+                } else {
+                    msgDiv.style.color = 'red';
+                    msgDiv.textContent = data.message || 'Password reset failed.';
+                    // Re-enable button on error
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Reset Password';
+                }
+            } catch (error) {
+                msgDiv.style.color = 'red';
+                msgDiv.textContent = 'Network error. Please try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Reset Password';
             }
         });
 
@@ -135,11 +384,18 @@
             // For demo, just proceed to details form
             registerOTPForm.style.display = 'none';
             registerDetailsForm.style.display = '';
-        });
-
-        // Registration Step 3: Details handler
+        });        // Registration Step 3: Details handler
         registerDetailsForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const msgDiv = document.getElementById('registerDetailsMessage');
+            
+            // Disable button to prevent multiple submissions
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Registering...';
+            msgDiv.textContent = 'Processing registration, please wait...';
+            msgDiv.style.color = 'blue';
+            
             const formData = new FormData();
             formData.append('first_name', document.getElementById('first_name').value);
             formData.append('last_name', document.getElementById('last_name').value);
@@ -155,21 +411,43 @@
             if(document.getElementById('valid_id').files[0]) {
                 formData.append('valid_id', document.getElementById('valid_id').files[0]);
             }
-            const res = await fetch('http://localhost:3000/auth/verify-register', {
-                method: 'POST',
-                body: formData
-            });
-            let data;
-            try { data = await res.json(); } catch { data = {}; }
-            const msgDiv = document.getElementById('registerDetailsMessage');
-            if (res.ok) {
-                msgDiv.style.color = 'green';
-                msgDiv.textContent = 'Registration successful!';
-            } else {
+            
+            try {
+                const res = await fetch('/auth/verify-register', {
+                    method: 'POST',
+                    body: formData
+                });
+                let data;
+                try { data = await res.json(); } catch { data = {}; }
+                
+                if (res.ok) {
+                    msgDiv.style.color = 'green';
+                    msgDiv.textContent = 'Registration successful! You can now login.';
+                    // Reset form and go back to login
+                    setTimeout(() => {
+                        loginTab.click();
+                        registerDetailsForm.reset();
+                        registerEmailForm.reset();
+                        registerOTPForm.reset();
+                    }, 2000);
+                } else {
+                    msgDiv.style.color = 'red';
+                    msgDiv.textContent = data.message || 'Registration failed.';
+                    // Re-enable button on error
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Register';
+                }
+            } catch (error) {
                 msgDiv.style.color = 'red';
-                msgDiv.textContent = data.message || 'Registration failed.';
+                msgDiv.textContent = 'Network error. Please try again.';                submitBtn.disabled = false;
+                submitBtn.textContent = 'Register';
             }
         });
+    // End of DOMContentLoaded
+    });
+
+        // Initialize the login tab as active
+        loginTab.click();
     </script>
 </body>
 </html>

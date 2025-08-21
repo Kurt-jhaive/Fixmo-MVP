@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .result { margin: 20px 0; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+        input, button { margin: 10px 0; padding: 10px; width: 100%; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Login Debug Test</h1>
+        
+        <div>
+            <input type="email" id="email" placeholder="Email" value="testuser@example.com">
+            <input type="password" id="password" placeholder="Password" value="testpassword123">
+            <button onclick="testLogin()">Test Login</button>
+        </div>
+        
+        <div class="result" id="result">
+            Ready to test...
+        </div>
+        
+        <div class="result" id="storage">
+            <h3>Local Storage Contents:</h3>
+            <div id="storageContents">No data</div>
+        </div>
+        
+        <div>
+            <button onclick="checkStorage()">Check Local Storage</button>
+            <button onclick="clearStorage()">Clear Local Storage</button>
+            <button onclick="goToBookings()">Go to Bookings</button>
+        </div>
+    </div>
+
+    <script>
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const result = document.getElementById('result');
+            
+            result.innerHTML = 'Testing login...';
+            
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.innerHTML = `
+                        <h3>Login Successful!</h3>
+                        <p><strong>Token:</strong> ${data.token ? data.token.substring(0, 20) + '...' : 'null'}</p>
+                        <p><strong>User ID:</strong> ${data.userId}</p>
+                        <p><strong>User Name:</strong> ${data.userName}</p>
+                    `;
+                    
+                    // Store in localStorage
+                    if (data.token) {
+                        localStorage.setItem('token', data.token);
+                        console.log('Token stored:', data.token);
+                    }
+                    if (data.userId && data.userName) {
+                        const userData = {
+                            userId: data.userId,
+                            userName: data.userName
+                        };
+                        localStorage.setItem('userData', JSON.stringify(userData));
+                        console.log('User data stored:', userData);
+                    }
+                    
+                    checkStorage();
+                } else {
+                    result.innerHTML = `<h3>Login Failed</h3><p>${data.message}</p>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<h3>Error</h3><p>${error.message}</p>`;
+            }
+        }
+        
+        function checkStorage() {
+            const token = localStorage.getItem('token');
+            const userData = localStorage.getItem('userData');
+            
+            document.getElementById('storageContents').innerHTML = `
+                <p><strong>Token:</strong> ${token ? token.substring(0, 20) + '...' : 'null'}</p>
+                <p><strong>User Data:</strong> ${userData || 'null'}</p>
+            `;
+        }
+        
+        function clearStorage() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userData');
+            checkStorage();
+        }
+        
+        function goToBookings() {
+            window.location.href = '/customer-bookings';
+        }
+        
+        // Check storage on page load
+        window.addEventListener('load', checkStorage);
+    </script>
+</body>
+</html>

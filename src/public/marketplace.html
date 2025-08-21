@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Marketplace - Book Professional Services</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .customer-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .customer-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #28a745;
+            padding-bottom: 10px;
+        }
+
+        .search-filters {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .filters-row {
+            display: grid;
+            grid-template-columns: 2fr 2fr 2fr 1fr;
+            gap: 20px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #117a8b;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        /* Rating Section Styles */
+        .rating-form {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .star {
+            font-size: 30px;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .star:hover,
+        .star.active {
+            color: #ffc107;
+        }
+
+        .appointments-list {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .appointment-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #28a745;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .appointment-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .appointment-item.selected {
+            background: #d4edda;
+            border-left-color: #155724;
+        }
+
+        .appointment-info {
+            background: #e7f3ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .service-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 25px;
+            position: relative;
+        }
+
+        .service-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #fff 0%, transparent 100%);
+        }
+
+        .service-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .service-price {
+            font-size: 1.3rem;
+            opacity: 0.95;
+        }
+
+        .service-content {
+            padding: 25px;
+        }
+
+        .provider-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .provider-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .provider-details h4 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .provider-details p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .service-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .service-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .rating {
+            display: flex;
+            align-items: center;
+            color: #ffc107;
+        }
+
+        .rating span {
+            margin-left: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .verification-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .service-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .service-actions .btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 3% auto;
+            padding: 0;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .close:hover {
+            opacity: 1;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .booking-summary {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .time-slots-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .time-slots-header {
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .date-selector {
+            margin-bottom: 20px;
+        }
+
+        .time-slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .time-slot {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            font-weight: 500;
+        }
+
+        .time-slot:hover {
+            border-color: #007bff;
+            background: #f0f4ff;
+            transform: translateY(-2px);
+        }
+
+        .time-slot.selected {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .time-slot.unavailable {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+            cursor: not-allowed;
+        }
+
+        .time-slot.unavailable:hover {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            transform: none;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 15px;
+            color: #888;
+            font-size: 1.5rem;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .filters-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .service-actions {
+                flex-direction: column;
+            }
+            
+            .time-slots-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-bar {
+                gap: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛍️ Service Marketplace</h1>
+            <p>Find and book professional services with trusted providers</p>
+        </div>
+
+        <!-- Customer Info Section -->
+        <div class="customer-section">
+            <h3>👤 Customer Information</h3>
+            <div class="filters-row">
+                <div class="form-group">
+                    <label for="customerId">Customer ID (for testing)</label>
+                    <input type="number" id="customerId" value="1" placeholder="Enter customer ID">
+                </div>
+                <div class="form-group">
+                    <label for="customerName">Customer Name</label>
+                    <input type="text" id="customerName" value="Jane Doe" placeholder="Enter customer name">
+                </div>
+                <div class="form-group">
+                    <label for="customerEmail">Email</label>
+                    <input type="email" id="customerEmail" value="jane.doe@example.com" placeholder="Enter email">
+                </div>                <button class="btn btn-info" onclick="loadMyBookings()">
+                    📅 My Bookings
+                </button>
+                <button class="btn btn-warning" onclick="showRatingSection()">
+                    ⭐ Rate Provider
+                </button>
+            </div>
+        </div>
+
+        <!-- Rating Section -->
+        <div id="ratingSection" class="form-section" style="display: none;">
+            <h3>⭐ Rate Your Service Provider</h3>
+            <div id="completedAppointments" class="appointments-list">
+                <p>Loading completed appointments...</p>
+            </div>
+            
+            <!-- Rating Form -->
+            <div id="ratingForm" class="rating-form" style="display: none;">
+                <h4>Submit Your Rating</h4>
+                <form id="providerRatingForm">
+                    <div class="form-group">
+                        <label>Selected Appointment:</label>
+                        <div id="selectedAppointmentInfo" class="appointment-info"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ratingValue">Rating (1-5 stars):</label>
+                        <div class="star-rating">
+                            <span class="star" data-rating="1">★</span>
+                            <span class="star" data-rating="2">★</span>
+                            <span class="star" data-rating="3">★</span>
+                            <span class="star" data-rating="4">★</span>
+                            <span class="star" data-rating="5">★</span>
+                        </div>
+                        <input type="hidden" id="ratingValue" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ratingComment">Comment (Optional):</label>
+                        <textarea id="ratingComment" placeholder="Share your experience with this service provider..." rows="4"></textarea>
+                    </div>
+                    
+                    <input type="hidden" id="selectedAppointmentId">
+                    <input type="hidden" id="selectedProviderId">
+                    
+                    <div style="display: flex; gap: 15px;">
+                        <button type="button" class="btn btn-secondary" onclick="hideRatingForm()">Cancel</button>
+                        <button type="submit" class="btn btn-success">Submit Rating</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Search & Filters -->
+        <div class="search-filters">
+            <h3>🔍 Find Services</h3>
+            <div class="filters-row">
+                <div class="form-group">
+                    <label for="searchLocation">Location</label>
+                    <input type="text" id="searchLocation" placeholder="Enter city or area">
+                </div>
+                <div class="form-group">
+                    <label for="serviceType">Service Type</label>
+                    <select id="serviceType">
+                        <option value="">All Services</option>
+                        <option value="computer">Computer Services</option>
+                        <option value="automotive">Automotive Services</option>
+                        <option value="electrical">Electrical Services</option>
+                        <option value="plumbing">Plumbing Services</option>
+                        <option value="carpentry">Carpentry Services</option>
+                        <option value="beauty">Beauty Services</option>
+                        <option value="cleaning">Cleaning Services</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="priceRange">Max Price ($)</label>
+                    <input type="number" id="priceRange" placeholder="e.g., 100">
+                </div>
+                <button class="btn btn-primary" onclick="searchServices()">
+                    🔍 Search
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="messageContainer"></div>
+
+        <!-- Loading -->
+        <div id="loadingServices" class="loading" style="display: none;">
+            🔄 Loading services...
+        </div>
+
+        <!-- Services Grid -->
+        <div class="services-grid" id="servicesGrid">
+            <!-- Services will be loaded here -->
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-number" id="totalServices">0</div>
+                <div class="stat-label">Services Available</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="totalProviders">0</div>
+                <div class="stat-label">Active Providers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="avgRating">0.0</div>
+                <div class="stat-label">Average Rating</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">📋 Book Service</h2>
+                <span class="close" onclick="closeBookingModal()">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <div class="booking-summary">
+                    <h3>📋 Service Details</h3>
+                    <div id="serviceSummary"></div>
+                </div>
+
+                <div class="time-slots-section">
+                    <div class="time-slots-header">📅 Select Date & Time</div>
+                    
+                    <div class="date-selector">
+                        <label for="bookingDate">Choose Date:</label>
+                        <input type="date" id="bookingDate" onchange="loadTimeSlots()">
+                    </div>
+
+                    <div id="timeSlotsContainer">
+                        <div class="time-slots-grid" id="timeSlots">
+                            <!-- Time slots will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="serviceNotes">Additional Notes (Optional)</label>
+                    <textarea id="serviceNotes" rows="3" placeholder="Any specific requirements or notes..."></textarea>
+                </div>
+
+                <div class="booking-summary" id="bookingSummary" style="display: none;">
+                    <h3>📝 Booking Summary</h3>
+                    <div id="summaryDetails"></div>
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-top: 25px;">
+                    <button class="btn btn-secondary" onclick="closeBookingModal()">❌ Cancel</button>
+                    <button class="btn btn-success" id="confirmBookingBtn" onclick="confirmBooking()" disabled>
+                        ✅ Confirm Booking
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let selectedService = null;
+        let selectedTimeSlot = null;
+        let availableSlots = [];
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set date restrictions for rolling weekly recurring booking
+            const today = new Date().toISOString().split('T')[0];
+            const maxDate = new Date();
+            maxDate.setDate(new Date().getDate() + (8 * 7)); // 8 weeks from today
+            const maxDateString = maxDate.toISOString().split('T')[0];
+            
+            document.getElementById('bookingDate').min = today;
+            document.getElementById('bookingDate').max = maxDateString;
+            document.getElementById('bookingDate').value = today;
+            
+            loadServices();
+        });
+
+        // Load all services
+        async function loadServices() {
+            showLoading(true);
+            try {
+                const response = await fetch('http://192.168.100.165:3000/auth/service-listings');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayServices(data.listings || []);
+                    updateStats(data.listings || []);
+                    showMessage(`Found ${data.count || 0} services available`, 'success');
+                } else {
+                    showMessage(data.message || 'Failed to load services', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading services:', error);
+                showMessage('Failed to load services. Please try again.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Search services with filters
+        async function searchServices() {
+            const location = document.getElementById('searchLocation').value;
+            const serviceType = document.getElementById('serviceType').value;
+            const maxPrice = document.getElementById('priceRange').value;
+
+            let queryParams = [];
+            if (location) queryParams.push(`location=${encodeURIComponent(location)}`);
+            if (serviceType) queryParams.push(`service_type=${encodeURIComponent(serviceType)}`);
+            if (maxPrice) queryParams.push(`max_price=${maxPrice}`);
+
+            const queryString = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
+
+            showLoading(true);
+            try {
+                const response = await fetch(`http://192.168.100.165:3000/auth/service-listings${queryString}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayServices(data.listings || []);
+                    updateStats(data.listings || []);
+                    showMessage(`Found ${data.count || 0} services matching your criteria`, 'success');
+                } else {
+                    showMessage(data.message || 'Failed to search services', 'error');
+                }
+            } catch (error) {
+                console.error('Error searching services:', error);
+                showMessage('Failed to search services. Please try again.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Display services in grid
+        function displayServices(services) {
+            const grid = document.getElementById('servicesGrid');
+            
+            if (!services || services.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <h3>No services found</h3>
+                        <p>Try adjusting your search criteria or check back later for new services.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = services.map(service => `
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-title">${service.service_title}</div>
+                        <div class="service-price">Starting at $${service.service_startingprice}</div>
+                    </div>
+                    <div class="service-content">
+                        <div class="provider-info">
+                            <div class="provider-avatar">
+                                ${getInitials(service.serviceProvider.provider_first_name, service.serviceProvider.provider_last_name)}
+                            </div>
+                            <div class="provider-details">
+                                <h4>${service.serviceProvider.provider_first_name} ${service.serviceProvider.provider_last_name}</h4>
+                                <p>📍 ${service.serviceProvider.provider_location || 'Location not specified'}</p>
+                                <p>📧 ${service.serviceProvider.provider_email}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="service-description">
+                            ${service.service_description}
+                        </div>
+                        
+                        <div class="service-meta">
+                            <div class="rating">
+                                ⭐⭐⭐⭐⭐ <span>${service.serviceProvider.provider_rating.toFixed(1)}</span>
+                            </div>
+                            ${service.serviceProvider.provider_isVerified ? 
+                                '<div class="verification-badge">✅ Verified</div>' : 
+                                '<div style="color: #666;">⏳ Pending Verification</div>'
+                            }
+                        </div>
+                        
+                        <div class="service-actions">
+                            <button class="btn btn-success" onclick="openBookingModal(${service.service_id}, '${service.service_title}', ${service.serviceProvider.provider_id}, '${service.serviceProvider.provider_first_name} ${service.serviceProvider.provider_last_name}', ${service.service_startingprice})">
+                                📅 Book Now
+                            </button>
+                            <button class="btn btn-info" onclick="viewServiceDetails(${service.service_id})">
+                                👁️ View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get initials for avatar
+        function getInitials(firstName, lastName) {
+            return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+        }
+
+        // Update statistics
+        function updateStats(services) {
+            const totalServices = services.length;
+            const totalProviders = new Set(services.map(s => s.serviceProvider.provider_id)).size;
+            const avgRating = services.length > 0 ? 
+                (services.reduce((sum, s) => sum + s.serviceProvider.provider_rating, 0) / services.length).toFixed(1) : 
+                '0.0';
+
+            document.getElementById('totalServices').textContent = totalServices;
+            document.getElementById('totalProviders').textContent = totalProviders;
+            document.getElementById('avgRating').textContent = avgRating;
+        }
+
+        // Open booking modal
+        async function openBookingModal(serviceId, serviceTitle, providerId, providerName, price) {
+            selectedService = { 
+                id: serviceId, 
+                title: serviceTitle, 
+                providerId: providerId, 
+                providerName: providerName,
+                price: price
+            };
+            
+            document.getElementById('serviceSummary').innerHTML = `
+                <strong>Service:</strong> ${serviceTitle}<br>
+                <strong>Provider:</strong> ${providerName}<br>
+                <strong>Starting Price:</strong> $${price}<br>
+                <strong>Service ID:</strong> ${serviceId}
+            `;
+            
+            document.getElementById('bookingModal').style.display = 'block';
+            
+            // Load availability for today
+            await loadTimeSlots();
+        }
+
+        // Close booking modal
+        function closeBookingModal() {
+            document.getElementById('bookingModal').style.display = 'none';
+            selectedService = null;
+            selectedTimeSlot = null;
+            resetBookingForm();
+        }
+
+        // Load time slots for selected date
+        async function loadTimeSlots() {
+            if (!selectedService) return;
+            
+            const date = document.getElementById('bookingDate').value;
+            const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+            
+            try {
+                // Load provider availability for the selected day
+                const response = await fetch(`http://192.168.100.165:3000/auth/provider/${selectedService.providerId}/availability/${dayOfWeek}`);
+                const availabilityData = await response.json();
+                
+                displayTimeSlots(availabilityData.availability || []);
+            } catch (error) {
+                console.error('Error loading time slots:', error);
+                document.getElementById('timeSlots').innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666;">Error loading time slots</div>';
+            }
+        }
+
+        // Display time slots
+        function displayTimeSlots(availability) {
+            const container = document.getElementById('timeSlots');
+            
+            if (!availability || availability.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666;">No available time slots for this day</div>';
+                return;
+            }
+
+            // Generate time slots based on availability
+            const slots = [];
+            availability.forEach(slot => {
+                const startTime = parseTime(slot.startTime);
+                const endTime = parseTime(slot.endTime);
+                
+                // Generate 1-hour slots
+                for (let time = startTime; time < endTime; time += 60) {
+                    const timeStr = formatTime(time);
+                    const endTimeStr = formatTime(time + 60);
+                    slots.push({
+                        time: timeStr,
+                        label: `${timeStr} - ${endTimeStr}`,
+                        available: true
+                    });
+                }
+            });
+
+            container.innerHTML = slots.map(slot => `
+                <div class="time-slot ${slot.available ? '' : 'unavailable'}" 
+                     onclick="selectTimeSlot('${slot.time}', '${slot.label}')"
+                     data-time="${slot.time}">
+                    ${slot.label}
+                </div>
+            `).join('');
+        }
+
+        // Parse time string to minutes
+        function parseTime(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        // Format minutes to time string
+        function formatTime(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+        }
+
+        // Select time slot
+        function selectTimeSlot(time, label) {
+            // Remove previous selection
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                slot.classList.remove('selected');
+            });
+            
+            // Add selection to clicked slot
+            event.target.classList.add('selected');
+            
+            selectedTimeSlot = { time, label };
+            
+            // Show booking summary
+            updateBookingSummary();
+            
+            // Enable confirm button
+            document.getElementById('confirmBookingBtn').disabled = false;
+        }
+
+        // Update booking summary
+        function updateBookingSummary() {
+            if (!selectedService || !selectedTimeSlot) return;
+            
+            const date = document.getElementById('bookingDate').value;
+            const formattedDate = new Date(date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            document.getElementById('summaryDetails').innerHTML = `
+                <strong>Service:</strong> ${selectedService.title}<br>
+                <strong>Provider:</strong> ${selectedService.providerName}<br>
+                <strong>Date:</strong> ${formattedDate}<br>
+                <strong>Time:</strong> ${selectedTimeSlot.label}<br>
+                <strong>Estimated Price:</strong> $${selectedService.price}<br>
+                <strong>Status:</strong> Pending Confirmation
+            `;
+            
+            document.getElementById('bookingSummary').style.display = 'block';
+        }
+
+        // Confirm booking
+        async function confirmBooking() {
+            if (!selectedService || !selectedTimeSlot) {
+                showMessage('Please select a time slot', 'error');
+                return;
+            }
+            
+            const customerId = document.getElementById('customerId').value;
+            if (!customerId) {
+                showMessage('Please enter customer ID', 'error');
+                return;
+            }
+            
+            const bookingData = {
+                customer_id: parseInt(customerId),
+                service_listing_id: selectedService.id,
+                provider_id: selectedService.providerId,
+                scheduled_date: document.getElementById('bookingDate').value,
+                scheduled_time: selectedTimeSlot.time,
+                service_description: document.getElementById('serviceNotes').value || `Service: ${selectedService.title} (Service ID: ${selectedService.id})`,
+                final_price: selectedService.price
+            };
+            
+            try {
+                const response = await fetch('http://192.168.100.165:3000/auth/book-appointment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bookingData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('🎉 Service booked successfully!', 'success');
+                    closeBookingModal();
+                } else {
+                    showMessage(result.message || 'Failed to book service', 'error');
+                }
+            } catch (error) {
+                console.error('Error booking service:', error);
+                showMessage('Network error. Please try again.', 'error');
+            }
+        }
+
+        // View service details
+        async function viewServiceDetails(serviceId) {
+            try {
+                const response = await fetch(`http://192.168.100.165:3000/auth/service-listing/${serviceId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const listing = data.listing;
+                    alert(`Service Details:\n\nTitle: ${listing.service_title}\nPrice: $${listing.service_startingprice}\nProvider: ${listing.serviceProvider.provider_first_name} ${listing.serviceProvider.provider_last_name}\nDescription: ${listing.service_description}\nRating: ${listing.serviceProvider.provider_rating}/5`);
+                } else {
+                    showMessage(data.message || 'Failed to load service details', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading service details:', error);
+                showMessage('Failed to load service details', 'error');
+            }
+        }
+
+        // Load customer bookings
+        async function loadMyBookings() {
+            const customerId = document.getElementById('customerId').value;
+            if (!customerId) {
+                showMessage('Please enter customer ID', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://192.168.100.165:3000/auth/customer/${customerId}/appointments`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const appointments = data.appointments || [];
+                    if (appointments.length === 0) {
+                        alert('No bookings found.');
+                    } else {
+                        const bookingsList = appointments.map(apt => 
+                            `• ${apt.serviceProvider.provider_first_name} ${apt.serviceProvider.provider_last_name}\n  ${new Date(apt.scheduled_date).toLocaleDateString()} at ${new Date(apt.scheduled_date).toLocaleTimeString()}\n  Status: ${apt.appointment_status.toUpperCase()}\n  ${apt.actual_price ? `Price: $${apt.actual_price}` : ''}`
+                        ).join('\n\n');
+                        
+                        alert(`Your Bookings (${appointments.length}):\n\n${bookingsList}`);
+                    }
+                } else {
+                    showMessage(data.message || 'Failed to load bookings', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                showMessage('Failed to load bookings', 'error');
+            }
+        }
+
+        // Utility functions
+        function resetBookingForm() {
+            document.getElementById('serviceNotes').value = '';
+            document.getElementById('bookingSummary').style.display = 'none';
+            document.getElementById('confirmBookingBtn').disabled = true;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingServices').style.display = show ? 'block' : 'none';
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="message ${type}">${message}</div>`;
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);        }
+
+        // Rating Functions
+        async function showRatingSection() {
+            document.getElementById('ratingSection').style.display = 'block';
+            await loadCompletedAppointments();
+        }
+
+        async function loadCompletedAppointments() {
+            const customerId = document.getElementById('customerId').value;
+            
+            if (!customerId) {
+                showMessage('Please enter your Customer ID first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://192.168.100.165:3000/auth/customer/${customerId}/appointments`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const completedAppointments = data.appointments.filter(apt => apt.appointment_status === 'completed');
+                    
+                    if (completedAppointments.length === 0) {
+                        document.getElementById('completedAppointments').innerHTML = 
+                            '<p>No completed appointments available for rating.</p>';
+                        return;
+                    }
+                    
+                    const appointmentsHTML = completedAppointments.map(apt => `
+                        <div class="appointment-item" onclick="selectAppointmentForRating(${apt.appointment_id}, ${apt.provider_id}, '${apt.serviceProvider.provider_first_name}', '${apt.serviceProvider.provider_last_name}', '${new Date(apt.scheduled_date).toLocaleDateString()}')">
+                            <strong>${apt.serviceProvider.provider_first_name} ${apt.serviceProvider.provider_last_name}</strong><br>
+                            Date: ${new Date(apt.scheduled_date).toLocaleDateString()}<br>
+                            Service: ${apt.repairDescription || 'Service appointment'}<br>
+                            <small>Click to rate this appointment</small>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('completedAppointments').innerHTML = 
+                        '<h4>Select an appointment to rate:</h4>' + appointmentsHTML;
+                        
+                } else {
+                    showMessage(data.message || 'Failed to load appointments', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading appointments:', error);
+                showMessage('Failed to load appointments', 'error');
+            }
+        }
+
+        function selectAppointmentForRating(appointmentId, providerId, providerFirstName, providerLastName, appointmentDate) {
+            // Clear previous selection
+            document.querySelectorAll('.appointment-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Mark selected appointment
+            event.target.classList.add('selected');
+            
+            // Set hidden form values
+            document.getElementById('selectedAppointmentId').value = appointmentId;
+            document.getElementById('selectedProviderId').value = providerId;
+            
+            // Update appointment info display
+            document.getElementById('selectedAppointmentInfo').innerHTML = `
+                <strong>Provider:</strong> ${providerFirstName} ${providerLastName}<br>
+                <strong>Date:</strong> ${appointmentDate}<br>
+                <strong>Appointment ID:</strong> ${appointmentId}
+            `;
+            
+            // Show rating form
+            document.getElementById('ratingForm').style.display = 'block';
+            
+            // Reset star rating
+            document.querySelectorAll('.star').forEach(star => {
+                star.classList.remove('active');
+            });
+            document.getElementById('ratingValue').value = '';
+            document.getElementById('ratingComment').value = '';
+        }
+
+        function hideRatingForm() {
+            document.getElementById('ratingForm').style.display = 'none';
+            document.getElementById('ratingSection').style.display = 'none';
+            
+            // Clear selections
+            document.querySelectorAll('.appointment-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+        }
+
+        // Star rating functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const stars = document.querySelectorAll('.star');
+            
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    document.getElementById('ratingValue').value = rating;
+                    
+                    // Update star display
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                });
+                
+                star.addEventListener('mouseover', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.style.color = '#ffc107';
+                        } else {
+                            s.style.color = '#ddd';
+                        }
+                    });
+                });
+            });
+            
+            // Rating form submission
+            document.getElementById('providerRatingForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await submitRating();
+            });
+        });
+
+        async function submitRating() {
+            const customerId = document.getElementById('customerId').value;
+            const appointmentId = document.getElementById('selectedAppointmentId').value;
+            const providerId = document.getElementById('selectedProviderId').value;
+            const ratingValue = document.getElementById('ratingValue').value;
+            const ratingComment = document.getElementById('ratingComment').value;
+            
+            if (!customerId || !appointmentId || !providerId || !ratingValue) {
+                showMessage('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            const ratingData = {
+                user_id: parseInt(customerId),
+                appointment_id: parseInt(appointmentId),
+                provider_id: parseInt(providerId),
+                rating_value: parseInt(ratingValue),
+                rating_comment: ratingComment || null
+            };
+            
+            try {
+                const response = await fetch('http://192.168.100.165:3000/auth/rate-provider', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(ratingData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage(`Rating submitted successfully! Provider's new average rating: ${result.provider_new_average_rating}/5`, 'success');
+                    hideRatingForm();
+                } else {
+                    showMessage(result.message || 'Failed to submit rating', 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting rating:', error);
+                showMessage('Network error. Please try again.', 'error');
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('bookingModal');
+            if (event.target === modal) {
+                closeBookingModal();
+            }
+        }
+    </script>
+</body>
+</html>

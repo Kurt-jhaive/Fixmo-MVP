@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rating System Test - Fixmo</title>
+    <link rel="stylesheet" href="/css/rating-system.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .test-section h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 0.5rem;
+        }
+        
+        .appointments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .appointment-card {
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease;
+        }
+        
+        .appointment-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .appointment-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .appointment-info h3 {
+            margin: 0 0 0.5rem 0;
+            color: #2c3e50;
+        }
+        
+        .appointment-info p {
+            margin: 0.25rem 0;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .appointment-status {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .appointment-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1000;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .toast-success {
+            border-left: 4px solid #10b981;
+            color: #065f46;
+        }
+        
+        .toast-error {
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+        }
+        
+        .toast-info {
+            border-left: 4px solid #3b82f6;
+            color: #1e40af;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        
+        .close-btn:hover {
+            background: #f3f4f6;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .auth-section {
+            background: #e0f2fe;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .login-btn {
+            background: #0ea5e9;
+            color: white;
+        }
+        
+        .login-btn:hover {
+            background: #0284c7;
+        }
+        
+        .current-user {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Rating System Test</h1>
+            <p>Test the rating functionality for completed appointments</p>
+        </div>
+        
+        <div class="auth-section">
+            <h3>Authentication</h3>
+            <div id="authStatus">
+                <p>Please log in to test the rating system</p>
+                <div class="auth-buttons">
+                    <a href="/fixmo-login" class="btn btn-primary login-btn">
+                        <i class="fas fa-user"></i> Login as Customer
+                    </a>
+                    <a href="/login" class="btn btn-primary login-btn">
+                        <i class="fas fa-tools"></i> Login as Provider
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Your Completed Appointments</h2>
+            <p>These are appointments that have been completed and can be rated:</p>
+            <div id="appointmentsList">
+                <div class="loading" style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading appointments...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Rating Examples</h2>
+            <p>Here are some examples of how ratings are displayed:</p>
+            
+            <div class="appointments-grid">
+                <div class="appointment-card">
+                    <div class="appointment-header">
+                        <div class="appointment-info">
+                            <h3>Air Conditioning Repair</h3>
+                            <p><i class="fas fa-user"></i> John Smith</p>
+                            <p><i class="fas fa-calendar"></i> Dec 15, 2024</p>
+                        </div>
+                        <div class="appointment-status">Completed</div>
+                    </div>
+                    <div class="rating-display">
+                        <div class="stars">
+                            <i class="fas fa-star active"></i>
+                            <i class="fas fa-star active"></i>
+                            <i class="fas fa-star active"></i>
+                            <i class="fas fa-star active"></i>
+                            <i class="fas fa-star active"></i>
+                        </div>
+                        <span class="rating-value">5.0</span>
+                        <span class="rating-count">(1 review)</span>
+                    </div>
+                    <div class="appointment-actions">
+                        <button class="btn btn-secondary view-ratings-btn" onclick="showSampleRatings()">
+                            <i class="fas fa-eye"></i> View Ratings
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="appointment-card">
+                    <div class="appointment-header">
+                        <div class="appointment-info">
+                            <h3>Plumbing Service</h3>
+                            <p><i class="fas fa-user"></i> Jane Doe</p>
+                            <p><i class="fas fa-calendar"></i> Dec 10, 2024</p>
+                        </div>
+                        <div class="appointment-status">Completed</div>
+                    </div>
+                    <p style="color: #6c757d; font-size: 0.9rem; margin: 0.5rem 0;">Not rated yet</p>
+                    <div class="appointment-actions">
+                        <button class="btn btn-primary rate-btn" onclick="showSampleRatingForm()">
+                            <i class="fas fa-star"></i> Rate
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/rating-system.js"></script>
+    <script>
+        // Initialize rating system
+        let ratingSystem;
+        
+        // Check authentication status
+        async function checkAuth() {
+            try {
+                const token = localStorage.getItem('fixmo_customer_token') || localStorage.getItem('fixmo_provider_token');
+                
+                if (!token) {
+                    return;
+                }
+                
+                // Try customer auth first
+                let response = await fetch('/api/auth/profile', {
+                    credentials: 'include',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    updateAuthStatus(user, 'customer');
+                    loadCompletedAppointments();
+                    return;
+                }
+                
+                // Try provider auth
+                response = await fetch('/api/auth/provider-profile', {
+                    credentials: 'include',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    updateAuthStatus(user, 'provider');
+                    loadCompletedAppointments();
+                    return;
+                }
+                
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+        }
+        
+        function updateAuthStatus(user, userType) {
+            const authStatus = document.getElementById('authStatus');
+            const userName = userType === 'customer' ? 
+                `${user.first_name} ${user.last_name}` : 
+                `${user.provider_first_name} ${user.provider_last_name}`;
+            
+            authStatus.innerHTML = `
+                <div class="current-user">
+                    <i class="fas fa-user-check"></i>
+                    Logged in as: ${userName} (${userType})
+                </div>
+            `;
+        }
+        
+        async function loadCompletedAppointments() {
+            try {
+                const token = localStorage.getItem('fixmo_customer_token') || localStorage.getItem('fixmo_provider_token');
+                
+                const response = await fetch('/api/ratings/completed-appointments', {
+                    credentials: 'include',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayAppointments(data.appointments);
+                } else {
+                    document.getElementById('appointmentsList').innerHTML = `
+                        <div style="text-align: center; padding: 2rem;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <p>Failed to load appointments. Please make sure you're logged in.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading appointments:', error);
+                document.getElementById('appointmentsList').innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Error loading appointments.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayAppointments(appointments) {
+            const container = document.getElementById('appointmentsList');
+            
+            if (appointments.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-info-circle"></i>
+                        <p>No completed appointments found.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="appointments-grid">
+                    ${appointments.map(appointment => `
+                        <div class="appointment-card">
+                            <div class="appointment-header">
+                                <div class="appointment-info">
+                                    <h3>${appointment.service?.service_title || 'Service'}</h3>
+                                    <p><i class="fas fa-user"></i> ${appointment.customer ? 
+                                        `${appointment.customer.first_name} ${appointment.customer.last_name}` :
+                                        `${appointment.serviceProvider.provider_first_name} ${appointment.serviceProvider.provider_last_name}`
+                                    }</p>
+                                    <p><i class="fas fa-calendar"></i> ${new Date(appointment.scheduled_date).toLocaleDateString()}</p>
+                                </div>
+                                <div class="appointment-status">Completed</div>
+                            </div>
+                            ${appointment.alreadyRated ? 
+                                '<p style="color: #10b981; font-size: 0.9rem; margin: 0.5rem 0;"><i class="fas fa-check-circle"></i> Already rated</p>' :
+                                '<p style="color: #6c757d; font-size: 0.9rem; margin: 0.5rem 0;">Not rated yet</p>'
+                            }
+                            <div class="appointment-actions">
+                                ${appointment.canRate ? 
+                                    `<button class="btn btn-primary rate-btn" data-appointment-id="${appointment.appointment_id}">
+                                        <i class="fas fa-star"></i> Rate
+                                    </button>` : ''
+                                }
+                                <button class="btn btn-secondary view-ratings-btn" data-appointment-id="${appointment.appointment_id}">
+                                    <i class="fas fa-eye"></i> View Ratings
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        function showSampleRatingForm() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content rating-modal">
+                    <div class="modal-header">
+                        <h3>Rate Service Provider</h3>
+                        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="rating-info">
+                            <div class="appointment-details">
+                                <h4>Plumbing Service</h4>
+                                <p>Date: Dec 10, 2024</p>
+                                <p>Provider: Jane Doe</p>
+                            </div>
+                            
+                            <div class="rating-section">
+                                <label>Rating</label>
+                                <div class="star-container">
+                                    <i class="fas fa-star star-rating" data-rating="1"></i>
+                                    <i class="fas fa-star star-rating" data-rating="2"></i>
+                                    <i class="fas fa-star star-rating" data-rating="3"></i>
+                                    <i class="fas fa-star star-rating" data-rating="4"></i>
+                                    <i class="fas fa-star star-rating" data-rating="5"></i>
+                                </div>
+                                <span class="rating-text">Select a rating</span>
+                            </div>
+
+                            <div class="comment-section">
+                                <label for="ratingComment">Comment (Optional)</label>
+                                <textarea id="ratingComment" 
+                                          placeholder="Share your experience..." 
+                                          maxlength="500"
+                                          rows="4"></textarea>
+                                <small class="char-count">0/500 characters</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        <button class="btn btn-primary" onclick="showToast('This is a demo - rating not submitted', 'info')">
+                            Submit Rating
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Setup star rating for demo
+            modal.querySelectorAll('.star-rating').forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = parseInt(this.dataset.rating);
+                    const stars = modal.querySelectorAll('.star-rating');
+                    const ratingText = modal.querySelector('.rating-text');
+                    
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                    
+                    const ratingTexts = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+                    ratingText.textContent = ratingTexts[rating] || 'Select a rating';
+                });
+            });
+            
+            // Setup character counter
+            const textarea = modal.querySelector('#ratingComment');
+            const charCount = modal.querySelector('.char-count');
+            textarea.addEventListener('input', (e) => {
+                charCount.textContent = `${e.target.value.length}/500 characters`;
+            });
+        }
+        
+        function showSampleRatings() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content ratings-view-modal">
+                    <div class="modal-header">
+                        <h3>Appointment Ratings</h3>
+                        <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="rating-item">
+                            <div class="rating-header">
+                                <div class="rater-info">
+                                    <img src="/images/default-avatar.png" alt="Profile" class="rater-avatar">
+                                    <div>
+                                        <h4>John Smith</h4>
+                                        <span class="rater-type">Customer</span>
+                                    </div>
+                                </div>
+                                <div class="rating-stars">
+                                    <i class="fas fa-star active"></i>
+                                    <i class="fas fa-star active"></i>
+                                    <i class="fas fa-star active"></i>
+                                    <i class="fas fa-star active"></i>
+                                    <i class="fas fa-star active"></i>
+                                </div>
+                            </div>
+                            <div class="rating-comment">
+                                <p>"Excellent service! The technician was professional and fixed the issue quickly. Highly recommend!"</p>
+                            </div>
+                            <div class="rating-date">
+                                December 15, 2024
+                            </div>
+                        </div>
+                        
+                        <div class="rating-item">
+                            <div class="rating-header">
+                                <div class="rater-info">
+                                    <img src="/images/default-avatar.png" alt="Profile" class="rater-avatar">
+                                    <div>
+                                        <h4>Jane Doe</h4>
+                                        <span class="rater-type">Service Provider</span>
+                                    </div>
+                                </div>
+                                <div class="rating-stars">
+                                    <i class="fas fa-star active"></i>
+                                    <i class="fas fa-star active"></i>
+                                    <i class="fas fa-star active"></i>
+                                    <i class="fas fa-star active"></i>
+                                    <i class="fas fa-star active"></i>
+                                </div>
+                            </div>
+                            <div class="rating-comment">
+                                <p>"Great customer! Clear communication and was available when scheduled. Very respectful and understanding."</p>
+                            </div>
+                            <div class="rating-date">
+                                December 15, 2024
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            
+            // Initialize rating system
+            ratingSystem = new RatingSystem();
+        });
+    </script>
+</body>
+</html>

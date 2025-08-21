@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Provider Availability Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin-bottom: 1em; color: #333; }
+        .form-section { margin-bottom: 2em; padding: 1em; border: 1px solid #ddd; border-radius: 8px; }
+        input, select { width: 100%; padding: 0.7em; margin-bottom: 1em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 0.7em; background: #007bff; color: #fff; border: none; border-radius: 4px; font-size: 1em; cursor: pointer; margin-bottom: 1em; }
+        button:hover { background: #0056b3; }
+        .message { margin-top: 1em; text-align: center; padding: 0.5em; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .availability-list { margin-top: 1em; }
+        .availability-item { padding: 1em; margin-bottom: 0.5em; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .delete-btn { background: #dc3545; color: white; border: none; padding: 0.3em 0.8em; border-radius: 4px; cursor: pointer; }
+        .delete-btn:hover { background: #c82333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Service Provider Availability Management</h2>
+        
+        <!-- Add Availability Form -->
+        <div class="form-section">
+            <h3>Add New Availability</h3>
+            <form id="addAvailabilityForm">
+                <input type="number" id="provider_id" placeholder="Provider ID" required />
+                <select id="dayOfWeek" required>
+                    <option value="">Select Day of Week</option>
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                </select>
+                <input type="time" id="startTime" placeholder="Start Time (HH:MM)" required />
+                <input type="time" id="endTime" placeholder="End Time (HH:MM)" required />
+                <button type="submit">Add Availability</button>
+                <div class="message" id="addMessage"></div>
+            </form>
+        </div>        <!-- Get Availability Form -->
+        <div class="form-section">
+            <h3>Get Provider Availability</h3>
+            <form id="getAvailabilityForm">
+                <input type="number" id="getProviderId" placeholder="Provider ID" required />
+                <button type="submit">Get All Availability</button>
+                <div class="message" id="getMessage"></div>
+                <div class="availability-list" id="availabilityList"></div>
+            </form>
+        </div>
+
+        <!-- Get Day-Specific Availability -->
+        <div class="form-section">
+            <h3>Get Day-Specific Availability</h3>
+            <form id="getDayAvailabilityForm">
+                <input type="number" id="dayProviderId" placeholder="Provider ID" required />
+                <select id="dayOfWeekSelect" required>
+                    <option value="">Select Day of Week</option>
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                </select>
+                <button type="submit">Get Day Availability</button>
+                <div class="message" id="dayMessage"></div>
+                <div class="availability-list" id="dayAvailabilityList"></div>
+            </form>
+        </div>
+
+        <!-- Get Suggested Time Slots -->
+        <div class="form-section">
+            <h3>Get Suggested Time Slots</h3>
+            <form id="getSuggestedSlotsForm">
+                <input type="number" id="suggestProviderId" placeholder="Provider ID" required />
+                <select id="suggestDayOfWeek" required>
+                    <option value="">Select Day of Week</option>
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                </select>
+                <input type="time" id="workStartTime" value="08:00" placeholder="Work Start Time" />
+                <input type="time" id="workEndTime" value="18:00" placeholder="Work End Time" />
+                <input type="number" id="slotDuration" value="60" placeholder="Slot Duration (minutes)" />
+                <button type="submit">Get Suggested Slots</button>
+                <div class="message" id="suggestMessage"></div>
+                <div class="availability-list" id="suggestedSlotsList"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Add Availability
+        document.getElementById('addAvailabilityForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const provider_id = document.getElementById('provider_id').value;
+            const dayOfWeek = document.getElementById('dayOfWeek').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const msgDiv = document.getElementById('addMessage');
+            
+            try {
+                const res = await fetch('http://192.168.100.165:3000/auth/addAvailability', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider_id, dayOfWeek, startTime, endTime })
+                });
+                
+                const data = await res.json();
+                  if (res.ok) {
+                    msgDiv.className = 'message success';
+                    msgDiv.textContent = 'Availability slot added successfully! You can add more slots for the same day.';
+                    document.getElementById('addAvailabilityForm').reset();
+                } else {
+                    msgDiv.className = 'message error';
+                    msgDiv.textContent = data.message || 'Failed to add availability';
+                }
+            } catch (error) {
+                msgDiv.className = 'message error';
+                msgDiv.textContent = 'Network error: ' + error.message;
+            }
+        });
+
+        // Get Availability
+        document.getElementById('getAvailabilityForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const provider_id = document.getElementById('getProviderId').value;
+            const msgDiv = document.getElementById('getMessage');
+            const listDiv = document.getElementById('availabilityList');
+            
+            try {
+                const res = await fetch(`http://192.168.100.165:3000/auth/provider/${provider_id}/availability`);
+                const data = await res.json();
+                
+                if (res.ok) {
+                    msgDiv.className = 'message success';
+                    msgDiv.textContent = 'Availability retrieved successfully!';
+                      if (data.availability && data.availability.length > 0) {
+                        // Group availability by day
+                        const groupedByDay = data.availability.reduce((acc, avail) => {
+                            if (!acc[avail.dayOfWeek]) {
+                                acc[avail.dayOfWeek] = [];
+                            }
+                            acc[avail.dayOfWeek].push(avail);
+                            return acc;
+                        }, {});
+
+                        listDiv.innerHTML = Object.entries(groupedByDay).map(([day, slots]) => `
+                            <div style="margin-bottom: 1em;">
+                                <h4>${day} (${slots.length} slot${slots.length > 1 ? 's' : ''})</h4>
+                                ${slots.map(avail => `
+                                    <div class="availability-item">
+                                        <span><strong>${avail.startTime} - ${avail.endTime}</strong></span>
+                                        <button class="delete-btn" onclick="deleteAvailability(${avail.availability_id})">Delete</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `).join('');
+                    } else {
+                        listDiv.innerHTML = '<p>No availability found for this provider.</p>';
+                    }
+                } else {
+                    msgDiv.className = 'message error';
+                    msgDiv.textContent = data.message || 'Failed to get availability';
+                    listDiv.innerHTML = '';
+                }
+            } catch (error) {
+                msgDiv.className = 'message error';
+                msgDiv.textContent = 'Network error: ' + error.message;
+                listDiv.innerHTML = '';
+            }
+        });
+
+        // Delete Availability
+        async function deleteAvailability(availability_id) {
+            if (!confirm('Are you sure you want to delete this availability?')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`http://192.168.100.165:3000/auth/availability/${availability_id}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('Availability deleted successfully!');
+                    // Refresh the list
+                    document.getElementById('getAvailabilityForm').dispatchEvent(new Event('submit'));
+                } else {
+                    alert('Failed to delete availability: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        // Get Day-Specific Availability
+        document.getElementById('getDayAvailabilityForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const provider_id = document.getElementById('dayProviderId').value;
+            const dayOfWeek = document.getElementById('dayOfWeekSelect').value;
+            const msgDiv = document.getElementById('dayMessage');
+            const listDiv = document.getElementById('dayAvailabilityList');
+            
+            try {
+                const res = await fetch(`http://192.168.100.165:3000/auth/provider/${provider_id}/availability/${dayOfWeek}`);
+                const data = await res.json();
+                
+                if (res.ok) {
+                    msgDiv.className = 'message success';
+                    msgDiv.textContent = `Found ${data.totalSlots} slot(s) for ${dayOfWeek}`;
+                    
+                    if (data.availability && data.availability.length > 0) {
+                        listDiv.innerHTML = `
+                            <h4>${data.dayOfWeek} Availability</h4>
+                            ${data.availability.map((avail, index) => `
+                                <div class="availability-item">
+                                    <span><strong>Slot ${index + 1}:</strong> ${avail.startTime} - ${avail.endTime} (${avail.duration})</span>
+                                    <button class="delete-btn" onclick="deleteAvailability(${avail.availability_id})">Delete</button>
+                                </div>
+                            `).join('')}
+                        `;
+                    } else {
+                        listDiv.innerHTML = `<p>No availability found for ${dayOfWeek}.</p>`;
+                    }
+                } else {
+                    msgDiv.className = 'message error';
+                    msgDiv.textContent = data.message || 'Failed to get day availability';
+                    listDiv.innerHTML = '';
+                }
+            } catch (error) {
+                msgDiv.className = 'message error';
+                msgDiv.textContent = 'Network error: ' + error.message;
+                listDiv.innerHTML = '';
+            }
+        });
+
+        // Get Suggested Time Slots
+        document.getElementById('getSuggestedSlotsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const provider_id = document.getElementById('suggestProviderId').value;
+            const dayOfWeek = document.getElementById('suggestDayOfWeek').value;
+            const workStartTime = document.getElementById('workStartTime').value;
+            const workEndTime = document.getElementById('workEndTime').value;
+            const slotDuration = document.getElementById('slotDuration').value;
+            const msgDiv = document.getElementById('suggestMessage');
+            const listDiv = document.getElementById('suggestedSlotsList');
+            
+            try {
+                const params = new URLSearchParams({
+                    workStartTime,
+                    workEndTime,
+                    slotDuration
+                });
+                
+                const res = await fetch(`http://192.168.100.165:3000/auth/provider/${provider_id}/suggested-slots/${dayOfWeek}?${params}`);
+                const data = await res.json();
+                
+                if (res.ok) {
+                    msgDiv.className = 'message success';
+                    msgDiv.textContent = `Found ${data.suggestedSlots.length} available slot(s) (${data.existingSlots} existing)`;
+                    
+                    if (data.suggestedSlots && data.suggestedSlots.length > 0) {
+                        listDiv.innerHTML = `
+                            <h4>Suggested Available Slots for ${data.dayOfWeek}</h4>
+                            <p><em>Working Hours: ${data.workingHours}</em></p>
+                            ${data.suggestedSlots.map((slot, index) => `
+                                <div class="availability-item" style="background: #e7f3ff;">
+                                    <span><strong>Available Slot ${index + 1}:</strong> ${slot.startTime} - ${slot.endTime}</span>
+                                    <button onclick="quickAddSlot('${provider_id}', '${dayOfWeek}', '${slot.startTime}', '${slot.endTime}')" 
+                                            style="background: #28a745; color: white; border: none; padding: 0.3em 0.8em; border-radius: 4px; cursor: pointer;">
+                                        Add This Slot
+                                    </button>
+                                </div>
+                            `).join('')}
+                        `;
+                    } else {
+                        listDiv.innerHTML = `<p>No available time slots found for ${dayOfWeek} with the specified parameters.</p>`;
+                    }
+                } else {
+                    msgDiv.className = 'message error';
+                    msgDiv.textContent = data.message || 'Failed to get suggested slots';
+                    listDiv.innerHTML = '';
+                }
+            } catch (error) {
+                msgDiv.className = 'message error';
+                msgDiv.textContent = 'Network error: ' + error.message;
+                listDiv.innerHTML = '';
+            }
+        });
+
+        // Quick add slot function
+        async function quickAddSlot(provider_id, dayOfWeek, startTime, endTime) {
+            try {
+                const res = await fetch('http://192.168.100.165:3000/auth/addAvailability', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ provider_id, dayOfWeek, startTime, endTime })
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    alert('Slot added successfully!');
+                    // Refresh the suggested slots
+                    document.getElementById('getSuggestedSlotsForm').dispatchEvent(new Event('submit'));
+                } else {
+                    alert('Failed to add slot: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

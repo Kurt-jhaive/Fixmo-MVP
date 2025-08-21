@@ -1,0 +1,463 @@
+{
+  "regions": [
+    {
+      "name": "National Capital Region (NCR)",
+      "cities": [
+        {
+          "name": "Caloocan City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.6507,
+            "lng": 120.9672
+          },
+          "barangays": [
+            "Baesa", "Bagbag", "Bagong Silang", "Bagumbong", "Bagumbong Norte", 
+            "Bagumbong Sur", "Balangkas", "Bignay", "Bisang", "Capri", 
+            "Camarin", "Deparo", "Grace Park East", "Grace Park West", 
+            "Kaybiga", "Kaunlaran", "La Loma", "Libis", "Lilles", 
+            "Maypajo", "Sangandaan", "Tala", "Tandang Sora", "Ugong"
+          ]
+        },
+        {
+          "name": "Las Piñas City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.4640,
+            "lng": 120.9830
+          },
+          "barangays": [
+            "Almanza Uno", "Almanza Dos", "B. F. International Village", 
+            "CAA-BF International", "Daniel Fajardo", "Elias Aldana", 
+            "Ilaya", "Manuyo Uno", "Manuyo Dos", "Pamplona Uno", 
+            "Pamplona Dos", "Pamplona Tres", "Pilar", "Poblacion", 
+            "Pulang Lupa Uno", "Pulang Lupa Dos", "Talon Uno", 
+            "Talon Dos", "Talon Tres", "Talon Kuatro", "Talon Singko"
+          ]
+        },
+        {
+          "name": "Makati City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.5547,
+            "lng": 121.0244
+          },
+          "barangays": [
+            "Ayala Triangle", "Bel-Air", "Carmona", "Cembo", "Comembo", 
+            "Dasmariñas", "East Rembo", "Forbes Park", "Guadalupe Nuevo", 
+            "Guadalupe Viejo", "Kasilawan", "La Paz", "Legazpi Village", 
+            "Magallanes", "Olympia", "Palanan", "Pembo", "Pinagkaisahan", 
+            "Pio del Pilar", "Poblacion", "Post Proper Northside", 
+            "Post Proper Southside", "Rizal", "Salcedo Village", 
+            "San Antonio", "San Isidro", "San Lorenzo", "Santa Cruz", 
+            "Singkamas", "South Cembo", "Tejeros", "Urdaneta", "Valenzuela", "West Rembo"
+          ]
+        },
+        {
+          "name": "Malabon City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.6570,
+            "lng": 120.9564
+          },
+          "barangays": [
+            "Acacia", "Baritan", "Bayan-bayanan", "Catmon", "Concepcion", 
+            "Dampalit", "Flores", "Hulong Duhat", "Ibaba", "Longos", 
+            "Maysilo", "Muzon", "Niugan", "Panghulo", "Potrero", 
+            "San Agustin", "Santolan", "Tañong", "Tinajeros", "Tonsuya", "Tugatog"
+          ]
+        },
+        {
+          "name": "Mandaluyong City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.5832,
+            "lng": 121.0409
+          },
+          "barangays": [
+            "Addition Hills", "Bagong Silang", "Barangka Drive", "Barangka Ibaba", 
+            "Barangka Ilaya", "Barangka Itaas", "Buayang Bato", "Burol", 
+            "Daang Bakal", "Hagdang Bato Itaas", "Hagdang Bato Libis", 
+            "Harapin ang Bukas", "Highway Hills", "Hulo", "Mabini-J. Rizal", 
+            "Malamig", "Mauway", "Namayan", "New Zañiga", "Old Zañiga", 
+            "Pag-asa", "Plainview", "Pleasant Hills", "Poblacion", 
+            "San Jose", "Vergara", "Wack-Wack Greenhills"
+          ]
+        },
+        {
+          "name": "Manila City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.5995,
+            "lng": 120.9842
+          },
+          "districts": [
+            {
+              "name": "Binondo",
+              "type": "district",
+              "coordinates": { "lat": 14.6001, "lng": 120.9736 }
+            },
+            {
+              "name": "Ermita",
+              "type": "district", 
+              "coordinates": { "lat": 14.5827, "lng": 120.9859 }
+            },
+            {
+              "name": "Intramuros",
+              "type": "district",
+              "coordinates": { "lat": 14.5906, "lng": 120.9755 }
+            },
+            {
+              "name": "Malate",
+              "type": "district",
+              "coordinates": { "lat": 14.5715, "lng": 120.9830 }
+            },
+            {
+              "name": "Paco",
+              "type": "district",
+              "coordinates": { "lat": 14.5685, "lng": 120.9941 }
+            },
+            {
+              "name": "Pandacan",
+              "type": "district",
+              "coordinates": { "lat": 14.5831, "lng": 121.0074 }
+            },
+            {
+              "name": "Port Area",
+              "type": "district",
+              "coordinates": { "lat": 14.5885, "lng": 120.9684 }
+            },
+            {
+              "name": "Quiapo",
+              "type": "district",
+              "coordinates": { "lat": 14.5993, "lng": 120.9819 }
+            },
+            {
+              "name": "Sampaloc",
+              "type": "district",
+              "coordinates": { "lat": 14.6103, "lng": 120.9919 }
+            },
+            {
+              "name": "San Miguel",
+              "type": "district",
+              "coordinates": { "lat": 14.6045, "lng": 120.9854 }
+            },
+            {
+              "name": "San Nicolas",
+              "type": "district",
+              "coordinates": { "lat": 14.6050, "lng": 120.9751 }
+            },
+            {
+              "name": "Santa Ana",
+              "type": "district",
+              "coordinates": { "lat": 14.5725, "lng": 121.0181 }
+            },
+            {
+              "name": "Santa Cruz",
+              "type": "district",
+              "coordinates": { "lat": 14.6103, "lng": 120.9767 }
+            },
+            {
+              "name": "Santa Mesa",
+              "type": "district",
+              "coordinates": { "lat": 14.6041, "lng": 121.0007 }
+            },
+            {
+              "name": "Tondo",
+              "type": "district",
+              "coordinates": { "lat": 14.6288, "lng": 120.9473 }
+            },
+            {
+              "name": "Divisoria",
+              "type": "commercial_area",
+              "coordinates": { "lat": 14.6069, "lng": 120.9727 }
+            }
+          ]
+        },
+        {
+          "name": "Marikina City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.6507,
+            "lng": 121.1029
+          },
+          "barangays": [
+            "Barangka", "Calumpang", "Concepcion Dos", "Concepcion Uno", 
+            "Fortune", "Industrial Valley Complex", "Jesus de la Peña", 
+            "Malanday", "Marikina Heights", "Nangka", "Parang", 
+            "San Roque", "Santa Elena", "Santo Niño", "Tañong", "Tumana"
+          ]
+        },
+        {
+          "name": "Muntinlupa City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.3833,
+            "lng": 121.0167
+          },
+          "barangays": [
+            "Alabang", "Bayanan", "Buli", "Cupang", "Poblacion", 
+            "Putatan", "Sucat", "Tunasan", "New Alabang Village"
+          ],
+          "districts": [
+            {
+              "name": "Alabang",
+              "type": "district",
+              "coordinates": { "lat": 14.4167, "lng": 121.0167 }
+            },
+            {
+              "name": "Filinvest City",
+              "type": "business_district",
+              "coordinates": { "lat": 14.4083, "lng": 121.0417 }
+            }
+          ]
+        },
+        {
+          "name": "Navotas City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.6708,
+            "lng": 120.9461
+          },
+          "barangays": [
+            "Bagumbayan North", "Bagumbayan South", "Bangkulasi", "Daanghari", 
+            "Navotas East", "Navotas West", "North Bay Boulevard North", 
+            "North Bay Boulevard South", "San Jose", "San Rafael Village", 
+            "San Roque", "Sipac-Almacen", "Tanza"
+          ]
+        },
+        {
+          "name": "Parañaque City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.4793,
+            "lng": 121.0198
+          },
+          "barangays": [
+            "Baclaran", "BF Homes", "Don Bosco", "Don Galo", "La Huerta", 
+            "Marcelo Green", "Merville", "Moonwalk", "San Antonio", 
+            "San Dionisio", "San Isidro", "San Martin de Porres", 
+            "Santo Niño", "Sun Valley", "Tambo", "Vitalez"
+          ]
+        },
+        {
+          "name": "Pasay City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.5378,
+            "lng": 120.9964
+          },
+          "barangays": [
+            "Baclaran", "Barangay 1-201 (various)", "Bay City", "Maricaban", 
+            "Pasay Rotonda", "San Isidro", "San Rafael", "San Roque", 
+            "Santo Niño", "Tramo", "Villamor", "Washington"
+          ]
+        },
+        {
+          "name": "Pasig City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.5764,
+            "lng": 121.0851
+          },
+          "barangays": [
+            "Bagong Ilog", "Bagong Katipunan", "Bambang", "Buting", 
+            "Caniogan", "Dela Paz", "Kalawaan", "Kapasigan", "Kapitolyo", 
+            "Malinao", "Manggahan", "Maybunga", "Oranbo", "Palatiw", 
+            "Pinagbuhatan", "Poblacion", "Rosario", "Sagad", "San Antonio", 
+            "San Joaquin", "San Jose", "San Miguel", "San Nicolas", 
+            "Santa Cruz", "Santa Lucia", "Santa Rosa", "Santo Tomas", 
+            "Santolan", "Sumilang", "Ugong"
+          ],
+          "districts": [
+            {
+              "name": "Ortigas Center",
+              "type": "business_district",
+              "coordinates": { "lat": 14.5833, "lng": 121.0667 }
+            },
+            {
+              "name": "Eastwood City",
+              "type": "business_district",
+              "coordinates": { "lat": 14.6228, "lng": 121.0769 }
+            },
+            {
+              "name": "The Podium",
+              "type": "commercial_area",
+              "coordinates": { "lat": 14.5833, "lng": 121.0622 }
+            }
+          ]
+        },
+        {
+          "name": "Quezon City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.6760,
+            "lng": 121.0437
+          },
+          "districts": [
+            {
+              "name": "Diliman",
+              "type": "district",
+              "coordinates": { "lat": 14.6547, "lng": 121.0689 }
+            },
+            {
+              "name": "Cubao",
+              "type": "business_district",
+              "coordinates": { "lat": 14.6198, "lng": 121.0509 }
+            },
+            {
+              "name": "Commonwealth",
+              "type": "district",
+              "coordinates": { "lat": 14.7167, "lng": 121.0833 }
+            },
+            {
+              "name": "Novaliches",
+              "type": "district",
+              "coordinates": { "lat": 14.7208, "lng": 121.0361 }
+            },
+            {
+              "name": "Project 8",
+              "type": "district",
+              "coordinates": { "lat": 14.6667, "lng": 121.0333 }
+            },
+            {
+              "name": "Fairview",
+              "type": "district",
+              "coordinates": { "lat": 14.7333, "lng": 121.0667 }
+            },
+            {
+              "name": "Kamias",
+              "type": "district",
+              "coordinates": { "lat": 14.6333, "lng": 121.0500 }
+            },
+            {
+              "name": "Timog",
+              "type": "commercial_area",
+              "coordinates": { "lat": 14.6280, "lng": 121.0340 }
+            },
+            {
+              "name": "Teacher's Village",
+              "type": "residential_area",
+              "coordinates": { "lat": 14.6333, "lng": 121.0667 }
+            }
+          ],
+          "barangays": [
+            "Alicia", "Amihan", "Apolonio Samson", "Aurora", "Baesa", 
+            "Bagbag", "Bagong Lipunan ng Crame", "Bagong Pag-asa", 
+            "Bagong Silangan", "Bagumbayan", "Bagumbuhay", "Balingasa", 
+            "Balintawak", "Balong Bato", "Barangay Culiat", "Batasan Hills", 
+            "Botocan", "Bungad", "Camp Aguinaldo", "Central", "Commonwealth", 
+            "Cubao", "Damar", "Diliman", "Don Manuel", "Dona Imelda", 
+            "Duyan-Duyan", "East Kamias", "Fairview", "Greater Fairview", 
+            "Gulod", "Holy Spirit", "Horseshoe", "Kalusugan", "Kamuning", 
+            "Katipunan", "Kaunlaran", "Kristong Hari", "Krus na Ligas", 
+            "Laging Handa", "La Loma", "Libis", "Lourdes", "Loyola Heights", 
+            "Maharlika", "Malaya", "Mariana", "Mariblo", "Marilag", 
+            "Masambong", "Matandang Balara", "Milagrosa", "N.S. Amoranto", 
+            "Nayong Kanluran", "New Era", "North Fairview", "Novaliches Proper", 
+            "Obrero", "Old Balara", "Pahiñga", "Paligsahan", "Paltok", 
+            "Pansol", "Paraiso", "Pasong Putik Proper", "Pasong Tamo", 
+            "Payatas", "Phil-Am", "Pinagkaisahan", "Pinyahan", "Project 6", 
+            "Project 7", "Project 8", "Quezon Memorial Circle", "Quirino 2-A", 
+            "Quirino 2-B", "Quirino 2-C", "Quirino 3-A", "Ramon Magsaysay", 
+            "Sacred Heart", "Saint Ignatius", "Saint Peter", "Salvacion", 
+            "San Antonio", "San Bartolome", "Sangandaan", "San Isidro Labrador", 
+            "San Jose", "San Martin de Porres", "San Roque", "Santa Cruz", 
+            "Santa Lucia", "Santa Monica", "Santa Teresita", "Santo Cristo", 
+            "Santo Domingo", "Santo Niño", "Santol", "Sienna", "Sikatuna Village", 
+            "Silangan", "Socorro", "South Triangle", "Tagumpay", "Talayan", 
+            "Tandang Sora", "Tatalon", "Teachers Village East", "Teachers Village West", 
+            "Ugong Norte", "Unang Sigaw", "UP Campus", "UP Village", "Valencia", 
+            "Vasra", "Veterans Village", "Villa Maria Clara", "West Kamias", 
+            "West Triangle", "White Plains"
+          ]
+        },
+        {
+          "name": "San Juan City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.6019,
+            "lng": 121.0355
+          },
+          "barangays": [
+            "Addition Hills", "Balong-Bato", "Batis", "Corazon de Jesus", 
+            "Ermitaño", "Greenhills", "Halo-halo", "Isabelita", "Kabayanan", 
+            "Little Baguio", "Maytunas", "Onse", "Pasadeña", "Pedro Cruz", 
+            "Progreso", "Rivera", "Salapan", "San Perfecto", "Santa Lucia", "Tibagan"
+          ],
+          "districts": [
+            {
+              "name": "Greenhills",
+              "type": "commercial_area",
+              "coordinates": { "lat": 14.6028, "lng": 121.0456 }
+            }
+          ]
+        },
+        {
+          "name": "Taguig City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.5176,
+            "lng": 121.0509
+          },
+          "barangays": [
+            "Bagumbayan", "Bambang", "Calzada", "Central Bicutan", 
+            "Central Signal Village", "Fort Bonifacio", "Hagonoy", 
+            "Ibayo-Tipas", "Ligid-Tipas", "Lower Bicutan", "Maharlika Village", 
+            "Napindan", "New Lower Bicutan", "North Daang Hari", "North Signal Village", 
+            "Palingon", "Pinagsama", "San Miguel", "Santa Ana", "Tanyag", 
+            "Tuktukan", "Upper Bicutan", "Ususan", "Wawa", "Western Bicutan"
+          ],
+          "districts": [
+            {
+              "name": "Bonifacio Global City",
+              "type": "business_district",
+              "coordinates": { "lat": 14.5486, "lng": 121.0508 }
+            },
+            {
+              "name": "McKinley Hill",
+              "type": "business_district",
+              "coordinates": { "lat": 14.5333, "lng": 121.0500 }
+            },
+            {
+              "name": "McKinley West",
+              "type": "business_district",
+              "coordinates": { "lat": 14.5167, "lng": 121.0333 }
+            }
+          ]
+        },
+        {
+          "name": "Valenzuela City",
+          "type": "city",
+          "coordinates": {
+            "lat": 14.7000,
+            "lng": 120.9833
+          },
+          "barangays": [
+            "Arkong Bato", "Bagbaguin", "Balangkas", "Bignay", "Bisig", 
+            "Canumay East", "Canumay West", "Coloong", "Dalandanan", 
+            "Gen. T. de Leon", "Hen. A. Luna", "Isla", "Karagatan", 
+            "Karuhatan", "Lawang Bato", "Lingunan", "Mabolo", "Malanday", 
+            "Malinta", "Mapulang Lupa", "Marulas", "Maysan", "Palasan", 
+            "Parada", "Pariancillo Villa", "Paso de Blas", "Poblacion", 
+            "Polo", "Punturin", "Rincon", "Tagalag", "Ugong", "Viente Reales", "Wawang Pulo"
+          ]
+        }
+      ],
+      "municipalities": [
+        {
+          "name": "Pateros",
+          "type": "municipality",
+          "coordinates": {
+            "lat": 14.5441,
+            "lng": 121.0618
+          },
+          "barangays": [
+            "Aguho", "Magtanggol", "Martires del '96", "Poblacion", 
+            "San Pedro", "San Roque", "Santa Ana", "Santo Rosario", 
+            "Tabacalera", "Sagana"
+          ]
+        }
+      ]
+    }
+  ]
+}

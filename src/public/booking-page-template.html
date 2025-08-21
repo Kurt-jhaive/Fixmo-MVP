@@ -1,0 +1,210 @@
+<!-- Enhanced Bookings Page Template -->
+<!-- This replaces the existing bookingsPage div in provider-dashboard.html -->
+
+<div id="bookingsPage" class="page">
+    <!-- Page Header -->
+    <div class="booking-page-header">
+        <div class="booking-page-title">
+            <h1>Bookings Management</h1>
+            <p class="booking-page-subtitle">Manage your appointments and customer requests</p>
+        </div>
+    </div>
+
+    <!-- Booking Statistics -->
+    <div class="booking-stats">
+        <div class="booking-stat-card total">
+            <div class="icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="count" id="stats-total">0</div>
+            <div class="label">Total Bookings</div>
+        </div>
+        <div class="booking-stat-card pending">
+            <div class="icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="count" id="stats-pending">0</div>
+            <div class="label">Pending</div>
+        </div>
+        <div class="booking-stat-card confirmed">
+            <div class="icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="count" id="stats-confirmed">0</div>
+            <div class="label">Confirmed</div>
+        </div>
+        <div class="booking-stat-card completed">
+            <div class="icon">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <div class="count" id="stats-completed">0</div>
+            <div class="label">Completed</div>
+        </div>
+        <div class="booking-stat-card">
+            <div class="icon">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+            <div class="count" id="stats-today">0</div>
+            <div class="label">Today</div>
+        </div>
+    </div>
+
+    <!-- Booking Controls -->
+    <div class="booking-controls">
+        <div class="booking-search-section">
+            <div class="booking-search">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="bookingSearchInput" placeholder="Search bookings...">
+            </div>
+            <div class="booking-sort">
+                <label for="bookingSortSelect">Sort by:</label>
+                <select id="bookingSortSelect">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="date_asc">Date (Earliest)</option>
+                    <option value="date_desc">Date (Latest)</option>
+                    <option value="price_high">Price (High to Low)</option>
+                    <option value="price_low">Price (Low to High)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="booking-filters">
+            <button class="booking-filter-btn active" data-filter="all">
+                <i class="fas fa-list"></i> All
+            </button>
+            <button class="booking-filter-btn" data-filter="pending">
+                <i class="fas fa-clock"></i> Pending
+            </button>
+            <button class="booking-filter-btn" data-filter="confirmed">
+                <i class="fas fa-check-circle"></i> Confirmed
+            </button>
+            <button class="booking-filter-btn" data-filter="in_progress">
+                <i class="fas fa-play-circle"></i> In Progress
+            </button>
+            <button class="booking-filter-btn" data-filter="completed">
+                <i class="fas fa-check-double"></i> Completed
+            </button>
+            <button class="booking-filter-btn" data-filter="cancelled">
+                <i class="fas fa-times-circle"></i> Cancelled
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Info -->
+    <div class="booking-results-info">
+        <div class="booking-results-count" id="bookingResultsCount">0 bookings</div>
+        <div class="booking-view-options">
+            <button class="view-option-btn active" data-view="card">
+                <i class="fas fa-th-large"></i>
+            </button>
+            <button class="view-option-btn" data-view="list">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Bookings Container -->
+    <div class="bookings-container" id="bookingsContainer">
+        <!-- Bookings will be loaded here by booking-manager.js -->
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading bookings...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Booking Details Modal -->
+<div id="bookingDetailsModal" class="modal">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3>Booking Details</h3>
+            <button class="modal-close" id="bookingDetailsModalClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="bookingDetailsBody">
+            <!-- Booking details will be populated here -->
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Booking Modal -->
+<div id="cancelBookingModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Cancel Booking</h3>
+            <button class="modal-close" id="cancelBookingModalClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to cancel this booking?</p>
+            <div class="form-group">
+                <label for="cancellationReason">Reason for cancellation:</label>
+                <textarea id="cancellationReason" rows="3" placeholder="Please provide a reason for cancellation..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="cancelBookingCancel">Cancel</button>
+                <button class="btn-danger" id="cancelBookingConfirm">Confirm Cancellation</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Complete Booking Modal -->
+<div id="completeBookingModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Complete Booking</h3>
+            <button class="modal-close" id="completeBookingModalClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Mark this booking as completed?</p>
+            <div class="form-group">
+                <label for="finalPrice">Final Price (₱):</label>
+                <input type="number" id="finalPrice" min="0" step="0.01" placeholder="Enter final price">
+            </div>
+            <div class="form-group">
+                <label for="completionNotes">Completion Notes:</label>
+                <textarea id="completionNotes" rows="3" placeholder="Any additional notes about the completed work..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="completeBookingCancel">Cancel</button>
+                <button class="btn-success" id="completeBookingConfirm">Mark as Completed</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reschedule Booking Modal -->
+<div id="rescheduleBookingModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Reschedule Booking</h3>
+            <button class="modal-close" id="rescheduleBookingModalClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="newBookingDate">New Date:</label>
+                <input type="date" id="newBookingDate" required>
+            </div>
+            <div class="form-group">
+                <label for="newBookingTime">New Time:</label>
+                <input type="time" id="newBookingTime" required>
+            </div>
+            <div class="form-group">
+                <label for="rescheduleReason">Reason for rescheduling:</label>
+                <textarea id="rescheduleReason" rows="3" placeholder="Please provide a reason for rescheduling..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="rescheduleBookingCancel">Cancel</button>
+                <button class="btn-primary" id="rescheduleBookingConfirm">Reschedule</button>
+            </div>
+        </div>
+    </div>
+</div>
